@@ -12,6 +12,7 @@ function makeMockCanvas(width = 900, height = 540) {
     moveTo: noop, lineTo: noop, arc: noop, fill: noop, stroke: noop, save: noop, restore: noop,
     translate: noop, rotate: noop, setLineDash: noop, fillText: noop, drawImage: noop,
     measureText: (text) => ({ width: text.length * 7 }), // aproximación monospace, suficiente para el smoke test
+    createLinearGradient: () => ({ addColorStop: noop }),
     set fillStyle(v) {}, set strokeStyle(v) {}, set font(v) {}, set textAlign(v) {},
     set textBaseline(v) {}, set globalAlpha(v) {}, set lineWidth(v) {},
   };
@@ -94,6 +95,30 @@ const tests = [
   ]],
   ['TrickQuiz', './src/games/trick-quiz/TrickQuiz.js', 'TrickQuiz', [], [
     { atFrame: 30, x: 642, y: 282 }, // botón "4", respuesta correcta de la pregunta 1
+  ]],
+  ['PapaPizzeria', './src/games/papa-pizzeria/PapaPizzeria.js', 'PapaPizzeria', [], [
+    { atFrame: 30, x: 100, y: 100 }, // click en área de cliente
+    { atFrame: 60, x: 200, y: 300 }, // click en estación
+  ]],
+  ['StickRPG', './src/games/stick-rpg/StickRPG.js', 'StickRPG', [], [
+    { atFrame: 30, x: 200, y: 300 }, // click en acción
+    { atFrame: 100, x: 400, y: 500 }, // click en navegación
+  ]],
+  ['CrushTheCastle', './src/games/crush-the-castle/CrushTheCastle.js', 'CrushTheCastle', [
+    { code: 'ArrowUp', atFrame: 5 },
+    { code: 'Space', atFrame: 15 },
+  ]],
+  ['Bowman', './src/games/bowman/Bowman.js', 'Bowman', [
+    { code: 'Space', atFrame: 5 },
+    { code: 'Space', atFrame: 100 },
+  ]],
+  ['BloonsTD', './src/games/bloons-td/BloonsTD.js', 'BloonsTD', [
+    { code: 'Space', atFrame: 5 },
+    { code: 'Digit1', atFrame: 30 },
+  ]],
+  ['TerritoryWar', './src/games/territory-war/TerritoryWar.js', 'TerritoryWar', [
+    { code: 'Space', atFrame: 10 },
+    { code: 'Space', atFrame: 30 },
   ]],
 ];
 

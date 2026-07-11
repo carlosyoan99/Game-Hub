@@ -70,5 +70,47 @@ export const GAME_REGISTRY = [
     level: 3,
     load: () => import('./trick-quiz/TrickQuiz.js').then((m) => m.TrickQuiz),
   },
+  {
+    id: 'papa-pizzeria',
+    title: "Papa's Pizzeria",
+    tagline: 'Colas, temporizadores y multitarea culinaria',
+    level: 3,
+    load: () => import('./papa-pizzeria/PapaPizzeria.js').then((m) => m.PapaPizzeria),
+  },
+  {
+    id: 'stick-rpg',
+    title: 'Stick RPG',
+    tagline: 'Días, energía, diálogos y cambio de escenas',
+    level: 3,
+    load: () => import('./stick-rpg/StickRPG.js').then((m) => m.StickRPG),
+  },
+  {
+    id: 'crush-the-castle',
+    title: 'Crush the Castle',
+    tagline: 'Proyectiles con física en estructuras',
+    level: 4,
+    load: () => import('./crush-the-castle/CrushTheCastle.js').then((m) => m.CrushTheCastle),
+  },
+  {
+    id: 'bowman',
+    title: 'Bowman',
+    tagline: 'Tiro parabólico con viento',
+    level: 4,
+    load: () => import('./bowman/Bowman.js').then((m) => m.Bowman),
+  },
+  {
+    id: 'bloons-td',
+    title: 'Bloons TD',
+    tagline: 'Waypoints + torres defensivas',
+    level: 4,
+    load: () => import('./bloons-td/BloonsTD.js').then((m) => m.BloonsTD),
+  },
+  {
+    id: 'territory-war',
+    title: 'Territory War',
+    tagline: 'IA de bots, turnos y captura de territorio',
+    level: 4,
+    load: () => import('./territory-war/TerritoryWar.js').then((m) => m.TerritoryWar),
+  },
   // Próximos juegos se añaden aquí siguiendo el mismo patrón.
 ];
