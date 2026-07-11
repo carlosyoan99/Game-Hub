@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GameHub Engine</title>
+  <link rel="stylesheet" href="styles/main.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1 class="topbar__logo">GAMEHUB<span>_ENGINE</span></h1>
+    <div id="game-hud" class="hud" hidden>
+      <span id="current-title" class="hud__title"></span>
+      <button id="back-button" class="hud__back">← Menú</button>
+    </div>
+  </header>
+
+  <main class="stage">
+    <section id="menu" class="menu">
+      <p class="menu__eyebrow">Selecciona un juego</p>
+      <div id="game-grid" class="game-grid"></div>
+    </section>
+
+    <canvas id="game-canvas" width="900" height="540" hidden></canvas>
+  </main>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

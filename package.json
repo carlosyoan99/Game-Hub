@@ -1,0 +1,13 @@
+{
+  "name": "gamehub-engine",
+  "version": "1.0.0",
+  "description": "Hub de minijuegos en Canvas 2D con motor común vanilla JS.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node smoke_test.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1"
+  }
+}
