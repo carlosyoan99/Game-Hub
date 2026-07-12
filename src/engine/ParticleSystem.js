@@ -10,10 +10,15 @@
  *   this.particles.render(ctx);
  *   this.particles.clear();
  */
+
+import { SettingsManager } from './SettingsManager.js';
+import { SeededRandom } from './SeededRandom.js';
+
 export class ParticleSystem {
   constructor(gravity = 150) {
     this.particles = [];
     this._gravity = gravity;
+    this._rng = new SeededRandom();
   }
 
   /**
@@ -44,9 +49,9 @@ export class ParticleSystem {
     } = options;
 
     for (let i = 0; i < count; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const spd = speed * (speedMin + Math.random() * (speedMax - speedMin));
-      const life = lifeMin + Math.random() * (lifeMax - lifeMin);
+      const angle = this._rng.nextFloat() * Math.PI * 2;
+      const spd = speed * (speedMin + this._rng.nextFloat() * (speedMax - speedMin));
+      const life = lifeMin + this._rng.nextFloat() * (lifeMax - lifeMin);
       this.particles.push({
         x,
         y,
@@ -54,10 +59,35 @@ export class ParticleSystem {
         vy: Math.sin(angle) * spd + vyOffset,
         life,
         maxLife: life,
-        radius: radiusMin + Math.random() * (radiusMax - radiusMin),
+        radius: radiusMin + this._rng.nextFloat() * (radiusMax - radiusMin),
         color,
       });
     }
+  }
+
+  /**
+   * Método abreviado para emitir una explosión de partículas.
+   * Es un wrapper de emit() con defaults orientados a efectos
+   * de impacto/explosión: vyOffset=-30, life 0.3-0.5.
+   *
+   * Uso desde los juegos:
+   *   this.particles.burst(x, y, '#ffb454', 12, 80);
+   *   this.particles.burst(x, y, '#e74c3c', 8, 100, { vyOffset: -50 });
+   *
+   * @param {number} x
+   * @param {number} y
+   * @param {string} color
+   * @param {number} count
+   * @param {number} speed
+   * @param {object} [overrides]  Opciones que sobreescriben los defaults
+   */
+  burst(x, y, color, count, speed, overrides = {}) {
+    this.emit(x, y, color, count, speed, {
+      vyOffset: -30,
+      lifeMin: 0.3,
+      lifeMax: 0.5,
+      ...overrides,
+    });
   }
 
   /** Avanza todas las partículas un frame. */
@@ -71,8 +101,15 @@ export class ParticleSystem {
     this.particles = this.particles.filter((p) => p.life > 0);
   }
 
-  /** Dibuja todas las partículas (desvanece por vida restante). */
+  /**
+   * Dibuja todas las partículas (desvanece por vida restante).
+   * Si reducedMotion está activo, no dibuja nada.
+   * Guard: SettingsManager.reducedMotion — el gameplay esencial no se
+   * afecta, solo lo decorativo (partículas).
+   */
   render(ctx) {
+    if (SettingsManager.reducedMotion) return;
+    ctx.save();
     for (const p of this.particles) {
       const alpha = p.life / p.maxLife;
       ctx.beginPath();
@@ -81,7 +118,7 @@ export class ParticleSystem {
       ctx.globalAlpha = alpha;
       ctx.fill();
     }
-    ctx.globalAlpha = 1;
+    ctx.restore();
   }
 
   /** Elimina todas las partículas (útil al reiniciar). */

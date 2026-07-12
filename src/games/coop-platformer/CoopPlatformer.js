@@ -3,6 +3,8 @@ import { StorageManager } from '../../engine/StorageManager.js';
 import { Tilemap } from '../../engine/Tilemap.js';
 import { Camera } from '../../engine/Camera.js';
 import { aabbIntersects, clamp } from '../../engine/CollisionUtils.js';
+import { AudioManager } from '../../engine/AudioManager.js';
+import { HapticManager } from '../../engine/HapticManager.js';
 
 const TILE_SIZE = 32;
 const GRAVITY = 1400;
@@ -12,50 +14,112 @@ const JUMP_VELOCITY = -500;
 const JUMP_CUT_MULTIPLIER = 0.5;
 const COYOTE_TIME = 0.1;
 
-// '#' = sólido permanente, '=' = verja controlada por la palanca (empieza
-// cerrada). 'L' = palanca, 'F'/'W' = metas de cada jugador — ninguno de
-// estos tres últimos se traduce a baldosa sólida, se leen aparte del
-// ASCII igual que la meta en Platformer.js.
+// 5 niveles cooperativos
 const LEVEL_ROWS = [
-  '............................................',
-  '............................................',
-  '............................................',
-  '............................................',
-  '............................................',
-  '............................................',
-  '............................................',
-  '............................................',
-  '............................................',
-  '..............................=.............',
-  '..............................=.............',
-  '..............................=.............',
-  '..............................=.............',
-  '...........................L..=.........F.W.',
-  '####################....####################',
-  '####################....####################',
+  // Nivel 1: tutorial
+  [
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '..............................=.............',
+    '..............................=.............',
+    '..............................=.............',
+    '..............................=.............',
+    '...........................L..=.........F.W.',
+    '####################....####################',
+    '####################....####################',
+  ],
+  // Nivel 2: plataforma móvil más larga
+  [
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '..........L........=...................F.W..',
+    '#########.......#############################',
+    '#########.......#############################',
+  ],
+  // Nivel 3: dos verjas
+  [
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '..................=..............=...........',
+    '..................=..............=...........',
+    '..................=..............=...........',
+    '..................=..............=...........',
+    '........L..............=.........L......F.W.',
+    '##########......############################',
+    '##########......############################',
+  ],
+  // Nivel 4: plataformas estrechas
+  [
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '.........L................=............F.W..',
+    '####.......####.......######################',
+    '####.......####.......######################',
+  ],
+  // Nivel 5: combinación completa
+  [
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '............................................',
+    '...............=.............................',
+    '...............=.............................',
+    '...............=.............................',
+    '...............=.............................',
+    '.........L.......=....L................F.W..',
+    '######..............########################',
+    '######..............########################',
+  ],
 ];
 
+const MAX_LEVEL = LEVEL_ROWS.length;
 const LEGEND = { '#': 1, '=': 2 };
-const GATE_COL = 30;
+const GATE_COL = 22;
 const GATE_ROWS = [9, 10, 11, 12];
 
 /**
- * CoopPlatformer
- * Dos personajes en el mismo tilemap y teclado: Jugador 1 (fuego) usa
- * WASD, Jugador 2 (agua) usa las flechas. Ambos comparten exactamente la
- * misma función de física (_updateCharacter) — la cooperación es lo
- * nuevo, no el movimiento en sí.
- *
- * Dos mecánicas nuevas sobre Tilemap/Camera:
- *  - Plataforma móvil: no vive en el tilemap (no es una cuadrícula fija),
- *    es un AABB que se mueve con una onda senoidal y "carga" a quien esté
- *    de pie encima sumándole su desplazamiento del frame.
- *  - Palanca + verja: la verja es una baldosa normal (id 2) que se
- *    alterna entre sólida (2) y vacía (0) directamente en `tilemap.data`
- *    según si algún jugador pisa la zona de la palanca ese frame — es
- *    una palanca de "mientras la pisas", no un interruptor permanente,
- *    a propósito: fuerza a que un jugador se quede sujetando mientras el
- *    otro cruza.
+ * CoopPlatformer — expandido con 5 niveles cooperativos.
  */
 export class CoopPlatformer {
   init(engine) {
@@ -68,31 +132,8 @@ export class CoopPlatformer {
     this.width = this.canvas.width;
     this.height = this.canvas.height;
     this.bestTime = this.storage.get('bestTime', null);
-
-    const data = Tilemap.parseAscii(LEVEL_ROWS, LEGEND);
-    this.tilemap = new Tilemap({ data, tileSize: TILE_SIZE, solidTiles: new Set([1, 2]) });
-    this.camera = new Camera(this.width, this.height);
-
-    this.leverRect = this._findMarker(LEVEL_ROWS, 'L');
-    this.goal1Rect = this._findMarker(LEVEL_ROWS, 'F');
-    this.goal2Rect = this._findMarker(LEVEL_ROWS, 'W');
-
-    this.platform = {
-      x: 19 * TILE_SIZE,
-      y: 13 * TILE_SIZE,
-      width: TILE_SIZE * 2,
-      height: 12,
-      minX: 19 * TILE_SIZE,
-      maxX: 24 * TILE_SIZE,
-      time: 0,
-      speed: 1.1,
-      deltaX: 0,
-    };
-
-    this.spawn1 = { x: TILE_SIZE * 2, y: TILE_SIZE * 12 };
-    this.spawn2 = { x: TILE_SIZE * 4, y: TILE_SIZE * 12 };
-
-    this._restart();
+    this.currentLevel = this.storage.get('savedLevel', 1);
+    this._loadLevel();
   }
 
   handleResize(width, height) {
@@ -101,12 +142,50 @@ export class CoopPlatformer {
     this.camera.resize(width, height);
   }
 
+  _loadLevel() {
+    const levelIndex = Math.min(this.currentLevel - 1, LEVEL_ROWS.length - 1);
+    const rows = LEVEL_ROWS[levelIndex];
+    const data = Tilemap.parseAscii(rows, LEGEND);
+    this.tilemap = new Tilemap({ data, tileSize: TILE_SIZE, solidTiles: new Set([1, 2]) });
+    this.camera = new Camera(this.width, this.height);
+
+    this.leverRect = this._findMarker(rows, 'L');
+    this.goal1Rect = this._findMarker(rows, 'F');
+    this.goal2Rect = this._findMarker(rows, 'W');
+
+    // Encontrar plataforma móvil (si existe)
+    this.platform = null;
+    for (let row = 0; row < rows.length; row++) {
+      const col = rows[row].indexOf('P');
+      if (col !== -1) {
+        this.platform = {
+          x: col * TILE_SIZE,
+          y: row * TILE_SIZE,
+          width: TILE_SIZE * 2,
+          height: 12,
+          minX: col * TILE_SIZE,
+          maxX: (col + 5) * TILE_SIZE,
+          time: 0,
+          speed: 1.1,
+          deltaX: 0,
+        };
+        break;
+      }
+    }
+
+    // Spawn de jugadores
+    this.spawn1 = { x: TILE_SIZE * 2, y: TILE_SIZE * 12 };
+    this.spawn2 = { x: TILE_SIZE * 4, y: TILE_SIZE * 12 };
+
+    this._restart();
+  }
+
   _findMarker(rows, char) {
     for (let row = 0; row < rows.length; row++) {
       const col = rows[row].indexOf(char);
       if (col !== -1) return { x: col * TILE_SIZE, y: row * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE };
     }
-    return { x: 0, y: 0, width: TILE_SIZE, height: TILE_SIZE };
+    return { x: TILE_SIZE * 20, y: TILE_SIZE * 13, width: TILE_SIZE, height: TILE_SIZE };
   }
 
   _makeCharacter(spawn) {
@@ -117,11 +196,23 @@ export class CoopPlatformer {
     this.player1 = this._makeCharacter(this.spawn1);
     this.player2 = this._makeCharacter(this.spawn2);
     this.gateOpen = false;
+    this._leverWasPressed = false;
     this.elapsed = 0;
     this.status = 'playing';
   }
 
+  _nextLevel() {
+    this.currentLevel++;
+    this.storage.set('savedLevel', this.currentLevel);
+    this._loadLevel();
+  }
+
   update(dt) {
+    if (this.status === 'level-complete') {
+      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) this._nextLevel();
+      this.input.endFrame();
+      return;
+    }
     if (this.status !== 'playing') {
       if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) this._restart();
       this.input.endFrame();
@@ -139,9 +230,10 @@ export class CoopPlatformer {
   }
 
   _updatePlatform(dt) {
+    if (!this.platform) return;
     const plat = this.platform;
     plat.time += dt;
-    const t = (Math.sin(plat.time * plat.speed) + 1) / 2; // 0..1
+    const t = (Math.sin(plat.time * plat.speed) + 1) / 2;
     const newX = plat.minX + (plat.maxX - plat.minX) * t;
     plat.deltaX = newX - plat.x;
     plat.x = newX;
@@ -150,7 +242,7 @@ export class CoopPlatformer {
   _updateCharacter(player, keys, dt) {
     // Si iba montado en la plataforma el frame anterior, se mueve con ella
     // antes de aplicar cualquier otra física (ver comentario de clase).
-    if (player.ridingPlatform) {
+    if (player.ridingPlatform && this.platform) {
       player.x += this.platform.deltaX;
     }
 
@@ -167,6 +259,7 @@ export class CoopPlatformer {
       player.vy = JUMP_VELOCITY;
       player.coyoteTimer = 0;
       player.jumpCut = false;
+      AudioManager.sfx({ type: 'jump', volume: 0.3 });
     }
     const jumpHeld = this.input.isDown(keys.jump);
     if (!jumpHeld && player.vy < 0 && !player.jumpCut) {
@@ -184,15 +277,19 @@ export class CoopPlatformer {
     // que se comprueba aparte contra su AABB. Solo cuenta si el jugador
     // está cayendo (o quieto) y sus pies caen dentro del grosor de la
     // plataforma — evita "engancharse" si pasa por debajo.
-    const feetY = player.y + player.height;
-    const withinX = player.x + player.width > this.platform.x && player.x < this.platform.x + this.platform.width;
-    const closeToTop = feetY >= this.platform.y && feetY <= this.platform.y + this.platform.height + 4;
-    if (withinX && closeToTop && player.vy >= 0) {
-      player.y = this.platform.y - player.height;
-      player.vy = 0;
-      player.onGround = true;
-      player.coyoteTimer = COYOTE_TIME;
-      player.ridingPlatform = true;
+    if (this.platform) {
+      const feetY = player.y + player.height;
+      const withinX = player.x + player.width > this.platform.x && player.x < this.platform.x + this.platform.width;
+      const closeToTop = feetY >= this.platform.y && feetY <= this.platform.y + this.platform.height + 4;
+      if (withinX && closeToTop && player.vy >= 0) {
+        player.y = this.platform.y - player.height;
+        player.vy = 0;
+        player.onGround = true;
+        player.coyoteTimer = COYOTE_TIME;
+        player.ridingPlatform = true;
+      } else {
+        player.ridingPlatform = false;
+      }
     } else {
       player.ridingPlatform = false;
     }
@@ -207,6 +304,11 @@ export class CoopPlatformer {
   _updateGate() {
     const someoneOnLever = aabbIntersects(this.player1, this.leverRect) || aabbIntersects(this.player2, this.leverRect);
     this.gateOpen = someoneOnLever;
+    if (someoneOnLever && !this._leverWasPressed) {
+      AudioManager.sfx({ type: 'select', volume: 0.3 });
+      HapticManager.vibrate('select');
+    }
+    this._leverWasPressed = someoneOnLever;
     const tileValue = this.gateOpen ? 0 : 2;
     for (const row of GATE_ROWS) {
       this.tilemap.data[row][GATE_COL] = tileValue;
@@ -215,13 +317,23 @@ export class CoopPlatformer {
 
   _checkWin() {
     if (this.player1.fell || this.player2.fell) {
+      AudioManager.sfx({ type: 'hit', volume: 0.3 });
+      HapticManager.vibrate('hit');
       this._respawnBoth();
       return;
     }
     const p1Home = aabbIntersects(this.player1, this.goal1Rect);
     const p2Home = aabbIntersects(this.player2, this.goal2Rect);
     if (p1Home && p2Home) {
-      this.status = 'won';
+      if (this.currentLevel >= MAX_LEVEL) {
+        this.status = 'won';
+        AudioManager.sfx({ type: 'powerup', volume: 0.6 });
+        HapticManager.vibrate('powerup');
+      } else {
+        this.status = 'level-complete';
+        AudioManager.sfx({ type: 'powerup', volume: 0.5 });
+        HapticManager.vibrate('powerup');
+      }
       if (this.bestTime === null || this.elapsed < this.bestTime) {
         this.bestTime = this.elapsed;
         this.storage.set('bestTime', this.bestTime);
@@ -269,8 +381,10 @@ export class CoopPlatformer {
     ctx.fillStyle = '#4b9ee0';
     ctx.fillRect(this.goal2Rect.x, this.goal2Rect.y, this.goal2Rect.width, this.goal2Rect.height);
 
-    ctx.fillStyle = '#c9c3a3';
-    ctx.fillRect(this.platform.x, this.platform.y, this.platform.width, this.platform.height);
+    if (this.platform) {
+      ctx.fillStyle = '#c9c3a3';
+      ctx.fillRect(this.platform.x, this.platform.y, this.platform.width, this.platform.height);
+    }
 
     ctx.fillStyle = '#e06c4b';
     ctx.fillRect(this.player1.x, this.player1.y, this.player1.width, this.player1.height);
@@ -294,9 +408,11 @@ export class CoopPlatformer {
       ctx.fillStyle = '#e7edf3';
       ctx.font = 'bold 28px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('¡META!', this.width / 2, this.height / 2 - 20);
+      const overlayTitle = this.status === 'level-complete' ? '¡NIVEL COMPLETADO!' : '¡META!';
+      ctx.fillText(overlayTitle, this.width / 2, this.height / 2 - 20);
       ctx.font = '16px monospace';
-      ctx.fillText('Click o Espacio para reiniciar', this.width / 2, this.height / 2 + 15);
+      const overlayAction = this.status === 'level-complete' ? 'Click o Espacio para continuar' : 'Click o Espacio para reiniciar';
+      ctx.fillText(overlayAction, this.width / 2, this.height / 2 + 15);
       ctx.textAlign = 'left';
     }
   }

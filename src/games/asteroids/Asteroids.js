@@ -2,32 +2,17 @@ import { InputManager } from '../../engine/InputManager.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { Vector2 } from '../../engine/Vector2.js';
 import { circleIntersects } from '../../engine/CollisionUtils.js';
-
-const SHIP_RADIUS = 12;
-const SHIP_TURN_SPEED = Math.PI * 1.6; // rad/s
-const SHIP_THRUST = 220; // px/s^2
-const SHIP_FRICTION = 0.6; // amortiguación exponencial por segundo
-const SHIP_MAX_SPEED = 340;
-const RESPAWN_INVULNERABILITY = 2; // segundos
-
-const BULLET_SPEED = 480;
-const BULLET_LIFETIME = 0.9;
-const FIRE_COOLDOWN = 0.25;
-
-const ASTEROID_SPECS = {
-  large: { radius: 38, speed: 45, splitsInto: 'medium', splitCount: 2, score: 20 },
-  medium: { radius: 22, speed: 75, splitsInto: 'small', splitCount: 2, score: 50 },
-  small: { radius: 12, speed: 120, splitsInto: null, splitCount: 0, score: 100 },
-};
+import { AudioManager } from '../../engine/AudioManager.js';
+import { HapticManager } from '../../engine/HapticManager.js';
+import { SeededRandom } from '../../engine/SeededRandom.js';
+import { t } from '../../engine/i18n.js';
+import { MAX_WAVE, SHIP_RADIUS, SHIP_TURN_SPEED, SHIP_THRUST, SHIP_FRICTION, SHIP_MAX_SPEED, RESPAWN_INVULNERABILITY, BULLET_SPEED, BULLET_LIFETIME, FIRE_COOLDOWN, ASTEROID_SPECS, generateAsteroidShape } from './constants.js';
 
 /**
- * Asteroids
- * Primer juego del hub con física de "nave espacial" real: en vez de
- * mover directamente x/y (como Breakout/Pong), aquí se acumula velocidad
- * (this.ship.vx/vy) a partir de un empuje orientado por ángulo, con
- * fricción exponencial para que se sienta a la deriva, no como un coche.
- * También es el primer uso de Vector2 en el hub (Vector2.fromAngle para
- * el vector de empuje y el de disparo) y de wraparound de pantalla.
+ * Asteroids — expandido con oleadas progresivas
+ * Oleadas 1-2: solo asteroides.
+ * Oleadas 3-4: asteroides + enemigos que persiguen.
+ * Oleadas 5+: asteroides + enemigos que disparan.
  */
 export class Asteroids {
   init(engine) {
@@ -50,18 +35,22 @@ export class Asteroids {
   }
 
   _restart() {
+    this.rng = new SeededRandom();
+    this.seedCode = SeededRandom.encode(this.rng.seed);
     this.ship = {
       x: this.width / 2,
       y: this.height / 2,
       vx: 0,
       vy: 0,
-      angle: -Math.PI / 2, // apuntando "hacia arriba" al iniciar
+      angle: -Math.PI / 2,
       radius: SHIP_RADIUS,
       thrusting: false,
       invulnerable: RESPAWN_INVULNERABILITY,
     };
     this.bullets = [];
     this.asteroids = [];
+    this.enemies = [];
+    this.enemyBullets = [];
     this.score = 0;
     this.lives = 3;
     this.wave = 1;
@@ -71,33 +60,59 @@ export class Asteroids {
   }
 
   _spawnWave() {
-    const count = 2 + this.wave;
+    const count = 2 + this.wave + Math.floor(this.wave / 2);
     for (let i = 0; i < count; i++) {
       let x;
       let y;
-      // Evita que un asteroide aparezca encima de la nave recién reaparecida.
       do {
-        x = Math.random() * this.width;
-        y = Math.random() * this.height;
+        x = this.rng.next() * this.width;
+        y = this.rng.next() * this.height;
       } while (Math.hypot(x - this.ship.x, y - this.ship.y) < 150);
       this._spawnAsteroid('large', x, y);
     }
+
+    if (this.wave >= 3) {
+      const enemyCount = 1 + Math.floor((this.wave - 3) / 2);
+      for (let i = 0; i < enemyCount; i++) {
+        this._spawnEnemy();
+      }
+    }
+  }
+
+  _spawnEnemy() {
+    const side = this.rng.nextInt(0, 3);
+    let x, y;
+    if (side === 0) { x = -20; y = this.rng.next() * this.height; }
+    else if (side === 1) { x = this.width + 20; y = this.rng.next() * this.height; }
+    else if (side === 2) { x = this.rng.next() * this.width; y = -20; }
+    else { x = this.rng.next() * this.width; y = this.height + 20; }
+
+    this.enemies.push({
+      x, y,
+      radius: 14,
+      angle: Math.atan2(this.ship.y - y, this.ship.x - x),
+      turnSpeed: 2.5 + this.rng.next(),
+      speed: 50 + this.rng.next() * 30 + this.wave * 3,
+      fireTimer: 2 + this.rng.next(),
+      fireCooldown: 1.5 - Math.min(this.wave * 0.1, 0.8),
+      hp: 2 + Math.floor((this.wave - 3) / 2),
+      alive: true,
+      shape: generateAsteroidShape(8),
+    });
   }
 
   _spawnAsteroid(size, x, y) {
     const spec = ASTEROID_SPECS[size];
-    const angle = Math.random() * Math.PI * 2;
-    const speed = spec.speed * (0.6 + Math.random() * 0.8);
+    const angle = this.rng.next() * Math.PI * 2;
+    const speed = spec.speed * (0.6 + this.rng.next() * 0.8);
     this.asteroids.push({
-      x,
-      y,
-      size,
+      x, y, size,
       radius: spec.radius,
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
-      rotation: Math.random() * Math.PI * 2,
-      rotationSpeed: (Math.random() - 0.5) * 2,
-      shape: generateAsteroidShape(),
+      rotation: this.rng.next() * Math.PI * 2,
+      rotationSpeed: (this.rng.next() - 0.5) * 2,
+      shape: generateAsteroidShape(this.rng),
     });
   }
 
@@ -113,6 +128,7 @@ export class Asteroids {
     this._updateShip(dt);
     this._updateBullets(dt);
     this._updateAsteroids(dt);
+    this._updateEnemies(dt);
     this._checkCollisions();
 
     this.input.endFrame();
@@ -133,8 +149,6 @@ export class Asteroids {
       this.ship.vy += thrust.y;
     }
 
-    // Fricción exponencial: independiente del framerate, a diferencia de
-    // un simple "vx *= 0.98" que dependería de cuántos frames pasen.
     const damping = Math.exp(-SHIP_FRICTION * dt);
     this.ship.vx *= damping;
     this.ship.vy *= damping;
@@ -151,7 +165,6 @@ export class Asteroids {
     this._wrap(this.ship);
 
     if (this.ship.invulnerable > 0) this.ship.invulnerable -= dt;
-
     this.fireCooldown -= dt;
     if ((this.input.isDown('Space') || this.input.mouse.down) && this.fireCooldown <= 0) {
       this._fireBullet();
@@ -161,6 +174,7 @@ export class Asteroids {
 
   _fireBullet() {
     const dir = Vector2.fromAngle(this.ship.angle, 1);
+    AudioManager.sfx({ type: 'shoot', volume: 0.2 });
     this.bullets.push({
       x: this.ship.x + dir.x * SHIP_RADIUS,
       y: this.ship.y + dir.y * SHIP_RADIUS,
@@ -192,7 +206,41 @@ export class Asteroids {
     }
   }
 
-  /** Envuelve un objeto con x/y/radius a través de los bordes del canvas. */
+  _updateEnemies(dt) {
+    for (const enemy of this.enemies) {
+      if (!enemy.alive) continue;
+      const targetAngle = Math.atan2(this.ship.y - enemy.y, this.ship.x - enemy.x);
+      let diff = targetAngle - enemy.angle;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      enemy.angle += Math.sign(diff) * Math.min(Math.abs(diff), enemy.turnSpeed * dt);
+
+      enemy.x += Math.cos(enemy.angle) * enemy.speed * dt;
+      enemy.y += Math.sin(enemy.angle) * enemy.speed * dt;
+      this._wrap(enemy);
+
+      enemy.fireTimer -= dt;
+      if (enemy.fireTimer <= 0) {
+        enemy.fireTimer = enemy.fireCooldown;
+        this.enemyBullets.push({
+          x: enemy.x + Math.cos(enemy.angle) * 16,
+          y: enemy.y + Math.sin(enemy.angle) * 16,
+          vx: Math.cos(enemy.angle) * 220,
+          vy: Math.sin(enemy.angle) * 220,
+          radius: 3,
+          alive: true,
+        });
+        AudioManager.sfx({ type: 'shoot', volume: 0.15 });
+      }
+    }
+    for (const b of this.enemyBullets) {
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      if (b.x < -20 || b.x > this.width + 20 || b.y < -20 || b.y > this.height + 20) b.alive = false;
+    }
+    this.enemyBullets = this.enemyBullets.filter((b) => b.alive);
+  }
+
   _wrap(obj) {
     const r = obj.radius ?? 0;
     if (obj.x < -r) obj.x = this.width + r;
@@ -212,29 +260,76 @@ export class Asteroids {
           bullet.dead = true;
           asteroid.dead = true;
           this.score += ASTEROID_SPECS[asteroid.size].score;
+          AudioManager.sfx({ type: 'hit', volume: 0.3 });
+          HapticManager.vibrate('hit');
           pendingSplits.push(asteroid);
           break;
+        }
+      }
+      if (!bullet.dead) {
+        for (const enemy of this.enemies) {
+          if (!enemy.alive) continue;
+          if (circleIntersects(bullet, enemy)) {
+            bullet.dead = true;
+            enemy.hp--;
+            this.particles.burst(enemy.x, enemy.y, '#ff6b4a', 6, 80, { vyOffset: -30 });
+            if (enemy.hp <= 0) {
+              enemy.alive = false;
+              this.score += 50 + this.wave * 10;
+              AudioManager.sfx({ type: 'explosion', volume: 0.4 });
+              HapticManager.vibrate('explosion');
+              this.particles.burst(enemy.x, enemy.y, '#ffb454', 15, 150, { vyOffset: -40 });
+            } else {
+              AudioManager.sfx({ type: 'hit', volume: 0.25 });
+            }
+            break;
+          }
         }
       }
     }
     this.bullets = this.bullets.filter((b) => !b.dead);
     this.asteroids = this.asteroids.filter((a) => !a.dead);
-    // Los fragmentos se generan aquí, ya fuera del bucle que recorría
-    // this.asteroids: empujarlos dentro del propio bucle (como hacía
-    // antes) los exponía a balas posteriores del mismo frame.
+    this.enemies = this.enemies.filter((e) => e.alive);
     for (const asteroid of pendingSplits) this._splitAsteroid(asteroid);
 
     if (this.ship.invulnerable <= 0) {
-      for (const asteroid of this.asteroids) {
-        if (circleIntersects(this.ship, asteroid)) {
+      for (const b of this.enemyBullets) {
+        if (b.alive && circleIntersects(b, this.ship)) {
+          b.alive = false;
           this._loseLife();
           break;
         }
       }
+      if (this.status === 'playing') {
+        for (const enemy of this.enemies) {
+          if (enemy.alive && circleIntersects(this.ship, enemy)) {
+            this._loseLife();
+            break;
+          }
+        }
+      }
+      if (this.status === 'playing') {
+        for (const asteroid of this.asteroids) {
+          if (circleIntersects(this.ship, asteroid)) {
+            this._loseLife();
+            break;
+          }
+        }
+      }
     }
 
-    if (this.asteroids.length === 0 && this.status === 'playing') {
+    if (this.asteroids.length === 0 && this.enemies.filter((e) => e.alive).length === 0 && this.status === 'playing') {
       this.wave += 1;
+      if (this.wave > MAX_WAVE) {
+        this.status = 'won';
+        if (this.score > this.highscore) {
+          this.highscore = this.score;
+          this.storage.set('highscore', this.highscore);
+        }
+        AudioManager.sfx({ type: 'powerup', volume: 0.6 });
+        HapticManager.vibrate('powerup');
+        return;
+      }
       this._spawnWave();
     }
   }
@@ -249,6 +344,8 @@ export class Asteroids {
 
   _loseLife() {
     this.lives -= 1;
+    AudioManager.sfx({ type: 'explosion', volume: 0.5 });
+    HapticManager.vibrate('explosion');
     if (this.lives <= 0) {
       this._endGame();
       return;
@@ -285,13 +382,26 @@ export class Asteroids {
 
     this._renderShip(ctx);
 
+    for (const enemy of this.enemies) {
+      if (!enemy.alive) continue;
+      this._renderEnemy(ctx, enemy);
+    }
+
+    ctx.fillStyle = '#ff6b4a';
+    for (const b of this.enemyBullets) {
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     ctx.fillStyle = '#9aa7b2';
     ctx.font = '14px monospace';
     ctx.textBaseline = 'top';
-    ctx.fillText(`Puntos: ${this.score}`, 10, 10);
-    ctx.fillText(`Vidas: ${this.lives}`, this.width - 90, 10);
-    ctx.fillText(`Oleada: ${this.wave}`, this.width / 2 - 40, 10);
-    ctx.fillText(`Récord: ${this.highscore}`, this.width / 2 - 40, 28);
+    ctx.fillText(t('asteroids.score', { n: this.score }), 10, 10);
+    ctx.fillText(t('asteroids.lives', { n: this.lives }), this.width - 90, 10);
+    ctx.fillText(t('asteroids.wave', { n: this.wave }), this.width / 2 - 40, 10);
+    ctx.fillText(t('asteroids.record', { n: this.highscore }), this.width / 2 - 40, 28);
+    ctx.fillText(t('game.seed', { seed: this.seedCode }), 10, 46);
 
     if (this.status !== 'playing') {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
@@ -299,16 +409,23 @@ export class Asteroids {
       ctx.fillStyle = '#e7edf3';
       ctx.font = 'bold 28px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('GAME OVER', this.width / 2, this.height / 2 - 20);
-      ctx.font = '16px monospace';
-      ctx.fillText('Click o Espacio para reiniciar', this.width / 2, this.height / 2 + 15);
+      ctx.textBaseline = 'middle';
+      if (this.status === 'won') {
+        ctx.fillText(t('game.victory'), this.width / 2, this.height / 2 - 30);
+        ctx.font = '16px monospace';
+        ctx.fillText(t('game.score', { n: this.score }), this.width / 2, this.height / 2 + 5);
+        ctx.fillText(t('game.restart'), this.width / 2, this.height / 2 + 30);
+      } else {
+        ctx.fillText('GAME OVER', this.width / 2, this.height / 2 - 20);
+        ctx.font = '16px monospace';
+        ctx.fillText(t('game.restart'), this.width / 2, this.height / 2 + 15);
+      }
       ctx.textAlign = 'left';
     }
   }
 
   _renderShip(ctx) {
     const blinking = this.ship.invulnerable > 0 && Math.floor(this.ship.invulnerable * 10) % 2 === 0;
-
     ctx.save();
     ctx.translate(this.ship.x, this.ship.y);
     ctx.rotate(this.ship.angle);
@@ -331,7 +448,26 @@ export class Asteroids {
       ctx.lineTo(-SHIP_RADIUS * 1.3, 0);
       ctx.stroke();
     }
+    ctx.restore();
+  }
 
+  _renderEnemy(ctx, enemy) {
+    ctx.save();
+    ctx.translate(enemy.x, enemy.y);
+    ctx.rotate(enemy.angle);
+    ctx.strokeStyle = '#ff6b4a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(enemy.radius, 0);
+    ctx.lineTo(-enemy.radius * 0.6, enemy.radius * 0.6);
+    ctx.lineTo(-enemy.radius * 0.3, 0);
+    ctx.lineTo(-enemy.radius * 0.6, -enemy.radius * 0.6);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255, 107, 74, 0.3)';
+    ctx.beginPath();
+    ctx.arc(enemy.radius * 0.3, 0, enemy.radius * 0.3, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
 
@@ -342,7 +478,6 @@ export class Asteroids {
     ctx.strokeStyle = '#9aa7b2';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-
     const n = asteroid.shape.length;
     for (let i = 0; i <= n; i++) {
       const idx = i % n;
@@ -353,7 +488,6 @@ export class Asteroids {
       if (i === 0) ctx.moveTo(px, py);
       else ctx.lineTo(px, py);
     }
-
     ctx.closePath();
     ctx.stroke();
     ctx.restore();
@@ -362,13 +496,4 @@ export class Asteroids {
   destroy() {
     this.input.detach();
   }
-}
-
-/** Genera un contorno irregular (0.7-1.2x el radio por vértice) para que no sean círculos perfectos. */
-function generateAsteroidShape(vertexCount = 10) {
-  const shape = [];
-  for (let i = 0; i < vertexCount; i++) {
-    shape.push(0.7 + Math.random() * 0.5);
-  }
-  return shape;
 }

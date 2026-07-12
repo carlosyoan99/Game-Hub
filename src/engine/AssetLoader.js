@@ -2,14 +2,18 @@
  * AssetLoader
  * Carga y cachea imágenes/audio/JSON por URL para que varios juegos
  * puedan compartir assets sin recargarlos, y para poder hacer
- * `await AssetLoader.loadImage(...)` antes de arrancar un juego.
+ * `await AssetLoader.loadImageAsync(...)` antes de arrancar un juego.
+ *
+ * Todos los métodos devuelven Promises que se resuelven cuando el recurso
+ * está listo para usar (imagen decodificada, audio descodificado, JSON parseado).
  */
 class AssetLoaderImpl {
   constructor() {
     this._cache = new Map();
   }
 
-  loadImage(url) {
+  /** Carga una imagen y devuelve Promise<HTMLImageElement> (resuelta en onload). */
+  loadImageAsync(url) {
     if (this._cache.has(url)) return this._cache.get(url);
     const promise = new Promise((resolve, reject) => {
       const img = new Image();
@@ -21,7 +25,8 @@ class AssetLoaderImpl {
     return promise;
   }
 
-  loadAudio(url) {
+  /** Carga audio y devuelve Promise<HTMLAudioElement> (resuelto en oncanplaythrough). */
+  loadAudioAsync(url) {
     if (this._cache.has(url)) return this._cache.get(url);
     const promise = new Promise((resolve, reject) => {
       const audio = new Audio();
@@ -33,7 +38,8 @@ class AssetLoaderImpl {
     return promise;
   }
 
-  async loadJSON(url) {
+  /** Carga JSON y devuelve Promise<object>. */
+  async loadJSONAsync(url) {
     if (this._cache.has(url)) return this._cache.get(url);
     const promise = fetch(url).then((res) => {
       if (!res.ok) throw new Error(`No se pudo cargar JSON: ${url}`);

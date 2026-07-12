@@ -27,6 +27,7 @@ src/
     StorageManager.js        localStorage namespaced por juego
     Tilemap.js                colisión por eje contra cuadrícula, render por viewport, arte ASCII
     Camera.js                  cámara de scroll que sigue a un objetivo, con clamp al mundo
+    ParticleSystem.js          sistema de partículas reutilizable (emit/update/render)
   games/
     registry.js              lista de juegos + import() dinámico
     breakout/
@@ -46,7 +47,21 @@ src/
     coop-platformer/
       CoopPlatformer.js               Nivel 2: cooperativo local, plataforma móvil, palanca
     trick-quiz/
-      TrickQuiz.js                     Nivel 3: primer juego sin física, primer uso real de pointInRect
+      TrickQuiz.js                     Nivel 3: preguntas trampa y zonas ocultas
+    papa-pizzeria/
+      PapaPizzeria.js                  Nivel 3: colas, temporizadores y multitarea culinaria
+    stick-rpg/
+      StickRPG.js                      Nivel 3: días, energía, diálogos y cambio de escenas
+    crush-the-castle/
+      CrushTheCastle.js                Nivel 4: proyectiles con física en estructuras
+    bowman/
+      Bowman.js                        Nivel 4: tiro parabólico con viento
+    bloons-td/
+      BloonsTD.js                      Nivel 4: waypoints + torres defensivas
+    territory-war/
+      TerritoryWar.js                  Nivel 4: IA de bots, turnos y captura de territorio
+    swords-and-souls/
+      SwordsAndSouls.js                Nivel 5: entrenamiento, combate por turnos y subida de nivel
 ```
 
 ## La "Game Interface"
@@ -84,12 +99,11 @@ input, colisiones y HUD dentro de esta interfaz.
 ## Verificación
 
 - Sintaxis: `find src -name "*.js" -exec node --check {} \;` (sin dependencias).
-- Prueba de humo (opcional, requiere `npm install` para `jsdom` como
-  devDependency — no se usa en el motor ni en ningún juego, solo para
-  simular DOM/teclado en el test): `npm test` ejecuta cada juego 300
-  frames con input sintético contra un canvas simulado y falla si
-  alguno lanza una excepción. Es un smoke test, no cobertura exhaustiva:
-  detecta errores de referencia y de estado, no bugs de balance/feel.
+- Prueba de humo: `npm test` (requiere `npm install`). Ejecuta cada juego
+  300 frames con input sintético contra un canvas simulado y falla si
+  alguno lanza una excepción.
+- Nuevos juegos: añadir entrada en `smoke_test.mjs` con clicks/teclas que
+  ejerciten al menos la carga, el render básico y el destroy.
 
 ## Convenciones (auditoría continua)
 
@@ -103,27 +117,50 @@ input, colisiones y HUD dentro de esta interfaz.
 - Cero dependencias externas en el motor. Si un juego concreto necesita
   algo (p. ej. un pathfinding A* para Nivel 4), que viva dentro de la
   carpeta de ese juego, no en `src/engine/`.
+- La repetición de un patrón entre juegos (partículas, wrapText, etc.)
+  es señal de que debería extraerse al motor (`src/engine/`).
 
 ## Ruta de niveles
 
 1. **Nivel 1** (Breakout, Snake, Pong, Flappy Bird): bucle de juego,
    AABB/círculo, input. Cubierto por el motor tal cual estaba desde el
-   principio.
+   principio. **4 juegos — completo.**
+
 2. **Nivel 2** (Asteroids, Platformer, Fancy Pants, Fuego y Agua):
    añadió `Vector2` con un caso de uso real (empuje orientado por
    ángulo) y `Tilemap.js`/`Camera.js` al motor — colisión tile-based
    resuelta por eje separado, y cámara con seguimiento y clamp al mundo.
    Los tres plataformas comparten `Tilemap`/`Camera` sin modificarlas;
    cada uno cambia el nivel y la mecánica específica (salto en pared,
-   cooperativo con plataforma móvil y palanca). Completo.
-3. **Nivel 3** (Trivia Trampa, en curso): el primer juego sin física —
-   la interacción es pura máquina de estados (pregunta → feedback →
-   siguiente pregunta o game over) evaluada con `pointInRect`, que ya
-   existía en `CollisionUtils.js` desde Nivel 1 pero no tenía un caso de
-   uso real hasta ahora. Papa's Pizzeria (colas + temporizadores) y
-   Stick RPG (días/energía + diálogos) seguirían este mismo patrón: sin
-   Tilemap ni Camera, estado + UI por click.
-4. **Nivel 4+**: IA de waypoints, proyectiles con física propia, etc. —
-   estos probablemente vivan como módulos dentro del propio juego hasta
-   que un segundo juego repita el patrón; solo entonces se "sube" al
-   motor.
+   cooperativo con plataforma móvil y palanca). **4 juegos — completo.**
+
+3. **Nivel 3** (Trivia Trampa, Papa's Pizzeria, Stick RPG): el primer
+   juego sin física (TrickQuiz) — la interacción es pura máquina de
+   estados evaluada con `pointInRect`. Le siguen Papa's Pizzeria (colas +
+   temporizadores + multitarea) y Stick RPG (días/energía + diálogos +
+   cambio de escenas). **3 juegos — completo.**
+
+4. **Nivel 4** (Crush the Castle, Bowman, Bloons TD, Territory War):
+   proyectiles con física de gravedad, waypoints para rutas de enemigos,
+   torres defensivas con auto-ataque, IA de bots con sistema de turnos y
+   captura de territorio. El patrón de partículas (presente en los 4)
+   se extrajo a `ParticleSystem.js` en el motor. **4 juegos — completo.**
+
+5. **Nivel 5** (Swords and Souls, Henry Stickmin): el más complejo.
+   **Swords and Souls** (completo): 4 zonas (casa/entrenamiento/arena/
+   tienda), minijuegos de entrenamiento (puntería, sparring, resistencia),
+   combate por turnos con IA adaptativa, subida de nivel con asignación
+   de puntos y tienda con armas/armaduras/objetos. **Henry Stickmin**:
+   pendiente.
+
+## Estado actual
+
+| Nivel | Juegos | Estado |
+|-------|--------|--------|
+| 🟢 Nivel 1 | Breakout, Snake, Pong, Flappy Bird (4) | ✅ Completo |
+| 🟡 Nivel 2 | Asteroids, Platformer, Fancy Pants, Fuego y Agua (4) | ✅ Completo |
+| 🔵 Nivel 3 | Trick Quiz, Papa's Pizzeria, Stick RPG (3) | ✅ Completo |
+| 🔴 Nivel 4 | Crush the Castle, Bowman, Bloons TD, Territory War (4) | ✅ Completo |
+| 🟣 Nivel 5 | Swords and Souls, Henry Stickmin (2) | ⏳ 1/2 |
+
+Total: **16 juegos implementados** de 18 planeados.

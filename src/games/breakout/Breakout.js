@@ -1,20 +1,30 @@
 import { InputManager } from '../../engine/InputManager.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { circleIntersectsAABB, clamp } from '../../engine/CollisionUtils.js';
+import { AudioManager } from '../../engine/AudioManager.js';
+import { HapticManager } from '../../engine/HapticManager.js';
+import { t } from '../../engine/i18n.js';
+import { SeededRandom } from '../../engine/SeededRandom.js';
 
 const PADDLE_WIDTH = 90;
 const PADDLE_HEIGHT = 14;
 const BALL_RADIUS = 7;
-const BRICK_ROWS = 5;
-const BRICK_COLS = 8;
 const BRICK_HEIGHT = 22;
 const BRICK_GAP = 4;
 const BRICK_TOP_OFFSET = 50;
+const MAX_LEVEL = 5;
+
+/** Configuración de cada nivel: filas, columnas, velocidad de la bola. */
+const LEVELS = [
+  { rows: 5, cols: 8, ballSpeed: 220, labelKey: 'level.easy' },
+  { rows: 6, cols: 9, ballSpeed: 240, labelKey: 'level.medium' },
+  { rows: 7, cols: 10, ballSpeed: 260, labelKey: 'level.hard' },
+  { rows: 8, cols: 10, ballSpeed: 280, labelKey: 'level.expert' },
+  { rows: 8, cols: 12, ballSpeed: 310, labelKey: 'level.impossible' },
+];
 
 /**
- * Breakout
- * Implementa la Game Interface: init, update, render, handleResize, destroy.
- * Sirve como referencia de cómo debe verse cualquier juego nuevo del hub.
+ * Breakout con sistema de 5 niveles.
  */
 export class Breakout {
   init(engine) {
@@ -30,7 +40,10 @@ export class Breakout {
     this.score = 0;
     this.lives = 3;
     this.highscore = this.storage.get('highscore', 0);
-    this.status = 'playing'; // 'playing' | 'won' | 'lost'
+    this.rng = new SeededRandom();
+    this.seedCode = SeededRandom.encode(this.rng.seed);
+    this.currentLevel = this.storage.get('savedLevel', 1);
+    this.status = 'playing'; // 'playing' | 'won' | 'lost' | 'level-complete'
 
     this._resetPaddleAndBall();
     this._buildBricks();
@@ -39,6 +52,14 @@ export class Breakout {
   handleResize(width, height) {
     this.width = width;
     this.height = height;
+    this.paddle.y = this.height - 30;
+    if (this.status === 'playing' || this.status === 'level-complete') {
+      this._buildBricks();
+    }
+  }
+
+  _getLevelConfig() {
+    return LEVELS[Math.min(this.currentLevel - 1, LEVELS.length - 1)];
   }
 
   _resetPaddleAndBall() {
@@ -48,34 +69,49 @@ export class Breakout {
       width: PADDLE_WIDTH,
       height: PADDLE_HEIGHT,
     };
+    const cfg = this._getLevelConfig();
+    const angle = (this.rng.nextFloat() - 0.5) * (Math.PI / 4);
     this.ball = {
       x: this.width / 2,
       y: this.height - 50,
       radius: BALL_RADIUS,
-      vx: 220,
-      vy: -220,
+      vx: Math.cos(angle) * cfg.ballSpeed,
+      vy: -Math.abs(Math.sin(angle) * cfg.ballSpeed),
     };
   }
 
   _buildBricks() {
-    const brickWidth = (this.width - BRICK_GAP * (BRICK_COLS + 1)) / BRICK_COLS;
+    const cfg = this._getLevelConfig();
+    const brickWidth = (this.width - BRICK_GAP * (cfg.cols + 1)) / cfg.cols;
     this.bricks = [];
-    for (let row = 0; row < BRICK_ROWS; row++) {
-      for (let col = 0; col < BRICK_COLS; col++) {
+    // La fila 0 usa un color especial y es más resistente (2 hits) si level >= 3
+    for (let row = 0; row < cfg.rows; row++) {
+      for (let col = 0; col < cfg.cols; col++) {
+        const isHard = row === 0 && this.currentLevel >= 3;
         this.bricks.push({
           x: BRICK_GAP + col * (brickWidth + BRICK_GAP),
           y: BRICK_TOP_OFFSET + row * (BRICK_HEIGHT + BRICK_GAP),
           width: brickWidth,
           height: BRICK_HEIGHT,
           alive: true,
-          hue: 190 + row * 25,
+          hue: 190 + row * (25 + this.currentLevel * 2),
+          hard: isHard,
+          hp: isHard ? 2 : 1,
         });
       }
     }
   }
 
   update(dt) {
-    if (this.status !== 'playing') {
+    if (this.status === 'level-complete') {
+      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
+        this._nextLevel();
+      }
+      this.input.endFrame();
+      return;
+    }
+
+    if (this.status === 'won' || this.status === 'lost') {
       if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
         this._restart();
       }
@@ -83,7 +119,7 @@ export class Breakout {
       return;
     }
 
-    // Paleta: teclado o ratón, lo que se haya movido.
+    // Paleta
     if (this.input.isDown('ArrowLeft') || this.input.isDown('KeyA')) {
       this.paddle.x -= 360 * dt;
     }
@@ -111,23 +147,27 @@ export class Breakout {
       this.ball.vy *= -1;
     }
 
-    // Bola vs paleta: el ángulo de rebote depende de dónde golpea (como el original).
+    // Bola vs paleta
     if (circleIntersectsAABB(this.ball, this.paddle) && this.ball.vy > 0) {
-      const hitPos = (this.ball.x - this.paddle.x) / this.paddle.width; // 0..1
-      const angle = (hitPos - 0.5) * (Math.PI / 3); // hasta ±60°
-      const speed = Math.hypot(this.ball.vx, this.ball.vy);
+      const hitPos = (this.ball.x - this.paddle.x) / this.paddle.width;
+      const angle = (hitPos - 0.5) * (Math.PI / 3);
+      const cfg = this._getLevelConfig();
+      const speed = cfg.ballSpeed;
       this.ball.vx = speed * Math.sin(angle);
       this.ball.vy = -Math.abs(speed * Math.cos(angle));
       this.ball.y = this.paddle.y - this.ball.radius;
+      AudioManager.sfx({ type: 'select', volume: 0.3 });
     }
 
     // Bola vs ladrillos
     for (const brick of this.bricks) {
       if (!brick.alive) continue;
       if (circleIntersectsAABB(this.ball, brick)) {
-        brick.alive = false;
-        this.score += 10;
-        // Rebote simple: decide eje por solapamiento mínimo.
+        brick.hp--;
+        if (brick.hp <= 0) brick.alive = false;
+        this.score += brick.hard ? 20 : 10;
+        AudioManager.sfx({ type: 'coin', volume: 0.25 });
+        HapticManager.vibrate('coin');
         const overlapX = Math.min(
           this.ball.x + this.ball.radius - brick.x,
           brick.x + brick.width - (this.ball.x - this.ball.radius)
@@ -142,9 +182,11 @@ export class Breakout {
       }
     }
 
-    // Bola cae fuera del canvas
+    // Bola cae
     if (this.ball.y - this.ball.radius > this.height) {
       this.lives -= 1;
+      AudioManager.sfx({ type: 'hit', volume: 0.4 });
+      HapticManager.vibrate('hit');
       if (this.lives <= 0) {
         this._endGame('lost');
       } else {
@@ -152,15 +194,34 @@ export class Breakout {
       }
     }
 
+    // Nivel completado
     if (this.bricks.every((b) => !b.alive)) {
-      this._endGame('won');
+      AudioManager.sfx({ type: 'powerup', volume: 0.5 });
+      HapticManager.vibrate('powerup');
+      if (this.currentLevel >= MAX_LEVEL) {
+        this._endGame('won');
+      } else {
+        this.status = 'level-complete';
+      }
     }
 
     this.input.endFrame();
   }
 
+  _nextLevel() {
+    this.currentLevel++;
+    this.storage.set('savedLevel', this.currentLevel);
+    this.status = 'playing';
+    this._resetPaddleAndBall();
+    this._buildBricks();
+  }
+
   _endGame(status) {
     this.status = status;
+    if (status === 'lost') {
+      AudioManager.sfx({ type: 'explosion', volume: 0.5 });
+      HapticManager.vibrate('explosion');
+    }
     if (this.score > this.highscore) {
       this.highscore = this.score;
       this.storage.set('highscore', this.highscore);
@@ -168,23 +229,35 @@ export class Breakout {
   }
 
   _restart() {
+    this.rng = new SeededRandom();
+    this.seedCode = SeededRandom.encode(this.rng.seed);
     this.score = 0;
     this.lives = 3;
+    this.currentLevel = this.storage.get('savedLevel', 1);
     this.status = 'playing';
     this._resetPaddleAndBall();
     this._buildBricks();
   }
 
   render(ctx) {
-    // Fondo
     ctx.fillStyle = '#0b0f14';
     ctx.fillRect(0, 0, this.width, this.height);
+
+    const cfg = this._getLevelConfig();
 
     // Ladrillos
     for (const brick of this.bricks) {
       if (!brick.alive) continue;
-      ctx.fillStyle = `hsl(${brick.hue}, 65%, 55%)`;
-      ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
+      if (brick.hard) {
+        // Ladrillo duro: borde brillante y dos tonos
+        ctx.fillStyle = `hsl(${brick.hue}, 75%, 65%)`;
+        ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
+        ctx.fillStyle = `hsl(${brick.hue}, 80%, 85%)`;
+        ctx.fillRect(brick.x + 2, brick.y + 2, brick.width - 4, brick.height / 2);
+      } else {
+        ctx.fillStyle = `hsl(${brick.hue}, 65%, 55%)`;
+        ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
+      }
     }
 
     // Paleta
@@ -201,20 +274,40 @@ export class Breakout {
     ctx.fillStyle = '#9aa7b2';
     ctx.font = '14px monospace';
     ctx.textBaseline = 'top';
-    ctx.fillText(`Puntos: ${this.score}`, 10, 10);
-    ctx.fillText(`Vidas: ${this.lives}`, this.width - 90, 10);
-    ctx.fillText(`Récord: ${this.highscore}`, this.width / 2 - 50, 10);
+    ctx.fillText(t('breakout.level', { n: this.currentLevel, max: MAX_LEVEL, label: t(cfg.labelKey) }), 10, 10);
+    ctx.fillText(t('game.score', { n: this.score }), 10, 28);
+    ctx.fillText(t('game.seed', { seed: this.seedCode }), 10, 46);
+    ctx.fillText(`${t('breakout.lives')} ${'❤'.repeat(Math.max(0, this.lives))}`, this.width - 100, 10);
+    ctx.fillText(t('game.record', { n: this.highscore }), this.width / 2 - 50, 10);
 
-    if (this.status !== 'playing') {
+    if (this.status === 'level-complete') {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx.fillRect(0, 0, this.width, this.height);
+      ctx.fillStyle = '#ffb454';
+      ctx.font = 'bold 24px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(t('game.levelComplete'), this.width / 2, this.height / 2 - 30);
+      ctx.fillStyle = '#e7edf3';
+      ctx.font = '16px monospace';
+      ctx.fillText(t('game.continue'), this.width / 2, this.height / 2 + 10);
+      ctx.textAlign = 'left';
+    }
+
+    if (this.status === 'won' || this.status === 'lost') {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
       ctx.fillRect(0, 0, this.width, this.height);
       ctx.fillStyle = '#e7edf3';
       ctx.font = 'bold 28px monospace';
       ctx.textAlign = 'center';
-      const message = this.status === 'won' ? '¡GANASTE!' : 'GAME OVER';
-      ctx.fillText(message, this.width / 2, this.height / 2 - 20);
+      if (this.status === 'won') {
+        ctx.fillText(t('breakout.gameComplete'), this.width / 2, this.height / 2 - 30);
+        ctx.font = '16px monospace';
+        ctx.fillText(t('breakout.finalScore', { n: this.score }), this.width / 2, this.height / 2 + 5);
+      } else {
+        ctx.fillText(t('game.gameOver'), this.width / 2, this.height / 2 - 20);
+      }
       ctx.font = '16px monospace';
-      ctx.fillText('Click o Espacio para reiniciar', this.width / 2, this.height / 2 + 15);
+      ctx.fillText(t('game.restart'), this.width / 2, this.height / 2 + 30);
       ctx.textAlign = 'left';
     }
   }

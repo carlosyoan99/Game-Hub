@@ -1,6 +1,9 @@
 import { InputManager } from '../../engine/InputManager.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { pointInRect } from '../../engine/CollisionUtils.js';
+import { wrapText } from '../../engine/wrapText.js';
+import { AudioManager } from '../../engine/AudioManager.js';
+import { HapticManager } from '../../engine/HapticManager.js';
 
 const START_LIVES = 3;
 const FEEDBACK_DURATION = 0.7; // segundos que se muestra "¡Correcto!"/"¡Incorrecto!" antes de continuar
@@ -18,54 +21,26 @@ const FEEDBACK_DURATION = 0.7; // segundos que se muestra "¡Correcto!"/"¡Incor
  *   botón — apenas insinuada con un tinte sutil, no invisible del todo.
  */
 const QUESTIONS = [
-  {
-    type: 'choice',
-    prompt: '¿Cuánto es 2 + 2?',
-    options: ['3', '4', '22', 'Pescado'],
-    correct: 1,
-  },
-  {
-    type: 'choice',
-    prompt: '¿De qué color es el caballo blanco de Napoleón?',
-    options: ['Negro', 'Marrón', 'Blanco', 'Depende del caballo'],
-    correct: 2,
-  },
-  {
-    type: 'hidden',
-    prompt: 'Encuentra la respuesta correcta. No es ninguna de estas cuatro.',
-    options: ['Aquí', 'No es esta', 'Tampoco', 'Ni de broma'],
-    hiddenZone: { xRatio: 0.04, yRatio: 0.08, wRatio: 0.06, hRatio: 0.06 },
-  },
-  {
-    type: 'choice',
-    prompt: "¿Cuántas veces aparece la letra 'A' en ABRACADABRA?",
-    options: ['4', '5', '6', '11'],
-    correct: 1,
-  },
-  {
-    type: 'choice',
-    prompt: '¿Cuál de estas cuatro opciones es la correcta?',
-    options: ['Ninguna de estas', 'Ninguna de estas', 'Ninguna de estas', 'Esta'],
-    correct: 3,
-  },
-  {
-    type: 'choice',
-    prompt: "Elige la respuesta INCORRECTA a esta pregunta: '¿Cuánto es 1 + 1?'",
-    options: ['2', 'Dos', 'II', 'Tres'],
-    correct: 3,
-  },
-  {
-    type: 'hidden',
-    prompt: 'La salida está escondida en algún lugar de la pantalla.',
-    options: ['Salir', 'Cerrar', 'Continuar', 'Terminar'],
-    hiddenZone: { xRatio: 0.9, yRatio: 0.88, wRatio: 0.06, hRatio: 0.06 },
-  },
-  {
-    type: 'choice',
-    prompt: 'Última pregunta. ¿Listo para terminar?',
-    options: ['No', 'Todavía no', 'Espera', 'Sí'],
-    correct: 3,
-  },
+  { type: 'choice', prompt: '¿Cuánto es 2 + 2?', options: ['3', '4', '22', 'Pescado'], correct: 1 },
+  { type: 'choice', prompt: '¿De qué color es el caballo blanco de Napoleón?', options: ['Negro', 'Marrón', 'Blanco', 'Depende del caballo'], correct: 2 },
+  { type: 'hidden', prompt: 'Encuentra la respuesta correcta. No es ninguna de estas cuatro.', options: ['Aquí', 'No es esta', 'Tampoco', 'Ni de broma'], hiddenZone: { xRatio: 0.04, yRatio: 0.08, wRatio: 0.06, hRatio: 0.06 } },
+  { type: 'choice', prompt: "¿Cuántas veces aparece la letra 'A' en ABRACADABRA?", options: ['4', '5', '6', '11'], correct: 1 },
+  { type: 'choice', prompt: '¿Cuál de estas cuatro opciones es la correcta?', options: ['Ninguna de estas', 'Ninguna de estas', 'Ninguna de estas', 'Esta'], correct: 3 },
+  { type: 'choice', prompt: "Elige la respuesta INCORRECTA: '¿Cuánto es 1 + 1?'", options: ['2', 'Dos', 'II', 'Tres'], correct: 3 },
+  { type: 'hidden', prompt: 'La salida está escondida...', options: ['Salir', 'Cerrar', 'Continuar', 'Terminar'], hiddenZone: { xRatio: 0.9, yRatio: 0.88, wRatio: 0.06, hRatio: 0.06 } },
+  { type: 'choice', prompt: '¿Listo para terminar?', options: ['No', 'Todavía no', 'Espera', 'Sí'], correct: 3 },
+
+  // Nuevas preguntas (expansión)
+  { type: 'choice', prompt: '¿Cuántos meses tienen 28 días?', options: ['1', '2', '6', 'Todos'], correct: 3 },
+  { type: 'choice', prompt: '¿Qué pesa más: 1kg de plomo o 1kg de plumas?', options: ['Plomo', 'Plumas', 'Igual', 'Depende'], correct: 2 },
+  { type: 'hidden', prompt: 'La respuesta no está en los botones. Busca en la pantalla...', options: ['Opción A', 'Opción B', 'Opción C', 'Opción D'], hiddenZone: { xRatio: 0.5, yRatio: 0.04, wRatio: 0.06, hRatio: 0.04 } },
+  { type: 'choice', prompt: '¿Cuál es el número que falta? 1, 1, 2, 3, 5, 8, ?', options: ['10', '12', '13', '21'], correct: 2 },
+  { type: 'choice', prompt: '¿Cuál de estas palabras no es un color?', options: ['Rojo', 'Azul', 'Silla', 'Verde'], correct: 2 },
+  { type: 'choice', prompt: '¿Qué pescado tiene más huesos?', options: ['Sardina', 'Merluza', 'Bacalao', 'El que pesa más'], correct: 3 },
+  { type: 'hidden', prompt: 'Has llegado lejos. Un último acertijo visual...', options: ['Salida', 'Puerta', 'Ventana', 'Trampilla'], hiddenZone: { xRatio: 0.7, yRatio: 0.82, wRatio: 0.06, hRatio: 0.06 } },
+  { type: 'choice', prompt: '¿Cuál es la respuesta a la pregunta definitiva?', options: ['42', 'Sí', 'No', 'Naranja'], correct: 0 },
+  { type: 'choice', prompt: '¿Qué viene después? O, T, T, F, F, S, S, ?', options: ['O', 'E', 'N', 'T'], correct: 1 },
+  { type: 'choice', prompt: '¿Cuántas veces puedes restar 5 de 25?', options: ['5', '4', 'Una', 'Infinitas'], correct: 2 },
 ];
 
 /**
@@ -194,12 +169,17 @@ export class TrickQuiz {
     this.status = 'feedback';
     this.feedbackKind = 'correct';
     this.feedbackTimer = FEEDBACK_DURATION;
+    AudioManager.sfx({ type: 'coin', volume: 0.3 });
+    HapticManager.vibrate('coin');
   }
 
   _onWrong() {
     this.lives -= 1;
+    AudioManager.sfx({ type: 'hit', volume: 0.4 });
+    HapticManager.vibrate('hit');
     if (this.lives <= 0) {
       this.status = 'lost';
+      AudioManager.sfx({ type: 'explosion', volume: 0.4 });
       return;
     }
     this.status = 'feedback';
@@ -215,6 +195,8 @@ export class TrickQuiz {
     }
     if (this.questionIndex >= QUESTIONS.length) {
       this.status = 'won';
+      AudioManager.sfx({ type: 'powerup', volume: 0.5 });
+      HapticManager.vibrate('powerup');
       return;
     }
     this.status = 'question';
@@ -296,26 +278,4 @@ export class TrickQuiz {
   }
 }
 
-/** Word-wrap simple para canvas: parte el texto en líneas que no excedan maxWidth. */
-function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-  const words = text.split(' ');
-  const lines = [];
-  let line = '';
 
-  for (const word of words) {
-    const testLine = line ? `${line} ${word}` : word;
-    if (ctx.measureText(testLine).width > maxWidth && line) {
-      lines.push(line);
-      line = word;
-    } else {
-      line = testLine;
-    }
-  }
-  if (line) lines.push(line);
-
-  let offsetY = y;
-  for (const l of lines) {
-    ctx.fillText(l, x, offsetY);
-    offsetY += lineHeight;
-  }
-}

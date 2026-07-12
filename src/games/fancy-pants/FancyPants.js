@@ -3,6 +3,8 @@ import { StorageManager } from '../../engine/StorageManager.js';
 import { Tilemap } from '../../engine/Tilemap.js';
 import { Camera } from '../../engine/Camera.js';
 import { aabbIntersects, clamp } from '../../engine/CollisionUtils.js';
+import { AudioManager } from '../../engine/AudioManager.js';
+import { HapticManager } from '../../engine/HapticManager.js';
 
 const TILE_SIZE = 32;
 const GRAVITY = 1500;
@@ -23,41 +25,130 @@ const WALL_JUMP_VX = 260;
 const WALL_JUMP_VY = -500;
 const WALL_JUMP_LOCK_TIME = 0.15; // tras un salto de pared, ignora input horizontal brevemente
 
-// '#' = sólido, 'G' = meta, '.' = vacío. Chimenea de dos paredes paralelas
-// pensada específicamente para encadenar deslizamiento + salto de pared.
+// 5 niveles de dificultad creciente
 const LEVEL_ROWS = [
-  '..........................................',
-  '..........................................',
-  '.....................G....................',
-  '....................####..................',
-  '....................#..#..................',
-  '....................#..#..................',
-  '....................#..#..................',
-  '....................#..#..................',
-  '....................#..#..................',
-  '....................#..#..................',
-  '....................#..#..................',
-  '....................#..#..................',
-  '....................#..#..................',
-  '....................#..#......####........',
-  '....................#..#..................',
-  '....................#..#..................',
-  '....................#..#..................',
-  '....................#..#..................',
-  '##########...#############################',
-  '##########...#############################',
+  // Nivel 1: chimenea básica
+  [
+    '..........................................',
+    '..........................................',
+    '..................G.......................',
+    '.................####.....................',
+    '.................#..#.....................',
+    '.................#..#.....................',
+    '.................#..#.....................',
+    '.................#..#.....................',
+    '.................#..#.....................',
+    '.................#..#.....................',
+    '.................#..#.....................',
+    '.................#..#.....................',
+    '.................#..#.....................',
+    '...............................####.......',
+    '.................#..#.....................',
+    '.................#..#.....................',
+    '.................#..#.....................',
+    '.................#..#.....................',
+    '##########..############################',
+    '##########..############################',
+  ],
+  // Nivel 2: dos chimeneas
+  [
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '........G..................................',
+    '.......####................................',
+    '.......#..#................................',
+    '.......#..#................................',
+    '.......#..#.......####....................',
+    '.......#..#.......#..#....................',
+    '.......#..#.......#..#....................',
+    '.......#..#.......#..#......####..........',
+    '.......#..#.......#..#....................',
+    '.......#..#.......#..#....................',
+    '.......#..#.......#..#....................',
+    '.......#..#.......#..#....................',
+    '#####.###...#####.###...#####...#########',
+    '#####.###...#####.###...#####...#########',
+  ],
+  // Nivel 3: plataformas estrechas
+  [
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..................G.........................',
+    '.................########..................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '...........####.....####..................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..#..#######..#####..############..#######',
+    '..#..#######..#####..############..#######',
+    '..#..#######..#####..############..#######',
+  ],
+  // Nivel 4: saltos precisos
+  [
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '...................G.......................',
+    '..................#####....................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........####..............................',
+    '..........................................',
+    '..........................................',
+    '####....####....####....####....####..#####',
+    '####....####....####....####....####..#####',
+    '####....####....####....####....####..#####',
+  ],
+  // Nivel 5: combinado
+  [
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '...........G.................................',
+    '..........####...............................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........####..............................',
+    '..........................................',
+    '..........................................',
+    '###..####..####..####..####..####..########',
+    '###..####..####..####..####..####..########',
+    '###..####..####..####..####..####..########',
+  ],
 ];
 
+const MAX_LEVEL = LEVEL_ROWS.length;
 const LEGEND = { '#': 1 };
 
 /**
- * FancyPants
- * Comparte Tilemap/Camera con Platformer.js, pero cambia por completo la
- * sensación de movimiento: en vez de velocidad horizontal instantánea,
- * usa aceleración + fricción (curvas suaves de arranque/frenado), y la
- * gravedad se reduce brevemente cerca del ápice del salto para dar ese
- * "hang time" característico de los saltos fluidos. El deslizamiento y
- * salto en pared son la mecánica nueva de este juego.
+ * FancyPants — expandido con 5 niveles de dificultad progresiva.
  */
 export class FancyPants {
   init(engine) {
@@ -70,14 +161,8 @@ export class FancyPants {
     this.width = this.canvas.width;
     this.height = this.canvas.height;
     this.bestTime = this.storage.get('bestTime', null);
-
-    const data = Tilemap.parseAscii(LEVEL_ROWS, LEGEND);
-    this.tilemap = new Tilemap({ data, tileSize: TILE_SIZE, solidTiles: new Set([1]) });
-    this.camera = new Camera(this.width, this.height);
-    this.goalRect = this._findGoal(LEVEL_ROWS);
-    this.spawnPoint = { x: TILE_SIZE * 2, y: TILE_SIZE * 16 };
-
-    this._restart();
+    this.currentLevel = this.storage.get('savedLevel', 1);
+    this._loadLevel();
   }
 
   handleResize(width, height) {
@@ -86,12 +171,28 @@ export class FancyPants {
     this.camera.resize(width, height);
   }
 
+  _loadLevel() {
+    const levelIndex = Math.min(this.currentLevel - 1, LEVEL_ROWS.length - 1);
+    const rows = LEVEL_ROWS[levelIndex];
+    const data = Tilemap.parseAscii(rows, LEGEND);
+    this.tilemap = new Tilemap({ data, tileSize: TILE_SIZE, solidTiles: new Set([1]) });
+    this.camera = new Camera(this.width, this.height);
+    this.goalRect = this._findGoal(rows);
+
+    let spawnY = TILE_SIZE * 16;
+    for (let row = 0; row < rows.length; row++) {
+      if (rows[row][2] === '.') { spawnY = row * TILE_SIZE; break; }
+    }
+    this.spawnPoint = { x: TILE_SIZE * 2, y: spawnY };
+    this._restart();
+  }
+
   _findGoal(rows) {
     for (let row = 0; row < rows.length; row++) {
       const col = rows[row].indexOf('G');
       if (col !== -1) return { x: col * TILE_SIZE, y: row * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE };
     }
-    return { x: 0, y: 0, width: TILE_SIZE, height: TILE_SIZE };
+    return { x: TILE_SIZE * 20, y: TILE_SIZE * 10, width: TILE_SIZE, height: TILE_SIZE };
   }
 
   _restart() {
@@ -114,7 +215,18 @@ export class FancyPants {
     this.status = 'playing';
   }
 
+  _nextLevel() {
+    this.currentLevel++;
+    this.storage.set('savedLevel', this.currentLevel);
+    this._loadLevel();
+  }
+
   update(dt) {
+    if (this.status === 'level-complete') {
+      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) this._nextLevel();
+      this.input.endFrame();
+      return;
+    }
     if (this.status !== 'playing') {
       if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) this._restart();
       this.input.endFrame();
@@ -186,6 +298,7 @@ export class FancyPants {
         this.player.vy = JUMP_VELOCITY;
         this.coyoteTimer = 0;
         this.player.jumpCut = false;
+        AudioManager.sfx({ type: 'jump', volume: 0.3 });
       } else if (this.isWallSliding) {
         this.player.vy = WALL_JUMP_VY;
         this.player.vx = this.player.wallSide === 'left' ? WALL_JUMP_VX : -WALL_JUMP_VX;
@@ -193,6 +306,8 @@ export class FancyPants {
         this.wallJumpLock = WALL_JUMP_LOCK_TIME;
         this.isWallSliding = false;
         this.player.jumpCut = false;
+        AudioManager.sfx({ type: 'jump', volume: 0.4 });
+        HapticManager.vibrate('jump');
       }
     }
 
@@ -224,8 +339,11 @@ export class FancyPants {
 
   _loseLife() {
     this.lives -= 1;
+    AudioManager.sfx({ type: 'hit', volume: 0.4 });
+    HapticManager.vibrate('hit');
     if (this.lives <= 0) {
       this.status = 'lost';
+      AudioManager.sfx({ type: 'explosion', volume: 0.4 });
     } else {
       this.player.x = this.spawnPoint.x;
       this.player.y = this.spawnPoint.y;
@@ -235,7 +353,15 @@ export class FancyPants {
   }
 
   _win() {
-    this.status = 'won';
+    if (this.currentLevel >= MAX_LEVEL) {
+      this.status = 'won';
+      AudioManager.sfx({ type: 'powerup', volume: 0.6 });
+      HapticManager.vibrate('powerup');
+    } else {
+      this.status = 'level-complete';
+      AudioManager.sfx({ type: 'powerup', volume: 0.5 });
+      HapticManager.vibrate('powerup');
+    }
     if (this.bestTime === null || this.elapsed < this.bestTime) {
       this.bestTime = this.elapsed;
       this.storage.set('bestTime', this.bestTime);
@@ -275,10 +401,11 @@ export class FancyPants {
       ctx.fillStyle = '#e7edf3';
       ctx.font = 'bold 28px monospace';
       ctx.textAlign = 'center';
-      const message = this.status === 'won' ? '¡META!' : 'GAME OVER';
-      ctx.fillText(message, this.width / 2, this.height / 2 - 20);
+      const overlayTitle = this.status === 'level-complete' ? '¡NIVEL COMPLETADO!' : this.status === 'won' ? '¡META!' : 'GAME OVER';
+      ctx.fillText(overlayTitle, this.width / 2, this.height / 2 - 20);
       ctx.font = '16px monospace';
-      ctx.fillText('Click o Espacio para reiniciar', this.width / 2, this.height / 2 + 15);
+      const overlayAction = this.status === 'level-complete' ? 'Click o Espacio para continuar' : 'Click o Espacio para reiniciar';
+      ctx.fillText(overlayAction, this.width / 2, this.height / 2 + 15);
       ctx.textAlign = 'left';
     }
   }

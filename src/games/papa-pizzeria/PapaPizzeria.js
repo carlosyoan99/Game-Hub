@@ -1,6 +1,10 @@
 import { InputManager } from '../../engine/InputManager.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { pointInRect } from '../../engine/CollisionUtils.js';
+import { AudioManager } from '../../engine/AudioManager.js';
+import { HapticManager } from '../../engine/HapticManager.js';
+import { SeededRandom } from '../../engine/SeededRandom.js';
+import { t } from '../../engine/i18n.js';
 
 /**
  * Papa's Pizzeria
@@ -15,14 +19,14 @@ import { pointInRect } from '../../engine/CollisionUtils.js';
 // ─── Constantes ────────────────────────────────────────────────────────
 
 const STEPS = ['order', 'dough', 'sauce', 'cheese', 'topping', 'bake', 'serve'];
-const STEP_LABELS = {
-  order: '📝 Tomar pedido',
-  dough: '🔄 Amasar masa',
-  sauce: '🍅 Poner salsa',
-  cheese: '🧀 Añadir queso',
-  topping: '🥓 Añadir topping',
-  bake: '🔥 Hornear',
-  serve: '🍕 Servir',
+const STEP_LABEL_KEYS = {
+  order: 'papa.station.order',
+  dough: 'papa.station.dough',
+  sauce: 'papa.station.sauce',
+  cheese: 'papa.station.cheese',
+  topping: 'papa.station.topping',
+  bake: 'papa.station.bake',
+  serve: 'papa.station.serve',
 };
 const STEP_TIME = {
   order: 1.2,
@@ -34,36 +38,19 @@ const STEP_TIME = {
   serve: 0.8,
 };
 
-const TOPPINGS = ['Pepperoni', 'Champiñones', 'Pimiento', 'Cebolla', 'Aceituna'];
+const TOPPINGS = ['Pepperoni', 'Champiñones', 'Pimiento', 'Cebolla', 'Aceituna', 'Jamón', 'Anchoa', 'Piña'];
 const MAX_QUEUE = 5;
-const PATIENCE_BASE = 18; // segundos que espera un cliente antes de irse
-const PATIENCE_CUSTOMER_VARIANCE = 4; // variación aleatoria ±
-const SPAWN_INTERVAL_BASE = 7; // segundos entre llegadas
+const PATIENCE_BASE = 18;
+const PATIENCE_CUSTOMER_VARIANCE = 4;
+const SPAWN_INTERVAL_BASE = 7;
 const SPAWN_INTERVAL_VARIANCE = 3;
-const MAX_ANGER = 3; // clientes que se van = game over
+const MAX_ANGER = 4;
 const MONEY_PER_PIZZA = 10;
-const TIP_PERFECT = 5; // propina extra si se sirve rápido (< 60% del tiempo de paciencia)
+const TIP_PERFECT = 5;
+const SERVE_TARGET = 15; // pizzas para ganar
 
 const STATION_COLS = 4;
 const STATION_ROWS = 2;
-
-// ─── Helper ────────────────────────────────────────────────────────────
-
-function randomBetween(min, max) {
-  return Math.random() * (max - min) + min;
-}
-
-function randomInt(min, max) {
-  return Math.floor(randomBetween(min, max + 1));
-}
-
-function makeOrder() {
-  const numToppings = randomInt(1, 3);
-  const shuffled = [...TOPPINGS].sort(() => Math.random() - 0.5);
-  return {
-    toppings: shuffled.slice(0, numToppings),
-  };
-}
 
 // ─── Game Class ────────────────────────────────────────────────────────
 
@@ -85,23 +72,27 @@ export class PapaPizzeria {
   handleResize(width, height) {
     this.width = width;
     this.height = height;
+    this._layoutStations();
   }
 
   _restart() {
+    this.rng = new SeededRandom();
+    this.seedCode = SeededRandom.encode(this.rng.seed);
     // Cola de clientes. Cada cliente: { order, patience, patienceMax, step, stepTimer, served }
     this.queue = [];
     this.currentCustomerIndex = 0; // índice en la cola del cliente que se está atendiendo
 
     this.money = 0;
     this.score = 0;
-    this.anger = 0; // clientes perdidos
+    this.anger = 0;
     this.spawnTimer = 0;
     this.totalServed = 0;
-    this.status = 'playing'; // 'playing' | 'lost' | 'won'
+    this.difficultyMultiplier = 1;
+    this.status = 'playing';
     this.messageText = null;
     this.messageTimer = 0;
 
-    this.spawnTimer = randomBetween(1, 3); // primer cliente llega pronto
+    this.spawnTimer = this.rng.nextFloat(1, 3);
     this._spawnCustomer();
 
     this._layoutStations();
@@ -121,7 +112,7 @@ export class PapaPizzeria {
       const row = Math.floor(i / STATION_COLS);
       return {
         step,
-        label: STEP_LABELS[step],
+        labelKey: STEP_LABEL_KEYS[step],
         x: marginX + col * (btnWidth + gap),
         y: marginY + row * (btnHeight + gap),
         width: btnWidth,
@@ -134,9 +125,13 @@ export class PapaPizzeria {
 
   _spawnCustomer() {
     if (this.queue.length >= MAX_QUEUE) return;
-    const patience = PATIENCE_BASE + randomBetween(-PATIENCE_CUSTOMER_VARIANCE, PATIENCE_CUSTOMER_VARIANCE);
+    // Clientes más exigentes con el progreso
+    const patienceMult = Math.max(0.5, 1 - this.totalServed * 0.02);
+    const patience = (PATIENCE_BASE + this.rng.nextFloat(-PATIENCE_CUSTOMER_VARIANCE, PATIENCE_CUSTOMER_VARIANCE)) * patienceMult;
+    const numToppings = this.rng.nextInt(1, Math.min(3 + Math.floor(this.totalServed / 3), TOPPINGS.length));
+    const shuffled = this.rng.shuffle([...TOPPINGS]);
     this.queue.push({
-      order: makeOrder(),
+      order: { toppings: shuffled.slice(0, numToppings) },
       patience,
       patienceMax: patience,
       step: 0,
@@ -158,7 +153,7 @@ export class PapaPizzeria {
     this.spawnTimer -= dt;
     if (this.spawnTimer <= 0 && this.queue.length < MAX_QUEUE) {
       this._spawnCustomer();
-      this.spawnTimer = SPAWN_INTERVAL_BASE + randomBetween(-SPAWN_INTERVAL_VARIANCE, SPAWN_INTERVAL_VARIANCE);
+      this.spawnTimer = SPAWN_INTERVAL_BASE + this.rng.nextFloat(-SPAWN_INTERVAL_VARIANCE, SPAWN_INTERVAL_VARIANCE);
     }
 
     // Actualizar temporizadores de clientes (iteración inversa para
@@ -227,6 +222,7 @@ export class PapaPizzeria {
         if (stepIdx === c.step && c.stepTimer <= 0) {
           // Iniciar el temporizador del paso
           c.stepTimer = STEP_TIME[station.step];
+          AudioManager.sfx({ type: 'select', volume: 0.25 });
         }
         return;
       }
@@ -236,15 +232,21 @@ export class PapaPizzeria {
   _serveCustomer(index) {
     const c = this.queue[index];
     this.money += MONEY_PER_PIZZA;
+    AudioManager.sfx({ type: 'coin', volume: 0.35 });
+    HapticManager.vibrate('coin');
 
     const timeRatio = 1 - (c.patienceMax - c.patience) / c.patienceMax;
     const tip = timeRatio < 0.6 ? TIP_PERFECT : 0;
-    this.money += tip;
+    this.money += tip;      this.score += MONEY_PER_PIZZA + tip;
+      this.totalServed += 1;
+      this.difficultyMultiplier = 1 + this.totalServed * 0.05;
 
-    this.score += MONEY_PER_PIZZA + tip;
-    this.totalServed += 1;
+    if (tip > 0) {
+      AudioManager.sfx({ type: 'powerup', volume: 0.3, playbackRate: 1.2 });
+    }
+    this._showMessage(tip > 0 ? t('papa.message.tip', { n: MONEY_PER_PIZZA + tip }) : t('papa.message.served', { n: MONEY_PER_PIZZA }));
 
-    this._showMessage(tip > 0 ? `+$${MONEY_PER_PIZZA + tip} (+propina!)` : `+$${MONEY_PER_PIZZA}`);
+    this.spawnTimer = Math.max(2, SPAWN_INTERVAL_BASE + this.rng.nextFloat(-SPAWN_INTERVAL_VARIANCE, SPAWN_INTERVAL_VARIANCE) - this.totalServed * 0.15);
 
     c.step = -1; // marcado como servido, será eliminado
     c.patience = 0;
@@ -259,8 +261,10 @@ export class PapaPizzeria {
     }
 
     // Victoria: servir suficiente pizzas
-    if (this.totalServed >= 10) {
+    if (this.totalServed >= SERVE_TARGET) {
       this.status = 'won';
+      AudioManager.sfx({ type: 'powerup', volume: 0.6 });
+      HapticManager.vibrate('powerup');
       if (this.score > this.bestScore) {
         this.bestScore = this.score;
         this.storage.set('bestScore', this.bestScore);
@@ -270,7 +274,9 @@ export class PapaPizzeria {
 
   _customerLeft(index) {
     this.anger += 1;
-    this._showMessage('Cliente se fue 😤');
+    AudioManager.sfx({ type: 'hit', volume: 0.3 });
+    HapticManager.vibrate('hit');
+    this._showMessage(t('papa.message.left'));
 
     // Reajustar índice antes de quitar de la cola
     if (index < this.currentCustomerIndex) {
@@ -283,6 +289,7 @@ export class PapaPizzeria {
 
     if (this.anger >= MAX_ANGER) {
       this.status = 'lost';
+      AudioManager.sfx({ type: 'explosion', volume: 0.4 });
       if (this.score > this.bestScore) {
         this.bestScore = this.score;
         this.storage.set('bestScore', this.bestScore);
@@ -321,17 +328,21 @@ export class PapaPizzeria {
     ctx.font = '13px monospace';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillText(`🍕 Servidas: ${this.totalServed}/10`, 10, 10);
+    ctx.fillText(t('papa.hud.served', { n: this.totalServed, target: SERVE_TARGET }), 10, 10);
     ctx.fillText(`$${this.money}`, this.width / 2 - 20, 10);
     ctx.textAlign = 'right';
-    ctx.fillText(`😤 Enfados: ${this.anger}/${MAX_ANGER}`, this.width - 10, 10);
+    ctx.fillText(t('papa.hud.anger', { n: this.anger, max: MAX_ANGER }), this.width - 10, 10);
 
     if (this.bestScore > 0) {
       ctx.textAlign = 'center';
       ctx.fillStyle = '#7c8894';
       ctx.font = '11px monospace';
-      ctx.fillText(`Mejor puntuación: ${this.bestScore}`, this.width / 2, 28);
+      ctx.fillText(t('papa.hud.bestScore', { n: this.bestScore }), this.width / 2, 28);
     }
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#7c8894';
+    ctx.font = '10px monospace';
+    ctx.fillText(t('game.seed', { seed: this.seedCode }), 10, 46);
 
     // ── Cola de clientes ──
     for (let i = 0; i < this.queue.length; i++) {
@@ -342,7 +353,7 @@ export class PapaPizzeria {
       ctx.fillStyle = '#7c8894';
       ctx.font = '13px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('Esperando clientes...', this.width / 2, 95);
+      ctx.fillText(t('papa.hud.waiting'), this.width / 2, 95);
     }
 
     // ── Estaciones ──
@@ -392,10 +403,10 @@ export class PapaPizzeria {
     ctx.font = '11px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText(c.order.toppings.join(', ') || 'Queso', rect.x + rect.width / 2, barY + barH + 4);
+    ctx.fillText(c.order.toppings.join(', ') || t('papa.message.cheese'), rect.x + rect.width / 2, barY + barH + 4);
 
     // Paso actual
-    const stepName = c.step >= 0 && c.step < STEPS.length ? STEP_LABELS[STEPS[c.step]].split(' ').slice(1).join(' ') : '';
+    const stepName = c.step >= 0 && c.step < STEPS.length ? t(STEP_LABEL_KEYS[STEPS[c.step]]).split(' ').slice(1).join(' ') : '';
     ctx.fillStyle = '#7c8894';
     ctx.font = '10px monospace';
     ctx.fillText(stepName, rect.x + rect.width / 2, barY + barH + 20);
@@ -430,7 +441,7 @@ export class PapaPizzeria {
     ctx.font = '11px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(station.label, station.x + station.width / 2, station.y + station.height / 2 - 6);
+    ctx.fillText(t(station.labelKey), station.x + station.width / 2, station.y + station.height / 2 - 6);
 
     // Barra de progreso si está activa
     if (isActive) {
@@ -452,15 +463,15 @@ export class PapaPizzeria {
     ctx.textBaseline = 'alphabetic';
 
     if (this.status === 'won') {
-      ctx.fillText('🎉 ¡PIZZERÍA EN MARCHA!', this.width / 2, this.height / 2 - 40);
+      ctx.fillText(t('papa.end.won'), this.width / 2, this.height / 2 - 40);
     } else {
-      ctx.fillText('😤 DEMASIADOS CLIENTES PERDIDOS', this.width / 2, this.height / 2 - 40);
+      ctx.fillText(t('papa.end.lost'), this.width / 2, this.height / 2 - 40);
     }
 
     ctx.font = '15px monospace';
-    ctx.fillText(`Pizzas servidas: ${this.totalServed}  |  Puntuación: ${this.score}`, this.width / 2, this.height / 2 + 2);
-    ctx.fillText(`Mejor puntuación: ${this.bestScore}`, this.width / 2, this.height / 2 + 24);
-    ctx.fillText('Click o Espacio para reiniciar', this.width / 2, this.height / 2 + 52);
+    ctx.fillText(t('papa.end.stats', { n: this.totalServed, score: this.score }), this.width / 2, this.height / 2 + 2);
+    ctx.fillText(t('papa.end.bestScore', { n: this.bestScore }), this.width / 2, this.height / 2 + 24);
+    ctx.fillText(t('papa.end.restart'), this.width / 2, this.height / 2 + 52);
     ctx.textAlign = 'left';
   }
 

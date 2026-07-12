@@ -3,6 +3,8 @@ import { StorageManager } from '../../engine/StorageManager.js';
 import { Tilemap } from '../../engine/Tilemap.js';
 import { Camera } from '../../engine/Camera.js';
 import { aabbIntersects, clamp } from '../../engine/CollisionUtils.js';
+import { AudioManager } from '../../engine/AudioManager.js';
+import { HapticManager } from '../../engine/HapticManager.js';
 
 const TILE_SIZE = 32;
 const GRAVITY = 1400; // px/s^2
@@ -12,40 +14,130 @@ const JUMP_VELOCITY = -520;
 const COYOTE_TIME = 0.1; // segundos de gracia para saltar tras salir de una plataforma
 const JUMP_CUT_MULTIPLIER = 0.5; // al soltar el botón mientras sube, corta el impulso (salto variable)
 
-// Nivel de referencia: '#' = sólido, 'G' = meta, '.' = vacío.
+// 5 niveles: '#' = sólido, 'G' = meta, '.' = vacío.
 const LEVEL_ROWS = [
-  '..................................................',
-  '..................................................',
-  '..................................................',
-  '..................................................',
-  '..................................................',
-  '..........####....................................',
-  '..................................................',
-  '..................................................',
-  '..................................................',
-  '........................###...................G...',
-  '.........................................####.....',
-  '.....................###..........................',
-  '..................................###.............',
-  '.................####.............................',
-  '..............................####................',
-  '..................................................',
-  '..................................................',
-  '##############...###########..########...#########',
-  '##############...###########..########...#########',
-  '##############...###########..########...#########',
+  // Nivel 1: tutorial plano
+  [
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '..................G................................',
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '............................................####..',
+    '..................................................',
+    '..................................................',
+    '###########...................############.......',
+    '###########...................############.......',
+    '###########...................############.......',
+  ],
+  // Nivel 2: plataformas escalonadas
+  [
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '.......................G..........................',
+    '..................................................',
+    '....................####...........................',
+    '..................................................',
+    '................................####..............',
+    '..................................................',
+    '.......................####........................',
+    '..................................................',
+    '............####...................................',
+    '..................................................',
+    '#####......####......####......####......#########',
+    '#####......####......####......####......#########',
+    '#####......####......####......####......#########',
+  ],
+  // Nivel 3: más vertical
+  [
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '......................G............................',
+    '.....................##............................',
+    '..................................................',
+    '..................................................',
+    '..........####......................................',
+    '..................................................',
+    '..........................####......................',
+    '####.........####.........####.........####..#####',
+    '####.........####.........####.........####..#####',
+    '####.........####.........####.........####..#####',
+  ],
+  // Nivel 4: huecos y precisión
+  [
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '.........................G.........................',
+    '.........................##.........................',
+    '..................................................',
+    '..................................................',
+    '..........####......................................',
+    '..................................................',
+    '..................................................',
+    '..............................####.................',
+    '..................................................',
+    '.................####..............................',
+    '..................................................',
+    '####..####..####..####..####..####..####..########',
+    '####..####..####..####..####..####..####..########',
+    '####..####..####..####..####..####..####..########',
+  ],
+  // Nivel 5: complejo
+  [
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '..................................................',
+    '...............................................G..',
+    '..................................................',
+    '..............#####...............................',
+    '..................................................',
+    '............................####...................',
+    '..................................................',
+    '..................................................',
+    '..............................####.................',
+    '..................................................',
+    '...........####...................................',
+    '..................................................',
+    '###..####..####..####..####..####..####..####..###',
+    '###..####..####..####..####..####..####..####..###',
+    '###..####..####..####..####..####..####..####..###',
+  ],
 ];
 
+const MAX_LEVEL = LEVEL_ROWS.length;
 const LEGEND = { '#': 1 };
 
 /**
- * Platformer
- * Primer juego que usa Tilemap + Camera. La colisión es la misma técnica
- * "resolver por eje separado" que ya tenía CollisionUtils, ahora aplicada
- * repetidamente por tile en vez de una sola vez contra un rectángulo —
- * de ahí que viviera en Tilemap.js del motor y no aquí: cualquier
- * plataformas futuro (Fancy Pants, Fireboy & Watergirl) la reutiliza tal
- * cual, solo cambia el nivel y los sprites.
+ * Platformer — expandido con 5 niveles de dificultad progresiva.
  */
 export class Platformer {
   init(engine) {
@@ -59,23 +151,33 @@ export class Platformer {
     this.height = this.canvas.height;
     this.bestTime = this.storage.get('bestTime', null);
 
-    const data = Tilemap.parseAscii(LEVEL_ROWS, LEGEND);
-    this.tilemap = new Tilemap({ data, tileSize: TILE_SIZE, solidTiles: new Set([1]) });
-    this.camera = new Camera(this.width, this.height);
-
-    // La meta ('G') no es una baldosa sólida: se busca aparte en el ASCII
-    // original y se guarda como un rectángulo normal de mundo.
-    this.goalRect = this._findGoal(LEVEL_ROWS);
-
-    this.spawnPoint = { x: TILE_SIZE * 2, y: TILE_SIZE * 10 };
-
-    this._restart();
+    this.currentLevel = this.storage.get('savedLevel', 1);
+    this._loadLevel();
   }
 
   handleResize(width, height) {
     this.width = width;
     this.height = height;
     this.camera.resize(width, height);
+  }
+
+  _loadLevel() {
+    const levelIndex = Math.min(this.currentLevel - 1, LEVEL_ROWS.length - 1);
+    const rows = LEVEL_ROWS[levelIndex];
+    const data = Tilemap.parseAscii(rows, LEGEND);
+    this.tilemap = new Tilemap({ data, tileSize: TILE_SIZE, solidTiles: new Set([1]) });
+    this.camera = new Camera(this.width, this.height);
+    this.goalRect = this._findGoal(rows);
+
+    // Spawn en la primera columna despejada
+    let spawnY = TILE_SIZE * 16;
+    let spawnX = TILE_SIZE * 2;
+    for (let row = 0; row < rows.length; row++) {
+      if (rows[row][2] === '.') { spawnY = row * TILE_SIZE; break; }
+    }
+    this.spawnPoint = { x: spawnX, y: spawnY };
+
+    this._restart();
   }
 
   _findGoal(rows) {
@@ -85,7 +187,7 @@ export class Platformer {
         return { x: col * TILE_SIZE, y: row * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE };
       }
     }
-    return { x: 0, y: 0, width: TILE_SIZE, height: TILE_SIZE };
+    return { x: TILE_SIZE * 30, y: TILE_SIZE * 10, width: TILE_SIZE, height: TILE_SIZE };
   }
 
   _restart() {
@@ -106,11 +208,20 @@ export class Platformer {
     this.status = 'playing';
   }
 
+  _nextLevel() {
+    this.currentLevel++;
+    this.storage.set('savedLevel', this.currentLevel);
+    this._loadLevel();
+  }
+
   update(dt) {
+    if (this.status === 'level-complete') {
+      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) this._nextLevel();
+      this.input.endFrame();
+      return;
+    }
     if (this.status !== 'playing') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
-        this._restart();
-      }
+      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) this._restart();
       this.input.endFrame();
       return;
     }
@@ -143,6 +254,7 @@ export class Platformer {
       this.player.vy = JUMP_VELOCITY;
       this.coyoteTimer = 0;
       this.player.jumpCut = false;
+      AudioManager.sfx({ type: 'jump', volume: 0.3 });
     }
 
     // Salto variable: si sueltas el botón mientras aún subes, se corta el
@@ -175,8 +287,11 @@ export class Platformer {
 
   _loseLife() {
     this.lives -= 1;
+    AudioManager.sfx({ type: 'hit', volume: 0.4 });
+    HapticManager.vibrate('hit');
     if (this.lives <= 0) {
       this.status = 'lost';
+      AudioManager.sfx({ type: 'explosion', volume: 0.4 });
     } else {
       this.player.x = this.spawnPoint.x;
       this.player.y = this.spawnPoint.y;
@@ -186,7 +301,15 @@ export class Platformer {
   }
 
   _win() {
-    this.status = 'won';
+    if (this.currentLevel >= MAX_LEVEL) {
+      this.status = 'won';
+      AudioManager.sfx({ type: 'powerup', volume: 0.6 });
+      HapticManager.vibrate('powerup');
+    } else {
+      this.status = 'level-complete';
+      AudioManager.sfx({ type: 'powerup', volume: 0.5 });
+      HapticManager.vibrate('powerup');
+    }
     if (this.bestTime === null || this.elapsed < this.bestTime) {
       this.bestTime = this.elapsed;
       this.storage.set('bestTime', this.bestTime);
@@ -228,10 +351,11 @@ export class Platformer {
       ctx.fillStyle = '#e7edf3';
       ctx.font = 'bold 28px monospace';
       ctx.textAlign = 'center';
-      const message = this.status === 'won' ? '¡META!' : 'GAME OVER';
-      ctx.fillText(message, this.width / 2, this.height / 2 - 20);
+      const overlayTitle = this.status === 'level-complete' ? '¡NIVEL COMPLETADO!' : this.status === 'won' ? '¡META!' : 'GAME OVER';
+      ctx.fillText(overlayTitle, this.width / 2, this.height / 2 - 20);
       ctx.font = '16px monospace';
-      ctx.fillText('Click o Espacio para reiniciar', this.width / 2, this.height / 2 + 15);
+      const overlayAction = this.status === 'level-complete' ? 'Click o Espacio para continuar' : 'Click o Espacio para reiniciar';
+      ctx.fillText(overlayAction, this.width / 2, this.height / 2 + 15);
       ctx.textAlign = 'left';
     }
   }

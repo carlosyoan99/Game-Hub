@@ -63,8 +63,8 @@ async function runGame(name, importPath, exportName, { frames = 300, dt = 1 / 60
     }
     instance.update(dt);
     instance.render(engine.ctx);
-    if (i % 250 === 249 && instance.status !== 'playing') {
-      // fuerza reinicio tras game over/victoria para seguir ejercitando el código
+    if (i % 250 === 249 && (instance.status === 'won' || instance.status === 'lost' || instance.status === 'level-complete')) {
+      // fuerza reinicio o avance de nivel tras game over/victoria/nivel completado
       window.dispatchEvent(new window.KeyboardEvent('keydown', { code: 'Space' }));
       instance.update(dt);
     }
@@ -75,10 +75,28 @@ async function runGame(name, importPath, exportName, { frames = 300, dt = 1 / 60
 }
 
 const tests = [
-  ['Breakout', './src/games/breakout/Breakout.js', 'Breakout', []],
-  ['Snake', './src/games/snake/Snake.js', 'Snake', [{ code: 'ArrowDown', atFrame: 10 }, { code: 'ArrowLeft', atFrame: 40 }]],
-  ['Pong', './src/games/pong/Pong.js', 'Pong', [{ code: 'ArrowUp', atFrame: 5 }]],
-  ['FlappyBird', './src/games/flappy-bird/FlappyBird.js', 'FlappyBird', [{ code: 'Space', atFrame: 5 }, { code: 'Space', atFrame: 40 }]],
+  ['Breakout', './src/games/breakout/Breakout.js', 'Breakout', [
+    { code: 'ArrowRight', atFrame: 10 },
+  ]],
+  ['Snake', './src/games/snake/Snake.js', 'Snake', [
+    { code: 'ArrowDown', atFrame: 10 },
+    { code: 'ArrowLeft', atFrame: 40 },
+    { code: 'ArrowDown', atFrame: 120 },
+    { code: 'ArrowRight', atFrame: 180 },
+    { code: 'ArrowUp', atFrame: 220 },
+  ]],
+  ['Pong', './src/games/pong/Pong.js', 'Pong', [
+    { code: 'ArrowUp', atFrame: 5 },
+    { code: 'ArrowDown', atFrame: 100 },
+  ]],
+  ['FlappyBird', './src/games/flappy-bird/FlappyBird.js', 'FlappyBird', [
+    { code: 'Space', atFrame: 5 },
+    { code: 'Space', atFrame: 40 },
+    { code: 'Space', atFrame: 80 },
+    { code: 'Space', atFrame: 120 },
+    { code: 'Space', atFrame: 160 },
+    { code: 'Space', atFrame: 200 },
+  ]],
   ['Asteroids', './src/games/asteroids/Asteroids.js', 'Asteroids', [{ code: 'ArrowUp', atFrame: 5 }, { code: 'Space', atFrame: 30 }]],
   ['Platformer', './src/games/platformer/Platformer.js', 'Platformer', [{ code: 'ArrowRight', atFrame: 5 }, { code: 'Space', atFrame: 60 }]],
   ['FancyPants', './src/games/fancy-pants/FancyPants.js', 'FancyPants', [
@@ -119,6 +137,17 @@ const tests = [
   ['TerritoryWar', './src/games/territory-war/TerritoryWar.js', 'TerritoryWar', [
     { code: 'Space', atFrame: 10 },
     { code: 'Space', atFrame: 30 },
+  ]],
+  ['SwordsAndSouls', './src/games/swords-and-souls/SwordsAndSouls.js', 'SwordsAndSouls', [], [
+    { atFrame: 20, x: 100, y: 100 }, // click en zona del hub
+    { atFrame: 40, x: 200, y: 200 }, // otro click
+    { atFrame: 60, x: 300, y: 300 }, // más clicks para ejercitar entrenamiento
+    { atFrame: 80, x: 400, y: 400 },
+  ]],
+  ['HenryStickmin', './src/games/henry-stickmin/HenryStickmin.js', 'HenryStickmin', [
+    { code: 'Space', atFrame: 10 }, // skip text intro
+    { code: 'Space', atFrame: 30 }, // skip more text
+    { code: 'Space', atFrame: 60 }, // another click to exercise various states
   ]],
 ];
 

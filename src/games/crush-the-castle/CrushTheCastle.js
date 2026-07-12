@@ -11,32 +11,11 @@ import { InputManager } from '../../engine/InputManager.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { clamp } from '../../engine/CollisionUtils.js';
 import { ParticleSystem } from '../../engine/ParticleSystem.js';
-
-const GRAVITY = 400;
-const BLOCK_SIZE = 28;
-const BLOCK_GAP = 1;
-const PROJECTILE_RADIUS = 6;
-
-const COLORS = {
-  bg: '#0b0f14',
-  panel: '#11161d',
-  ink: '#e7edf3',
-  inkDim: '#7c8894',
-  line: '#1e2731',
-  marquee: '#ffb454',
-  ground: '#1a2a1a',
-  stone: '#5a5a6a',
-  wood: '#6b4a2e',
-  soldier: '#c0392b',
-};
-
-/**
- * Tipo de bloques con su resistencia (golpes necesarios para destruirlos).
- */
-const BLOCK_TYPES = {
-  wood: { hp: 2, color: '#6b4a2e', stroke: '#4a3520' },
-  stone: { hp: 4, color: '#5a5a6a', stroke: '#3a3a4a' },
-};
+import { AudioManager } from '../../engine/AudioManager.js';
+import { HapticManager } from '../../engine/HapticManager.js';
+import { t } from '../../engine/i18n.js';
+import { SeededRandom } from '../../engine/SeededRandom.js';
+import { GRAVITY, BLOCK_SIZE, BLOCK_GAP, PROJECTILE_RADIUS, DEBRIS_OPTS, COLORS, BLOCK_TYPES } from './constants.js';
 
 export class CrushTheCastle {
   init(engine) {
@@ -56,9 +35,15 @@ export class CrushTheCastle {
   handleResize(width, height) {
     this.width = width;
     this.height = height;
+    this.catapult.y = this.height - 60;
+    if (this.status === 'aiming' || this.status === 'flying' || this.status === 'exploding') {
+      this._buildCastle();
+    }
   }
 
   _restart() {
+    this.rng = new SeededRandom();
+    this.seedCode = SeededRandom.encode(this.rng.seed);
     this.score = 0;
     this.wave = 1;
     this.status = 'aiming'; // 'aiming' | 'flying' | 'exploding' | 'won' | 'lost'
@@ -69,7 +54,6 @@ export class CrushTheCastle {
     this.bullets = [];
     this.particles = new ParticleSystem(200);
 
-    // Catapulta: posición izquierda
     this.catapult = {
       x: 70,
       y: this.height - 60,
@@ -77,16 +61,12 @@ export class CrushTheCastle {
       power: 0.5,
     };
 
-    // Power bar
     this.powerTarget = 0.5;
-
     this._buildCastle();
 
     this.currentProjectile = null;
     this.aimAngle = -Math.PI / 4;
     this.aimPower = 0.5;
-
-    // Last shot trail
     this.trail = [];
   }
 
@@ -94,23 +74,22 @@ export class CrushTheCastle {
     const groundY = this.height - 50;
     const castleX = this.width * 0.55;
 
-    // Clear existing
     this.blocks = [];
     this.soldiers = [];
 
-    // Build a castle structure: wider for higher waves
     const castleWidth = 6 + Math.min(this.wave, 4);
     const castleHeight = 5 + Math.min(Math.floor(this.wave / 2), 3);
     const extraWidth = Math.min(this.wave - 1, 4);
 
-    // Random choice of materials per column
     for (let col = 0; col < castleWidth + extraWidth; col++) {
       const baseMaterial = col < 3 ? 'stone' : 'wood';
       for (let row = 0; row < castleHeight; row++) {
-        // Some random gaps for visual variety
-        if (Math.random() < 0.08 && row > 1 && col > 2 && col < castleWidth + extraWidth - 2) continue;
+        if (this.rng.next() < 0.08 && row > 1 && col > 2 && col < castleWidth + extraWidth - 2) continue;
 
-        const blockType = row < 2 && col < 4 ? 'stone' : baseMaterial;
+        let blockType = row < 2 && col < 4 ? 'stone' : baseMaterial;
+        if (this.wave >= 3 && row === 0 && this.rng.next() < 0.3) blockType = 'reinforced';
+        if (this.wave >= 5 && this.rng.next() < 0.12) blockType = 'explosive';
+
         this.blocks.push({
           x: castleX + col * (BLOCK_SIZE + BLOCK_GAP),
           y: groundY - (row + 1) * (BLOCK_SIZE + BLOCK_GAP),
@@ -126,13 +105,10 @@ export class CrushTheCastle {
       }
     }
 
-    // Place soldiers (enemy stick figures) inside/on top of the castle
     const soldierCount = Math.min(2 + Math.floor(this.wave / 2), 6);
     for (let i = 0; i < soldierCount; i++) {
-      // Find a valid position on top of blocks
       let sx, sy;
       if (this.blocks.length > 0) {
-        // Place on top of highest blocks
         const cols = {};
         for (const b of this.blocks) {
           const key = Math.round(b.x);
@@ -140,24 +116,22 @@ export class CrushTheCastle {
         }
         const colKeys = Object.values(cols);
         if (colKeys.length > 0) {
-          const topBlock = colKeys[Math.floor(Math.random() * colKeys.length)];
-          sx = topBlock.x + topBlock.width / 2 + (Math.random() - 0.5) * 10;
+          const topBlock = colKeys[this.rng.nextInt(0, colKeys.length - 1)];
+          sx = topBlock.x + topBlock.width / 2 + (this.rng.next() - 0.5) * 10;
           sy = topBlock.y - 8;
         } else {
-          sx = castleX + 60 + Math.random() * 60;
-          sy = groundY - 50 - Math.random() * 30;
+          sx = castleX + 60 + this.rng.next() * 60;
+          sy = groundY - 50 - this.rng.next() * 30;
         }
       } else {
-        sx = castleX + 60 + Math.random() * 60;
-        sy = groundY - 50 - Math.random() * 30;
+        sx = castleX + 60 + this.rng.next() * 60;
+        sy = groundY - 50 - this.rng.next() * 30;
       }
       this.soldiers.push({
-        x: sx,
-        y: sy,
-        width: 8,
-        height: 16,
+        x: sx, y: sy,
+        width: 8, height: 16,
         alive: true,
-        hue: 0 + Math.random() * 20,
+        hue: this.rng.next() * 20,
         panicTimer: 0,
       });
     }
@@ -173,7 +147,7 @@ export class CrushTheCastle {
     }
 
     if (this.status === 'exploding') {
-      this._updateParticles(dt);
+      this.particles.update(dt);
       if (this.particles.isEmpty) {
         this.status = 'aiming';
       }
@@ -181,13 +155,11 @@ export class CrushTheCastle {
       return;
     }
 
-    // Power bar oscillation during aiming
     if (this.status === 'aiming') {
       this.powerTarget += dt * 0.8;
       if (this.powerTarget > 1) this.powerTarget = 0;
       this.aimPower = Math.abs(Math.sin(this.powerTarget * Math.PI * 2));
 
-      // Aim angle based on mouse vertical position
       if (this.input.mouse.x >= 0) {
         const dx = this.input.mouse.x - this.catapult.x;
         const dy = this.input.mouse.y - this.catapult.y;
@@ -195,19 +167,16 @@ export class CrushTheCastle {
           this.aimAngle = Math.atan2(dy, dx);
           this.aimAngle = clamp(this.aimAngle, -Math.PI * 0.45, -0.05);
         }
-        // Power via mouse distance
         const dist = Math.hypot(dx, dy);
         this.aimPower = clamp(dist / 400, 0.2, 1.0);
       }
 
-      // Aim with keyboard
       if (this.input.isDown('ArrowUp')) this.aimAngle -= 1.5 * dt;
       if (this.input.isDown('ArrowDown')) this.aimAngle += 1.5 * dt;
       this.aimAngle = clamp(this.aimAngle, -Math.PI * 0.45, -0.05);
       if (this.input.isDown('ArrowLeft')) this.aimPower = clamp(this.aimPower - 0.5 * dt, 0.2, 1.0);
       if (this.input.isDown('ArrowRight')) this.aimPower = clamp(this.aimPower + 0.5 * dt, 0.2, 1.0);
 
-      // Check for click to fire
       if (this.input.mouse.clickedThisFrame || this.input.wasPressed('Space')) {
         this._fire();
       }
@@ -215,7 +184,7 @@ export class CrushTheCastle {
 
     if (this.status === 'flying') {
       this._updateProjectile(dt);
-      this._updateParticles(dt);
+      this.particles.update(dt);
     }
 
     this.input.endFrame();
@@ -223,7 +192,6 @@ export class CrushTheCastle {
 
   _fire() {
     if (this.ammo <= 0) return;
-
     this.ammo--;
 
     const power = this.aimPower * 500;
@@ -238,29 +206,23 @@ export class CrushTheCastle {
     this.trail = [];
     this.status = 'flying';
 
-    // Launch particles
-    this._spawnParticles(this.catapult.x, this.catapult.y - 10, '#ffb454', 12, 80);
+    this.particles.burst(this.catapult.x, this.catapult.y - 10, '#ffb454', 12, 80, DEBRIS_OPTS);
+    AudioManager.sfx({ type: 'shoot', volume: 0.35 });
+    HapticManager.vibrate('shoot');
   }
 
   _updateProjectile(dt) {
     if (!this.currentProjectile || !this.currentProjectile.active) return;
 
     const p = this.currentProjectile;
-
-    // Store trail
     this.trail.push({ x: p.x, y: p.y, life: 0.5 });
 
-    // Gravity
     p.vy += GRAVITY * dt;
-
-    // Air resistance (minor)
     p.vx *= 0.999;
     p.vy *= 0.999;
-
     p.x += p.vx * dt;
     p.y += p.vy * dt;
 
-    // Check bounds
     if (p.y > this.height - 50 || p.x > this.width + 20 || p.x < -20) {
       this.currentProjectile.active = false;
       this.status = 'aiming';
@@ -268,11 +230,8 @@ export class CrushTheCastle {
       return;
     }
 
-    // Collision with blocks
     for (const block of this.blocks) {
       if (block.hp <= 0) continue;
-
-      // Circle vs rect check
       const closestX = clamp(p.x, block.x, block.x + block.width);
       const closestY = clamp(p.y, block.y, block.y + block.height);
       const dx = p.x - closestX;
@@ -280,19 +239,17 @@ export class CrushTheCastle {
       const distSq = dx * dx + dy * dy;
 
       if (distSq <= p.radius * p.radius) {
-        // Damage the block
         block.hp--;
         block.wiggling = 0.15;
+        AudioManager.sfx({ type: 'hit', volume: 0.3 });
+        HapticManager.vibrate('hit');
 
-        // Spawn debris particles
-        this._spawnParticles(p.x, p.y, block.color, 8, 120);
-        this._spawnParticles(p.x, p.y, '#ffb454', 4, 60);
+        this.particles.burst(p.x, p.y, block.color, 8, 120, DEBRIS_OPTS);
+        this.particles.burst(p.x, p.y, '#ffb454', 4, 60, DEBRIS_OPTS);
         this.score += 5;
 
-        // Bounce/deflect the projectile
         const speed = Math.hypot(p.vx, p.vy);
         if (speed > 30) {
-          // Reflect and lose energy
           const normalX = (closestX - p.x) || 0;
           const normalY = (closestY - p.y) || 0;
           const normLen = Math.hypot(normalX, normalY);
@@ -308,11 +265,26 @@ export class CrushTheCastle {
           p.vy *= 0.2;
         }
 
-        // Check if block destroyed
         if (block.hp <= 0) {
+          if (block.type === 'explosive') {
+            for (const other of this.blocks) {
+              if (other === block || other.hp <= 0) continue;
+              const dx = (other.x + other.width / 2) - (block.x + block.width / 2);
+              const dy = (other.y + other.height / 2) - (block.y + block.height / 2);
+              if (Math.abs(dx) < BLOCK_SIZE * 2 && Math.abs(dy) < BLOCK_SIZE * 2) {
+                other.hp -= 3;
+                if (other.hp <= 0) this.score += 10;
+              }
+            }
+            this.particles.burst(block.x + block.width / 2, block.y + block.height / 2, '#ffb454', 30, 300, DEBRIS_OPTS);
+            AudioManager.sfx({ type: 'explosion', volume: 0.6 });
+            HapticManager.vibrate('explosion');
+          } else {
+            this.particles.burst(block.x + block.width / 2, block.y + block.height / 2, block.color, 16, 200, DEBRIS_OPTS);
+            AudioManager.sfx({ type: 'explosion', volume: 0.35 });
+          }
           this.score += 10;
-          this._spawnParticles(block.x + block.width / 2, block.y + block.height / 2, block.color, 16, 200);
-          // Check for soldiers on top of destroyed blocks
+
           for (const soldier of this.soldiers) {
             if (!soldier.alive) continue;
             if (
@@ -322,7 +294,6 @@ export class CrushTheCastle {
               soldier.y < block.y + block.height + 5
             ) {
               soldier.y += block.height + 2;
-              // Check if soldier falls to ground
               let standing = false;
               for (const otherBlock of this.blocks) {
                 if (otherBlock.hp <= 0) continue;
@@ -341,56 +312,50 @@ export class CrushTheCastle {
               }
               if (!standing) {
                 soldier.alive = false;
-                this._spawnParticles(soldier.x, soldier.y, '#c0392b', 6, 100);
+                AudioManager.sfx({ type: 'hit', volume: 0.4 });
+                this.particles.burst(soldier.x, soldier.y, '#c0392b', 6, 100, DEBRIS_OPTS);
                 this.score += 25;
               }
             }
           }
         }
-
         break;
       }
     }
 
-    // Collision with soldiers (direct hit)
     for (const soldier of this.soldiers) {
       if (!soldier.alive) continue;
       const dx = p.x - soldier.x;
       const dy = p.y - soldier.y;
       if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
         soldier.alive = false;
-        this._spawnParticles(soldier.x, soldier.y, '#c0392b', 10, 150);
+        AudioManager.sfx({ type: 'explosion', volume: 0.4 });
+        HapticManager.vibrate('explosion');
+        this.particles.burst(soldier.x, soldier.y, '#c0392b', 10, 150, DEBRIS_OPTS);
         this.score += 25;
-        // Slow down projectile
         p.vx *= 0.3;
         p.vy *= 0.3;
         break;
       }
     }
 
-    // Ground collision
     if (p.y + p.radius > this.height - 50) {
       p.y = this.height - 50 - p.radius;
       p.vy *= -0.3;
       p.vx *= 0.5;
-      this._spawnParticles(p.x, this.height - 50, '#5a5a6a', 6, 80);
+      this.particles.burst(p.x, this.height - 50, '#5a5a6a', 6, 80, DEBRIS_OPTS);
       if (Math.abs(p.vy) < 20) {
         this.currentProjectile.active = false;
       }
     }
 
-    // Update trail
-    for (const t of this.trail) {
-      t.life -= dt;
-    }
+    for (const t of this.trail) { t.life -= dt; }
     this.trail = this.trail.filter((t) => t.life > 0);
 
-    // If projectile stopped moving, deactivate
     if (this.currentProjectile && Math.abs(p.vx) < 5 && Math.abs(p.vy) < 5) {
       this.currentProjectile.active = false;
     }
 
-    // Check win/lose conditions
     if (!this.currentProjectile || !this.currentProjectile.active) {
       this._checkWaveEnd();
       if (this.status === 'aiming' || this.status === 'won') {
@@ -403,6 +368,8 @@ export class CrushTheCastle {
     const aliveSoldiers = this.soldiers.filter((s) => s.alive);
     if (aliveSoldiers.length === 0) {
       this.status = 'won';
+      AudioManager.sfx({ type: 'powerup', volume: 0.5 });
+      HapticManager.vibrate('powerup');
       if (this.score > this.highscore) {
         this.highscore = this.score;
         this.storage.set('highscore', this.highscore);
@@ -412,13 +379,13 @@ export class CrushTheCastle {
 
     if (this.ammo <= 0) {
       this.status = 'lost';
+      AudioManager.sfx({ type: 'hit', volume: 0.5 });
+      HapticManager.vibrate('hit');
       return;
     }
 
-    // Recalculate soldier positions after blocks fall
     for (const soldier of this.soldiers) {
       if (!soldier.alive) continue;
-      // Check if soldier is falling
       let standing = false;
       for (const block of this.blocks) {
         if (block.hp <= 0) continue;
@@ -437,16 +404,6 @@ export class CrushTheCastle {
     }
   }
 
-  _spawnParticles(x, y, color, count, speed) {
-    this.particles.emit(x, y, color, count, speed, {
-      vyOffset: -50, lifeMin: 0.5, lifeMax: 0.8, radiusMin: 1, radiusMax: 3, speedMin: 0.3, speedMax: 0.7,
-    });
-  }
-
-  _updateParticles(dt) {
-    this.particles.update(dt);
-  }
-
   _nextWave() {
     if (this.status === 'won') {
       this.wave++;
@@ -462,24 +419,20 @@ export class CrushTheCastle {
   }
 
   render(ctx) {
-    // Background
     ctx.fillStyle = COLORS.bg;
     ctx.fillRect(0, 0, this.width, this.height);
 
-    // Sky gradient
     const skyGrad = ctx.createLinearGradient(0, 0, 0, this.height);
     skyGrad.addColorStop(0, '#0a1628');
     skyGrad.addColorStop(0.6, '#0f1a2e');
     ctx.fillStyle = skyGrad;
     ctx.fillRect(0, 0, this.width, this.height - 50);
 
-    // Ground
     ctx.fillStyle = COLORS.ground;
     ctx.fillRect(0, this.height - 50, this.width, 50);
     ctx.fillStyle = '#2a3a2a';
     ctx.fillRect(0, this.height - 50, this.width, 2);
 
-    // Trail
     for (const t of this.trail) {
       ctx.beginPath();
       ctx.arc(t.x, t.y, 2, 0, Math.PI * 2);
@@ -487,18 +440,14 @@ export class CrushTheCastle {
       ctx.fill();
     }
 
-    // Castle blocks
     for (const block of this.blocks) {
       if (block.hp <= 0) continue;
-
-      // Wiggle animation when hit
       const wiggleOffset = block.wiggling > 0 ? Math.sin(block.wiggling * 60) * 2 : 0;
       if (block.wiggling > 0) block.wiggling -= 1 / 60;
 
       ctx.fillStyle = block.color;
       ctx.fillRect(block.x + wiggleOffset, block.y, block.width, block.height);
 
-      // Damage cracks
       const hpPercent = block.hp / block.maxHp;
       if (hpPercent < 1) {
         ctx.strokeStyle = 'rgba(0,0,0,0.3)';
@@ -522,32 +471,24 @@ export class CrushTheCastle {
       ctx.strokeRect(block.x + wiggleOffset, block.y, block.width, block.height);
     }
 
-    // Soldiers
     for (const soldier of this.soldiers) {
       if (!soldier.alive) continue;
-
       const sX = soldier.x;
       const sY = soldier.y;
-
-      // Body
       ctx.strokeStyle = COLORS.soldier;
       ctx.lineWidth = 2;
-      // Head
       ctx.beginPath();
       ctx.arc(sX, sY, 3, 0, Math.PI * 2);
       ctx.stroke();
-      // Body line
       ctx.beginPath();
       ctx.moveTo(sX, sY + 4);
       ctx.lineTo(sX, sY + 12);
       ctx.stroke();
-      // Arms
       ctx.beginPath();
       ctx.moveTo(sX - 4, sY + 7);
       ctx.lineTo(sX, sY + 8);
       ctx.lineTo(sX + 4, sY + 7);
       ctx.stroke();
-      // Legs
       ctx.beginPath();
       ctx.moveTo(sX, sY + 12);
       ctx.lineTo(sX - 3, sY + 17);
@@ -556,10 +497,8 @@ export class CrushTheCastle {
       ctx.stroke();
     }
 
-    // Catapult
     this._renderCatapult(ctx);
 
-    // Projectile
     if (this.currentProjectile && this.currentProjectile.active) {
       ctx.beginPath();
       ctx.arc(this.currentProjectile.x, this.currentProjectile.y, this.currentProjectile.radius, 0, Math.PI * 2);
@@ -568,15 +507,12 @@ export class CrushTheCastle {
       ctx.strokeStyle = '#8a5f2c';
       ctx.lineWidth = 1.5;
       ctx.stroke();
-
-      // Glow
       ctx.beginPath();
       ctx.arc(this.currentProjectile.x, this.currentProjectile.y, this.currentProjectile.radius * 2.5, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(255, 180, 84, 0.15)';
       ctx.fill();
     }
 
-    // Aiming line
     if (this.status === 'aiming' && this.ammo > 0) {
       const power = this.aimPower * 500;
       ctx.save();
@@ -594,19 +530,18 @@ export class CrushTheCastle {
 
     this.particles.render(ctx);
 
-    // HUD
     ctx.fillStyle = COLORS.inkDim;
     ctx.font = '14px monospace';
     ctx.textBaseline = 'top';
-    ctx.fillText(`Oleada: ${this.wave}`, 10, 10);
-    ctx.fillText(`Puntuación: ${this.score}`, 10, 28);
+    ctx.fillText(t('game.wave', { n: this.wave }), 10, 10);
+    ctx.fillText(t('crush.score', { n: this.score }), 10, 28);
     ctx.fillText(`Proyectiles: ${'●'.repeat(this.ammo)}${'○'.repeat(this.maxAmmo - this.ammo)}`, 10, 46);
+    ctx.fillText(t('game.seed', { seed: this.seedCode }), 10, 64);
 
     if (this.highscore > 0) {
-      ctx.fillText(`Récord: ${this.highscore}`, this.width / 2 - 40, 10);
+      ctx.fillText(t('crush.record', { n: this.highscore }), this.width / 2 - 40, 10);
     }
 
-    // Power indicator
     if (this.status === 'aiming' && this.ammo > 0) {
       const barX = 10;
       const barY = this.height - 40;
@@ -618,28 +553,25 @@ export class CrushTheCastle {
       ctx.fillRect(barX + 1, barY + 1, (barW - 2) * this.aimPower, barH - 2);
       ctx.fillStyle = COLORS.inkDim;
       ctx.font = '11px monospace';
-      ctx.fillText('POTENCIA', barX, barY - 14);
+      ctx.fillText(t('game.power'), barX, barY - 14);
     }
 
-    // Win/Lose overlay
     if (this.status === 'won' || this.status === 'lost') {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
       ctx.fillRect(0, 0, this.width, this.height);
-
       ctx.fillStyle = COLORS.ink;
       ctx.font = 'bold 28px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-
       if (this.status === 'won') {
-        ctx.fillText('¡CASTILLO DESTRUIDO!', this.width / 2, this.height / 2 - 30);
+        ctx.fillText(t('crush.victory'), this.width / 2, this.height / 2 - 30);
         ctx.font = '16px monospace';
-        ctx.fillText('Click o Espacio para siguiente oleada', this.width / 2, this.height / 2 + 20);
+        ctx.fillText(t('crush.nextWave'), this.width / 2, this.height / 2 + 20);
       } else {
-        ctx.fillText('GAME OVER', this.width / 2, this.height / 2 - 30);
+        ctx.fillText(t('game.gameOver'), this.width / 2, this.height / 2 - 30);
         ctx.font = '16px monospace';
-        ctx.fillText(`Quedan ${this.soldiers.filter(s => s.alive).length} soldados en pie`, this.width / 2, this.height / 2 + 20);
-        ctx.fillText('Click o Espacio para reiniciar', this.width / 2, this.height / 2 + 45);
+        ctx.fillText(t('crush.soldiersLeft', { n: this.soldiers.filter(s => s.alive).length }), this.width / 2, this.height / 2 + 20);
+        ctx.fillText(t('game.restart'), this.width / 2, this.height / 2 + 45);
       }
       ctx.textAlign = 'left';
     }
@@ -649,11 +581,9 @@ export class CrushTheCastle {
     const cx = this.catapult.x;
     const cy = this.catapult.y;
 
-    // Base
     ctx.fillStyle = '#4a3520';
     ctx.fillRect(cx - 18, cy - 5, 36, 10);
 
-    // Wheels
     ctx.beginPath();
     ctx.arc(cx - 12, cy + 8, 5, 0, Math.PI * 2);
     ctx.fillStyle = '#3a2510';
@@ -662,7 +592,6 @@ export class CrushTheCastle {
     ctx.arc(cx + 12, cy + 8, 5, 0, Math.PI * 2);
     ctx.fill();
 
-    // Arm (rotates based on aim angle if aiming)
     const armAngle = this.status === 'aiming' ? this.aimAngle : -Math.PI / 4;
     ctx.save();
     ctx.translate(cx, cy - 5);
@@ -671,7 +600,6 @@ export class CrushTheCastle {
     ctx.fillStyle = '#5a4530';
     ctx.fillRect(-3, -30, 6, 30);
 
-    // Cup at end
     ctx.fillStyle = '#6b4a2e';
     ctx.beginPath();
     ctx.arc(0, -32, 6, 0, Math.PI * 2);
@@ -679,11 +607,9 @@ export class CrushTheCastle {
 
     ctx.restore();
 
-    // Side structure
     ctx.fillStyle = '#3a2510';
     ctx.fillRect(cx - 3, cy - 12, 6, 12);
 
-    // Stone ammo next to catapult
     ctx.beginPath();
     ctx.arc(cx + 25, cy + 3, 5, 0, Math.PI * 2);
     ctx.fillStyle = '#5a5a6a';

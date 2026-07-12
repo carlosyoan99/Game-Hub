@@ -1,6 +1,11 @@
 import { InputManager } from '../../engine/InputManager.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { pointInRect } from '../../engine/CollisionUtils.js';
+import { wrapText } from '../../engine/wrapText.js';
+import { AudioManager } from '../../engine/AudioManager.js';
+import { HapticManager } from '../../engine/HapticManager.js';
+import { SeededRandom } from '../../engine/SeededRandom.js';
+import { t } from '../../engine/i18n.js';
 
 /**
  * Stick RPG (versión simple)
@@ -21,81 +26,72 @@ const MAX_ENERGY = 100;
 const START_MONEY = 20;
 const SLEEP_ENERGY_RESTORE = 100;
 const STARTING_DAY = 1;
+const MAX_DAYS = 14;
 
 // Escenas
 const SCENES = {
-  home: {
-    name: '🏠 Casa',
-    subtitle: 'Tu hogar — descansa y recupérate',
-    actions: [
-      { id: 'sleep', label: '😴 Dormir (recupera energía → día siguiente)', energyCost: 0 },
-      { id: 'home_read', label: '📖 Leer revistas viejas (+1 inteligencia)', energyCost: 15 },
-    ],
-    npcDialogue: 'Mamá: "¡Hola, cariño! ¿Has estado comiendo bien?"',
-  },
-  streets: {
-    name: '🏙️ Calles',
-    subtitle: 'El centro de la ciudad — conecta con todo',
-    actions: [
-      { id: 'walk', label: '🚶 Caminar (+1 carisma)', energyCost: 10 },
-      { id: 'panhandle', label: '🪙 Pedir monedas (+$2-$5)', energyCost: 20 },
-    ],
-    npcDialogue: 'Extraño: "Oye, ¿tienes hora? ... Bah, da igual."',
-  },
-  gym: {
-    name: '💪 Gimnasio',
-    subtitle: 'Pesa, corre, suda — todo duele',
-    actions: [
-      { id: 'light_weights', label: '🏋️ Pesas ligeras (+1 fuerza, $0)', energyCost: 25 },
-      { id: 'heavy_weights', label: '🏋️‍♂️ Pesas pesadas (+2 fuerza, $0)', energyCost: 40 },
-      { id: 'cardio', label: '🏃 Cardio (+1 fuerza, +1 carisma)', energyCost: 20 },
-    ],
-    npcDialogue: 'Entrenador: "¡Sin dolor no hay ganancia! Bueno, tampoco exageres."',
-  },
-  library: {
-    name: '📚 Biblioteca',
-    subtitle: 'Silencio — el conocimiento espera',
-    actions: [
-      { id: 'read_book', label: '📕 Leer un libro (+2 inteligencia)', energyCost: 20 },
-      { id: 'study', label: '✏️ Estudiar (+3 inteligencia)', energyCost: 35 },
-      { id: 'research', label: '🔍 Investigar (+1 inteligencia, +$5)', energyCost: 25 },
-    ],
-    npcDialogue: 'Bibliotecaria: "Shhh... Este libro sobre bootstraping es fascinante."',
-  },
-  job: {
-    name: '💼 Trabajo',
-    subtitle: 'Gana dinero — la rutina diaria',
-    actions: [
-      { id: 'work_part', label: '🛠️ Trabajo parcial (+$15)', energyCost: 30 },
-      { id: 'work_full', label: '🔨 Trabajo completo (+$25)', energyCost: 50 },
-      { id: 'overtime', label: '⏰ Horas extra (+$40)', energyCost: 70 },
-    ],
-    npcDialogue: 'Jefe: "Buen trabajo hoy. No llegues tarde mañana."',
-  },
-  shop: {
-    name: '🛒 Tienda',
-    subtitle: 'Gasta tu dinero... o solo mira',
-    actions: [
-      { id: 'buy_food', label: '🥪 Comprar comida (+10 energía, -$5)', energyCost: 0 },
-      { id: 'buy_drink', label: '🧃 Comprar bebida (+5 energía, -$3)', energyCost: 0 },
-      { id: 'buy_vitamins', label: '💊 Vitaminas (+2 a todas las stats)', energyCost: 0, moneyCost: 20 },
-      { id: 'buy_books', label: '📚 Libros usados (+3 inteligencia)', energyCost: 0, moneyCost: 8 },
-    ],
-    npcDialogue: 'Dependiente: "Tenemos ofertas hoy. Bueno, siempre tenemos las mismas ofertas."',
-  },
+  home: { nameKey: 'stick.scene.home', subtitleKey: 'stick.scene.subHome', actions: [
+    { id: 'sleep', labelKey: 'stick.action.sleep', energyCost: 0 },
+    { id: 'home_read', labelKey: 'stick.action.homeRead', energyCost: 15 },
+  ], npcDialogueKey: 'stick.npc.home' },
+  streets: { nameKey: 'stick.scene.streets', subtitleKey: 'stick.scene.subStreets', actions: [
+    { id: 'walk', labelKey: 'stick.action.walk', energyCost: 10 },
+    { id: 'panhandle', labelKey: 'stick.action.panhandle', energyCost: 20 },
+  ], npcDialogueKey: 'stick.npc.streets' },
+  gym: { nameKey: 'stick.scene.gym', subtitleKey: 'stick.scene.subGym', actions: [
+    { id: 'light_weights', labelKey: 'stick.action.lightWeights', energyCost: 25 },
+    { id: 'heavy_weights', labelKey: 'stick.action.heavyWeights', energyCost: 40 },
+    { id: 'cardio', labelKey: 'stick.action.cardio', energyCost: 20 },
+  ], npcDialogueKey: 'stick.npc.gym' },
+  library: { nameKey: 'stick.scene.library', subtitleKey: 'stick.scene.subLibrary', actions: [
+    { id: 'read_book', labelKey: 'stick.action.readBook', energyCost: 20 },
+    { id: 'study', labelKey: 'stick.action.study', energyCost: 35 },
+    { id: 'research', labelKey: 'stick.action.research', energyCost: 25 },
+  ], npcDialogueKey: 'stick.npc.library' },
+  job: { nameKey: 'stick.scene.job', subtitleKey: 'stick.scene.subJob', actions: [
+    { id: 'work_part', labelKey: 'stick.action.workPart', energyCost: 30 },
+    { id: 'work_full', labelKey: 'stick.action.workFull', energyCost: 50 },
+    { id: 'overtime', labelKey: 'stick.action.overtime', energyCost: 70 },
+  ], npcDialogueKey: 'stick.npc.job' },
+  shop: { nameKey: 'stick.scene.shop', subtitleKey: 'stick.scene.subShop', actions: [
+    { id: 'buy_food', labelKey: 'stick.action.buyFood', energyCost: 0 },
+    { id: 'buy_drink', labelKey: 'stick.action.buyDrink', energyCost: 0 },
+    { id: 'buy_vitamins', labelKey: 'stick.action.buyVitamins', energyCost: 0, moneyCost: 20 },
+    { id: 'buy_books', labelKey: 'stick.action.buyBooks', energyCost: 0, moneyCost: 8 },
+  ], npcDialogueKey: 'stick.npc.shop' },
+  park: { nameKey: 'stick.scene.park', subtitleKey: 'stick.scene.subPark', actions: [
+    { id: 'park_relax', labelKey: 'stick.action.parkRelax', energyCost: 15 },
+    { id: 'park_find', labelKey: 'stick.action.parkFind', energyCost: 20 },
+  ], npcDialogueKey: 'stick.npc.park' },
+  market: { nameKey: 'stick.scene.market', subtitleKey: 'stick.scene.subMarket', actions: [
+    { id: 'market_trade', labelKey: 'stick.action.marketTrade', energyCost: 25 },
+    { id: 'market_job', labelKey: 'stick.action.marketJob', energyCost: 30 },
+  ], npcDialogueKey: 'stick.npc.market' },
 };
 
 const SCENE_KEYS = Object.keys(SCENES);
 
-// Conexiones entre escenas (grafo simple)
 const SCENE_CONNECTIONS = {
   home: ['streets'],
-  streets: ['home', 'gym', 'library', 'job', 'shop'],
+  streets: ['home', 'gym', 'library', 'job', 'shop', 'park', 'market'],
   gym: ['streets'],
   library: ['streets'],
   job: ['streets'],
   shop: ['streets'],
+  park: ['streets'],
+  market: ['streets'],
 };
+
+// Eventos aleatorios
+const RANDOM_EVENTS = [
+  { textKey: 'stick.event.goldCoin', effect: (p) => { p.money += 10; } },
+  { textKey: 'stick.event.rain', effect: null },
+  { textKey: 'stick.event.music', effect: (p) => { p.charisma += 1; } },
+  { textKey: 'stick.event.newspaper', effect: (p) => { p.intelligence += 1; } },
+  { textKey: 'stick.event.dog', effect: (p) => { p.strength += 1; } },
+  { textKey: 'stick.event.gift', effect: (p) => { p.money += 5; } },
+  { textKey: 'stick.event.nightmare', effect: (p) => { p.energy = Math.max(0, p.energy - 10); } },
+];
 
 // ─── Game Class ────────────────────────────────────────────────────────
 
@@ -117,9 +113,12 @@ export class StickRPG {
   handleResize(width, height) {
     this.width = width;
     this.height = height;
+    this._updateSceneActions();
   }
 
   _restart() {
+    this.rng = new SeededRandom();
+    this.seedCode = SeededRandom.encode(this.rng.seed);
     this.player = {
       energy: MAX_ENERGY,
       money: START_MONEY,
@@ -167,7 +166,7 @@ export class StickRPG {
 
     this.navButtons = connections.map((sceneKey, i) => ({
       sceneKey,
-      label: SCENES[sceneKey].name,
+      label: SCENES[sceneKey].nameKey,
       x: navStartX + i * (navBtnW + navGap),
       y: navY,
       width: navBtnW,
@@ -220,13 +219,13 @@ export class StickRPG {
 
     // Compras: verificamos dinero
     if (action.moneyCost && this.player.money < action.moneyCost) {
-      this._showDialogue('❌ No tienes suficiente dinero.');
+      this._showDialogue(t('stick.dialogue.noMoney'));
       return;
     }
 
     // Verificar energía
     if (energyCost > this.player.energy) {
-      this._showDialogue('😴 Demasiado cansado. Vuelve a casa a dormir.');
+      this._showDialogue(t('stick.dialogue.tired'));
       return;
     }
 
@@ -237,81 +236,89 @@ export class StickRPG {
       case 'sleep':
         this.player.energy = Math.min(MAX_ENERGY, this.player.energy + SLEEP_ENERGY_RESTORE);
         this.player.day += 1;
-        this._showDialogue(`☀️ Día ${this.player.day}. ¡ Energía al máximo!`);
+        this._showDialogue(t('stick.dialogue.sleep', { n: this.player.day }));
+        AudioManager.sfx({ type: 'powerup', volume: 0.3 });
         this._checkWinCondition();
         break;
       case 'home_read':
         this.player.intelligence += 1;
-        this._showDialogue('📖 Encontraste un artículo fascinante sobre... bueno, algo.');
+        AudioManager.sfx({ type: 'select', volume: 0.25 });
+        this._showDialogue(t('stick.dialogue.homeRead'));
         break;
       case 'walk':
         this.player.charisma += 1;
-        this._showDialogue('🚶 Saliste a caminar. Saludaste a 3 personas.');
+        this._showDialogue(t('stick.dialogue.walk'));
         break;
       case 'panhandle':
-        const earned = Math.floor(Math.random() * 4) + 2;
+        const earned = this.rng.nextInt(2, 5);
         this.player.money += earned;
-        this._showDialogue(`🪙 Alguien te dio $${earned}. No es mucho, pero algo es algo.`);
+        AudioManager.sfx({ type: 'coin', volume: 0.25 });
+        this._showDialogue(t('stick.dialogue.panhandle', { n: earned }));
         break;
       case 'light_weights':
         this.player.strength += 1;
-        this._showDialogue('🏋️ Pesas ligeras. Mañana dolerá.');
+        this._showDialogue(t('stick.dialogue.lightWeights'));
         break;
       case 'heavy_weights':
         this.player.strength += 2;
-        this._showDialogue('🏋️‍♂️ ¡Casi no puedes levantar los brazos! +2 fuerza.');
+        this._showDialogue(t('stick.dialogue.heavyWeights'));
         break;
       case 'cardio':
         this.player.strength += 1;
         this.player.charisma += 1;
-        this._showDialogue('🏃 Corriste 20 minutos. Te sientes más fuerte y con más confianza.');
+        this._showDialogue(t('stick.dialogue.cardio'));
         break;
       case 'read_book':
         this.player.intelligence += 2;
-        this._showDialogue('📕 Libro interesante. +2 inteligencia.');
+        this._showDialogue(t('stick.dialogue.readBook'));
         break;
       case 'study':
         this.player.intelligence += 3;
-        this._showDialogue('✏️ Estudio intenso. +3 inteligencia.');
+        this._showDialogue(t('stick.dialogue.study'));
         break;
       case 'research':
         this.player.intelligence += 1;
         this.player.money += 5;
-        this._showDialogue('🔍 Investigación remunerada: +1 inteligencia, +$5.');
+        this._showDialogue(t('stick.dialogue.research'));
         break;
       case 'work_part':
         this.player.money += 15;
-        this._showDialogue('🛠️ $15 por medio día de trabajo.');
+        this._showDialogue(t('stick.dialogue.workPart'));
         break;
       case 'work_full':
         this.player.money += 25;
-        this._showDialogue('🔨 Jornada completa: $25.');
+        this._showDialogue(t('stick.dialogue.workFull'));
         break;
       case 'overtime':
         this.player.money += 40;
-        this._showDialogue('⏰ Horas extra: $40. Estás agotado.');
+        this._showDialogue(t('stick.dialogue.overtime'));
         break;
       case 'buy_food':
         this.player.energy = Math.min(MAX_ENERGY, this.player.energy + 10);
         this.player.money -= 5;
-        this._showDialogue('🥪 Comida comprada. +10 energía, -$5.');
+        AudioManager.sfx({ type: 'select', volume: 0.25 });
+        this._showDialogue(t('stick.dialogue.buyFood'));
         break;
       case 'buy_drink':
         this.player.energy = Math.min(MAX_ENERGY, this.player.energy + 5);
         this.player.money -= 3;
-        this._showDialogue('🧃 Bebida energética. +5 energía, -$3.');
+        AudioManager.sfx({ type: 'select', volume: 0.25 });
+        this._showDialogue(t('stick.dialogue.buyDrink'));
         break;
       case 'buy_vitamins':
         this.player.money -= 20;
         this.player.strength += 2;
         this.player.intelligence += 2;
         this.player.charisma += 2;
-        this._showDialogue('💊 Vitaminas: +2 a todas las stats.');
+        AudioManager.sfx({ type: 'coin', volume: 0.35 });
+        HapticManager.vibrate('coin');
+        this._showDialogue(t('stick.dialogue.buyVitamins'));
         break;
       case 'buy_books':
         this.player.money -= 8;
         this.player.intelligence += 3;
-        this._showDialogue('📚 Libros usados: +3 inteligencia.');
+        AudioManager.sfx({ type: 'coin', volume: 0.25 });
+        this._showDialogue(t('stick.dialogue.buyBooks'));
         break;
     }
 
@@ -325,16 +332,25 @@ export class StickRPG {
 
   _goToScene(sceneKey) {
     this.currentScene = sceneKey;
-    this.dialogueText = SCENES[sceneKey].npcDialogue;
+    this.dialogueText = t(SCENES[sceneKey].npcDialogueKey);
     this.dialogueTimer = 3.5;
     this._updateSceneActions();
   }
 
   _checkWinCondition() {
-    // Victoria: sobrevivir 7 días o alcanzar stats altas
+    // Evento aleatorio al despertar
+    if (this.rng.next() < 0.4) {
+      const evt = RANDOM_EVENTS[this.rng.nextInt(0, RANDOM_EVENTS.length - 1)];
+      if (evt.effect) evt.effect(this.player);
+      this._showDialogue(t(evt.textKey));
+    }
+
+    // Victoria: sobrevivir 14 días o alcanzar stats altas
     const statsTotal = this.player.strength + this.player.intelligence + this.player.charisma;
-    if (this.player.day >= 7 || statsTotal >= 30) {
+    if (this.player.day >= MAX_DAYS || statsTotal >= 40) {
       this.status = 'won';
+      AudioManager.sfx({ type: 'powerup', volume: 0.6 });
+      HapticManager.vibrate('powerup');
       if (this.player.day > this.bestDay) {
         this.bestDay = this.player.day;
         this.storage.set('bestDay', this.bestDay);
@@ -347,7 +363,8 @@ export class StickRPG {
     // Pero si el dinero es negativo (no debería pasar, pero por si acaso)
     if (this.player.money < 0) {
       this.status = 'lost';
-      this.gameOverReason = '💸 Te quedaste sin dinero.';
+      this.gameOverReason = t('stick.dialogue.bankrupt');
+      AudioManager.sfx({ type: 'hit', volume: 0.5 });
     }
   }
 
@@ -369,15 +386,15 @@ export class StickRPG {
     ctx.font = 'bold 18px monospace';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillText(scene.name, 12, 10);
+    ctx.fillText(t(scene.nameKey), 12, 10);
 
     ctx.fillStyle = '#7c8894';
     ctx.font = '11px monospace';
-    ctx.fillText(scene.subtitle, 12, 34);
+    ctx.fillText(t(scene.subtitleKey), 12, 34);
 
     // Stats en la esquina superior derecha
     const p = this.player;
-    const statsText = `Día ${p.day}  ⚡${p.energy}/${MAX_ENERGY}  💰$${p.money}`;
+    const statsText = `${t('stick.label.day', { n: p.day })}  ⚡${p.energy}/${MAX_ENERGY}  ${t('stick.label.money', { n: p.money })}`;
     ctx.fillStyle = '#9aa7b2';
     ctx.font = '12px monospace';
     ctx.textAlign = 'right';
@@ -389,6 +406,9 @@ export class StickRPG {
     ctx.fillText(`💪${p.strength}  📖${p.intelligence}  🗣️${p.charisma}`, this.width - 12, 30);
 
     ctx.textAlign = 'left';
+    ctx.font = '10px monospace';
+    ctx.fillStyle = '#7c8894';
+    ctx.fillText(t('game.seed', { seed: this.seedCode }), 12, 48);
 
     // ── Línea decorativa ──
     ctx.strokeStyle = '#1e2731';
@@ -410,18 +430,18 @@ export class StickRPG {
       // Pequeño indicador de quién habla
       ctx.fillStyle = '#ffb454';
       ctx.font = '10px monospace';
-      ctx.fillText('NPC:', 18, dlgY + 6);
+      ctx.fillText(t('stick.label.npc'), 18, dlgY + 6);
 
       ctx.fillStyle = '#e7edf3';
       ctx.font = '13px monospace';
-      this._wrapText(ctx, this.dialogueText, 18, dlgY + 22, this.width - 40, 18);
+      wrapText(ctx, this.dialogueText, 18, dlgY + 22, this.width - 40, 18);
     }
 
     // ── Acciones ──
     const firstActionY = this.height * 0.35;
     ctx.fillStyle = '#7c8894';
     ctx.font = '10px monospace';
-    ctx.fillText('— ACCIONES —', 12, firstActionY - 12);
+    ctx.fillText(t('stick.label.actions'), 12, firstActionY - 12);
 
     for (const btn of this.actionButtons) {
       const action = btn.action;
@@ -445,7 +465,7 @@ export class StickRPG {
       ctx.font = '12px monospace';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(action.label, btn.x + 10, btn.y + btn.height / 2);
+      ctx.fillText(t(action.labelKey), btn.x + 10, btn.y + btn.height / 2);
 
       // Coste a la derecha
       const costs = [];
@@ -471,7 +491,7 @@ export class StickRPG {
     ctx.font = '10px monospace';
     ctx.textAlign = 'center';
     const navLabelY = this.navButtons.length > 0 ? this.navButtons[0].y - 12 : this.height - 30;
-    ctx.fillText('— IR A —', this.width / 2, navLabelY);
+    ctx.fillText(t('stick.label.go'), this.width / 2, navLabelY);
     ctx.textAlign = 'left';
 
     for (const btn of this.navButtons) {
@@ -485,7 +505,7 @@ export class StickRPG {
       ctx.font = '10px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(btn.label, btn.x + btn.width / 2, btn.y + btn.height / 2);
+      ctx.fillText(t(btn.label), btn.x + btn.width / 2, btn.y + btn.height / 2);
     }
     ctx.textAlign = 'left';
   }
@@ -497,9 +517,9 @@ export class StickRPG {
     ctx.textBaseline = 'alphabetic';
 
     if (this.status === 'won') {
-      ctx.fillText('🏆 ¡RPG COMPLETADO!', this.width / 2, this.height / 2 - 50);
+      ctx.fillText(t('stick.end.won'), this.width / 2, this.height / 2 - 50);
     } else {
-      ctx.fillText('GAME OVER', this.width / 2, this.height / 2 - 50);
+      ctx.fillText(t('stick.end.lost'), this.width / 2, this.height / 2 - 50);
       if (this.gameOverReason) {
         ctx.font = '16px monospace';
         ctx.fillText(this.gameOverReason, this.width / 2, this.height / 2 - 20);
@@ -509,31 +529,15 @@ export class StickRPG {
     const p = this.player;
     ctx.font = '14px monospace';
     ctx.fillText(
-      `Día ${p.day} | 💪${p.strength} 📖${p.intelligence} 🗣️${p.charisma} | 💰$${p.money}`,
+      `${t('stick.label.day', { n: p.day })} | 💪${p.strength} 📖${p.intelligence} 🗣️${p.charisma} | ${t('stick.label.money', { n: p.money })}`,
       this.width / 2, this.height / 2 + 8,
     );
-    ctx.fillText(`Mejor día alcanzado: ${this.bestDay}`, this.width / 2, this.height / 2 + 30);
-    ctx.fillText('Click o Espacio para reiniciar', this.width / 2, this.height / 2 + 56);
+    ctx.fillText(t('stick.end.bestDay', { n: this.bestDay }), this.width / 2, this.height / 2 + 30);
+    ctx.fillText(t('game.restart'), this.width / 2, this.height / 2 + 56);
     ctx.textAlign = 'left';
   }
 
-  _wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-    const words = text.split(' ');
-    let line = '';
-    let offsetY = y;
 
-    for (const word of words) {
-      const testLine = line ? `${line} ${word}` : word;
-      if (ctx.measureText(testLine).width > maxWidth && line) {
-        ctx.fillText(line, x, offsetY);
-        line = word;
-        offsetY += lineHeight;
-      } else {
-        line = testLine;
-      }
-    }
-    if (line) ctx.fillText(line, x, offsetY);
-  }
 
   destroy() {
     this.input.detach();

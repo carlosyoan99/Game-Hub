@@ -7,7 +7,7 @@
 export class InputManager {
   constructor() {
     this.keys = new Set();
-    this.keysPressedThisFrame = new Set();
+    this.keysJustPressed = new Set();
     // -1,-1 como sentinel de "el ratón aún no se ha movido dentro del
     // canvas": 0,0 es una posición válida y no debe confundirse con eso
     // (los juegos que usan mouse.x/y como control comprueban >= 0).
@@ -16,7 +16,7 @@ export class InputManager {
     this._canvas = null;
 
     this._onKeyDown = (e) => {
-      if (!this.keys.has(e.code)) this.keysPressedThisFrame.add(e.code);
+      if (!this.keys.has(e.code)) this.keysJustPressed.add(e.code);
       this.keys.add(e.code);
     };
     this._onKeyUp = (e) => this.keys.delete(e.code);
@@ -44,6 +44,7 @@ export class InputManager {
       if (e.touches.length === 0) return;
       this._onMouseMove(e.touches[0]);
       this._onMouseDown();
+      e.preventDefault();
     };
     this._onTouchEnd = () => this._onMouseUp();
   }
@@ -55,7 +56,7 @@ export class InputManager {
     canvas.addEventListener('mousemove', this._onMouseMove);
     canvas.addEventListener('mousedown', this._onMouseDown);
     window.addEventListener('mouseup', this._onMouseUp);
-    canvas.addEventListener('touchstart', this._onTouchStart, { passive: true });
+    canvas.addEventListener('touchstart', this._onTouchStart, { passive: false });
     canvas.addEventListener('touchmove', this._onTouchMove, { passive: false });
     canvas.addEventListener('touchend', this._onTouchEnd);
   }
@@ -79,12 +80,12 @@ export class InputManager {
   }
 
   wasPressed(code) {
-    return this.keysPressedThisFrame.has(code);
+    return this.keysJustPressed.has(code);
   }
 
   /** Llamar al final de cada frame (lo hace el juego, no el engine, a propósito). */
   endFrame() {
-    this.keysPressedThisFrame.clear();
+    this.keysJustPressed.clear();
     this.mouse.clickedThisFrame = false;
   }
 }

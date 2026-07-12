@@ -62,36 +62,34 @@ export class Tilemap {
     // movimiento rápido), sobrescribir con la última encontrada podría
     // "teletransportar" la entidad a través de la fila en vez de
     // detenerla en la primera baldosa que realmente bloquea el paso.
-    let correction = null;
+    let bestCorrection = null;
+    // Reusar el mismo objeto para evitar presión de GC.
+    const tileRect = { x: 0, y: 0, width: this.tileSize, height: this.tileSize };
 
     for (let row = top; row <= bottom; row++) {
       for (let col = left; col <= right; col++) {
         if (!this.isSolidTile(this.tileAt(col, row))) continue;
 
-        const tileRect = {
-          x: col * this.tileSize,
-          y: row * this.tileSize,
-          width: this.tileSize,
-          height: this.tileSize,
-        };
+        tileRect.x = col * this.tileSize;
+        tileRect.y = row * this.tileSize;
         if (!aabbIntersects(entity, tileRect)) continue;
 
         if (axis === 'x') {
           const candidate = velocity > 0 ? tileRect.x - entity.width : tileRect.x + this.tileSize;
-          correction = correction === null ? candidate : pickMoreRestrictive(correction, candidate, velocity);
+          bestCorrection = bestCorrection === null ? candidate : pickMoreRestrictive(bestCorrection, candidate, velocity);
           result.onWall = true;
         } else {
           const candidate = velocity > 0 ? tileRect.y - entity.height : tileRect.y + this.tileSize;
-          correction = correction === null ? candidate : pickMoreRestrictive(correction, candidate, velocity);
+          bestCorrection = bestCorrection === null ? candidate : pickMoreRestrictive(bestCorrection, candidate, velocity);
           if (velocity > 0) result.onGround = true;
           else result.onCeiling = true;
         }
       }
     }
 
-    if (correction !== null) {
-      if (axis === 'x') entity.x = correction;
-      else entity.y = correction;
+    if (bestCorrection !== null) {
+      if (axis === 'x') entity.x = bestCorrection;
+      else entity.y = bestCorrection;
     }
   }
 

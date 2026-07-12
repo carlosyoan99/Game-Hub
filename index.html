@@ -11,18 +11,114 @@
     <h1 class="topbar__logo">GAMEHUB<span>_ENGINE</span></h1>
     <div id="game-hud" class="hud" hidden>
       <span id="current-title" class="hud__title"></span>
-      <button id="back-button" class="hud__back">← Menú</button>
+      <button id="back-button" class="hud__back" data-i18n="menu.back">← Menú</button>
     </div>
+    <button id="settings-btn" class="settings-btn" aria-label="Configuración" data-i18n="settings.title">⚙️</button>
   </header>
 
   <main class="stage">
     <section id="menu" class="menu">
-      <p class="menu__eyebrow">Selecciona un juego</p>
+      <div class="menu__toolbar">
+        <p class="menu__eyebrow" data-i18n="menu.eyebrow">Selecciona un juego</p>
+        <input id="game-search" class="menu__search" type="text" placeholder="🔍 Buscar juegos..." autocomplete="off" data-i18n-placeholder="menu.searchPlaceholder" />
+      </div>
       <div id="game-grid" class="game-grid"></div>
+      <p id="search-empty" class="menu__empty" data-i18n="menu.empty" hidden>No se encontraron juegos</p>
     </section>
 
     <canvas id="game-canvas" width="900" height="540" hidden></canvas>
   </main>
+
+  <!-- ─── Settings Modal ──────────────────────────────────────────── -->
+  <div id="settings-overlay" class="settings-overlay" hidden>
+    <div class="settings-modal" role="dialog" aria-label="Configuración">
+      <div class="settings-header">
+        <h2 class="settings-title" data-i18n="settings.title">CONFIGURACIÓN</h2>
+        <button id="settings-close" class="settings-close" aria-label="Cerrar" data-i18n="settings.close">✕</button>
+      </div>
+
+      <div class="settings-body">
+        <!-- Apariencia -->
+        <div class="settings-section">
+          <p class="settings-section__label" data-i18n="settings.appearance">APARIENCIA</p>
+
+          <div class="settings-row">
+            <span class="settings-row__label" data-i18n="settings.theme">Tema</span>
+            <div class="settings-row__widget">
+              <button id="settings-theme" class="settings-toggle">
+                <span class="settings-toggle__opt" data-value="dark">🌙 OSCURO</span>
+                <span class="settings-toggle__opt" data-value="light">☀️ CLARO</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="settings-row">
+            <span class="settings-row__label" data-i18n="settings.language">Idioma</span>
+            <div class="settings-row__widget">
+              <button id="settings-language" class="settings-toggle">
+                <span class="settings-toggle__opt" data-value="es">🇪🇸 ES</span>
+                <span class="settings-toggle__opt" data-value="en">🇬🇧 EN</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="settings-row">
+            <span class="settings-row__label" data-i18n="settings.reducedMotion">Animaciones</span>
+            <div class="settings-row__widget">
+              <button id="settings-motion" class="settings-toggle">
+                <span class="settings-toggle__opt" data-value="false">▶️ NORM</span>
+                <span class="settings-toggle__opt" data-value="true">⏸️ REDUC</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Audio -->
+        <div class="settings-section">
+          <p class="settings-section__label" data-i18n="settings.audio">AUDIO</p>
+
+          <div class="settings-row">
+            <span class="settings-row__label" data-i18n="settings.masterVol">Vol. maestro</span>
+            <div class="settings-row__widget">
+              <input type="range" id="settings-master-vol" class="settings-slider" min="0" max="100" value="80" />
+              <span id="settings-master-vol-val" class="settings-slider__val">80</span>
+            </div>
+          </div>
+
+          <div class="settings-row">
+            <span class="settings-row__label" data-i18n="settings.sfxVol">Vol. SFX</span>
+            <div class="settings-row__widget">
+              <input type="range" id="settings-sfx-vol" class="settings-slider" min="0" max="100" value="100" />
+              <span id="settings-sfx-vol-val" class="settings-slider__val">100</span>
+            </div>
+          </div>
+
+          <div class="settings-row">
+            <span class="settings-row__label" data-i18n="settings.musicVol">Vol. música</span>
+            <div class="settings-row__widget">
+              <input type="range" id="settings-music-vol" class="settings-slider" min="0" max="100" value="50" />
+              <span id="settings-music-vol-val" class="settings-slider__val">50</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Háptico -->
+        <div class="settings-section">
+          <p class="settings-section__label" data-i18n="settings.haptics">HÁPTICO</p>
+
+          <div class="settings-row">
+            <span class="settings-row__label" data-i18n="settings.vibration">Vibración</span>
+            <div class="settings-row__widget">
+              <button id="settings-haptic" class="settings-toggle">
+                <span class="settings-toggle__opt" data-value="true">📳 ON</span>
+                <span class="settings-toggle__opt" data-value="false">🚫 OFF</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="src/main.js"></script>
 </body>
