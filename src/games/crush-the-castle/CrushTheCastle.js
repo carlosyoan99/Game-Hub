@@ -535,7 +535,7 @@ export class CrushTheCastle {
     ctx.textBaseline = 'top';
     ctx.fillText(t('game.wave', { n: this.wave }), 10, 10);
     ctx.fillText(t('crush.score', { n: this.score }), 10, 28);
-    ctx.fillText(`Proyectiles: ${'●'.repeat(this.ammo)}${'○'.repeat(this.maxAmmo - this.ammo)}`, 10, 46);
+    ctx.fillText(t('crush.ammo') + ` ${'●'.repeat(this.ammo)}${'○'.repeat(this.maxAmmo - this.ammo)}`, 10, 46);
     ctx.fillText(t('game.seed', { seed: this.seedCode }), 10, 64);
 
     if (this.highscore > 0) {

@@ -67,7 +67,7 @@ export class Bowman {
       angle: -Math.PI / 4,
       power: 0.5,
       color: '#4a9eff',
-      label: 'TÚ',
+      label: 'bowman.turnPlayer',
       facingRight: true,
     };
 
@@ -79,7 +79,7 @@ export class Bowman {
       angle: Math.PI * 0.75,
       power: 0.5,
       color: '#e74c3c',
-      label: 'BOT',
+      label: 'bowman.turnBot',
       facingRight: false,
     };
 
@@ -586,8 +586,7 @@ export class Bowman {
     ctx.fillText(`${hp}`, x, barY + barH + 3);
 
     ctx.fillStyle = isActive ? '#ffb454' : '#7c8894';
-    ctx.font = '11px monospace';
-    ctx.fillText(archer.label, x, barY + barH + 15);
+    ctx.font = '11px monospace';      ctx.fillText(t(archer.label), x, barY + barH + 15);
     ctx.textAlign = 'left';
   }
 

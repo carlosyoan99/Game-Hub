@@ -598,7 +598,7 @@ export class TerritoryWar {
 
       ctx.fillStyle = COLORS.inkDim;
       ctx.font = '8px monospace';
-      ctx.fillText(unit.nameKey, pos.x, barY + 9);
+      ctx.fillText(t(unit.nameKey), pos.x, barY + 9);
       ctx.textAlign = 'left';
     }
 

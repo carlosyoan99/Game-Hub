@@ -4,6 +4,7 @@ import { pointInRect } from '../../engine/CollisionUtils.js';
 import { wrapText } from '../../engine/wrapText.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
+import { t } from '../../engine/i18n.js';
 
 const START_LIVES = 3;
 const FEEDBACK_DURATION = 0.7; // segundos que se muestra "¡Correcto!"/"¡Incorrecto!" antes de continuar
@@ -268,8 +269,7 @@ export class TrickQuiz {
 
     ctx.font = '15px monospace';
     ctx.fillText(`Llegaste a la pregunta ${this.questionIndex + 1} de ${QUESTIONS.length}`, this.width / 2, this.height / 2 + 4);
-    ctx.fillText(`Mejor progreso: pregunta ${this.bestQuestion + 1}`, this.width / 2, this.height / 2 + 26);
-    ctx.fillText('Click o Espacio para reiniciar', this.width / 2, this.height / 2 + 52);
+    ctx.fillText(`Mejor progreso: pregunta ${this.bestQuestion + 1}`, this.width / 2, this.height / 2 + 26);      ctx.fillText(t('game.restart'), this.width / 2, this.height / 2 + 52);
     ctx.textAlign = 'left';
   }
 

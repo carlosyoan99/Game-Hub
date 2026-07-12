@@ -1225,9 +1225,9 @@ export class SwordsAndSouls {
         ctx.fillStyle = '#9aa7b2';
         ctx.font = 'bold 14px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText('🏃 ¡Haz clic para mantener el ritmo!', this.width / 2, this.height * 0.4);
+        ctx.fillText(t('swords.trainingClickRhythm'), this.width / 2, this.height * 0.4);
         ctx.font = '11px monospace';
-        ctx.fillText('Clickea lo más rápido que puedas', this.width / 2, this.height * 0.45);
+        ctx.fillText(t('swords.trainingClickFast'), this.width / 2, this.height * 0.45);
         ctx.textAlign = 'left';
         break;
     }

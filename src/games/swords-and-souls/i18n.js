@@ -46,5 +46,7 @@ export default {
   'swords.shopFree':           { es: 'GRATIS',                         en: 'FREE' },
   'swords.shopCost':           { es: '${n} oro',                      en: '${n} gold' },
   'swords.shopCategories':     { es: '← Categorías',                   en: '← Categories' },
+  'swords.trainingClickRhythm':  { es: '🏃 ¡Haz clic para mantener el ritmo!', en: '🏃 Click to keep the rhythm!' },
+  'swords.trainingClickFast':    { es: 'Clickea lo más rápido que puedas',    en: 'Click as fast as you can' },
   'swords.back':               { es: '← VOLVER',                      en: '← BACK' },
 };

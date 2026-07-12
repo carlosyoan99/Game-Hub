@@ -2,6 +2,7 @@ import { InputManager } from '../../engine/InputManager.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { Vector2 } from '../../engine/Vector2.js';
 import { circleIntersects } from '../../engine/CollisionUtils.js';
+import { ParticleSystem } from '../../engine/ParticleSystem.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
@@ -55,6 +56,7 @@ export class Asteroids {
     this.lives = 3;
     this.wave = 1;
     this.fireCooldown = 0;
+    this.particles = new ParticleSystem(80);
     this.status = 'playing';
     this._spawnWave();
   }
@@ -97,7 +99,7 @@ export class Asteroids {
       fireCooldown: 1.5 - Math.min(this.wave * 0.1, 0.8),
       hp: 2 + Math.floor((this.wave - 3) / 2),
       alive: true,
-      shape: generateAsteroidShape(8),
+      shape: generateAsteroidShape(this.rng),
     });
   }
 
@@ -416,7 +418,7 @@ export class Asteroids {
         ctx.fillText(t('game.score', { n: this.score }), this.width / 2, this.height / 2 + 5);
         ctx.fillText(t('game.restart'), this.width / 2, this.height / 2 + 30);
       } else {
-        ctx.fillText('GAME OVER', this.width / 2, this.height / 2 - 20);
+        ctx.fillText(t('game.gameOver'), this.width / 2, this.height / 2 - 20);
         ctx.font = '16px monospace';
         ctx.fillText(t('game.restart'), this.width / 2, this.height / 2 + 15);
       }

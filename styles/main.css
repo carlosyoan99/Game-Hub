@@ -385,6 +385,14 @@ body {
    Settings Modal – retro NES
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/* Forzar que el atributo hidden funcione incluso con display:flex/grid */
+.settings-overlay[hidden],
+.hud[hidden],
+#game-canvas[hidden],
+#search-empty[hidden] {
+  display: none !important;
+}
+
 .settings-overlay {
   position: fixed;
   inset: 0;

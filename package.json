@@ -8,6 +8,7 @@
     "test": "node smoke_test.mjs"
   },
   "devDependencies": {
+    "eslint": "^10.7.0",
     "jsdom": "^29.1.1"
   }
 }
