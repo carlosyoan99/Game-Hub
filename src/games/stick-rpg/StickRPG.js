@@ -1,4 +1,5 @@
-import { InputManager } from '../../engine/InputManager.js';
+import { GameBase } from '../../engine/GameBase.js';
+import { renderOverlay } from '../../engine/GameUI.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { pointInRect } from '../../engine/CollisionUtils.js';
 import { wrapText } from '../../engine/wrapText.js';
@@ -95,24 +96,16 @@ const RANDOM_EVENTS = [
 
 // ─── Game Class ────────────────────────────────────────────────────────
 
-export class StickRPG {
+export class StickRPG extends GameBase {
   init(engine) {
-    this.engine = engine;
-    this.canvas = engine.canvas;
-    this.input = new InputManager();
-    this.input.attach(this.canvas);
-    this.storage = new StorageManager('stick-rpg');
-
-    this.width = this.canvas.width;
-    this.height = this.canvas.height;
+    super.init(engine, 'stick-rpg');
     this.bestDay = this.storage.get('bestDay', 0);
 
     this._restart();
   }
 
   handleResize(width, height) {
-    this.width = width;
-    this.height = height;
+    super.handleResize(width, height);
     this._updateSceneActions();
   }
 
@@ -252,7 +245,7 @@ export class StickRPG {
       case 'panhandle':
         const earned = this.rng.nextInt(2, 5);
         this.player.money += earned;
-        AudioManager.sfx({ type: 'coin', volume: 0.25 });
+        AudioManager.sfx({ type: 'stick_buy', volume: 0.25 });
         this._showDialogue(t('stick.dialogue.panhandle', { n: earned }));
         break;
       case 'light_weights':
@@ -310,14 +303,14 @@ export class StickRPG {
         this.player.strength += 2;
         this.player.intelligence += 2;
         this.player.charisma += 2;
-        AudioManager.sfx({ type: 'coin', volume: 0.35 });
+        AudioManager.sfx({ type: 'stick_buy', volume: 0.35 });
         HapticManager.vibrate('coin');
         this._showDialogue(t('stick.dialogue.buyVitamins'));
         break;
       case 'buy_books':
         this.player.money -= 8;
         this.player.intelligence += 3;
-        AudioManager.sfx({ type: 'coin', volume: 0.25 });
+        AudioManager.sfx({ type: 'stick_buy', volume: 0.25 });
         this._showDialogue(t('stick.dialogue.buyBooks'));
         break;
     }
@@ -364,7 +357,7 @@ export class StickRPG {
     if (this.player.money < 0) {
       this.status = 'lost';
       this.gameOverReason = t('stick.dialogue.bankrupt');
-      AudioManager.sfx({ type: 'hit', volume: 0.5 });
+      AudioManager.sfx({ type: 'stick_fight', volume: 0.5 });
     }
   }
 
@@ -408,7 +401,7 @@ export class StickRPG {
     ctx.textAlign = 'left';
     ctx.font = '10px monospace';
     ctx.fillStyle = '#7c8894';
-    ctx.fillText(t('game.seed', { seed: this.seedCode }), 12, 48);
+
 
     // ── Línea decorativa ──
     ctx.strokeStyle = '#1e2731';
@@ -511,35 +504,30 @@ export class StickRPG {
   }
 
   _renderEndScreen(ctx) {
-    ctx.fillStyle = '#e7edf3';
-    ctx.font = 'bold 26px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'alphabetic';
+    const title = this.status === 'won' ? t('stick.end.won') : t('stick.end.lost');
+    const subtitle = this.gameOverReason || null;
+    renderOverlay(ctx, {
+      width: this.width, height: this.height,
+      title,
+      subtitle,
+      actionText: t('game.restart'),
+    });
 
-    if (this.status === 'won') {
-      ctx.fillText(t('stick.end.won'), this.width / 2, this.height / 2 - 50);
-    } else {
-      ctx.fillText(t('stick.end.lost'), this.width / 2, this.height / 2 - 50);
-      if (this.gameOverReason) {
-        ctx.font = '16px monospace';
-        ctx.fillText(this.gameOverReason, this.width / 2, this.height / 2 - 20);
-      }
-    }
-
+    // Líneas extra de stats después del overlay
     const p = this.player;
-    ctx.font = '14px monospace';
+    ctx.fillStyle = '#9aa7b2';
+    ctx.font = '13px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const statsY = this.height / 2 + 60;
     ctx.fillText(
       `${t('stick.label.day', { n: p.day })} | 💪${p.strength} 📖${p.intelligence} 🗣️${p.charisma} | ${t('stick.label.money', { n: p.money })}`,
-      this.width / 2, this.height / 2 + 8,
+      this.width / 2, statsY,
     );
-    ctx.fillText(t('stick.end.bestDay', { n: this.bestDay }), this.width / 2, this.height / 2 + 30);
-    ctx.fillText(t('game.restart'), this.width / 2, this.height / 2 + 56);
+    ctx.fillText(t('stick.end.bestDay', { n: this.bestDay }), this.width / 2, statsY + 20);
     ctx.textAlign = 'left';
   }
 
 
 
-  destroy() {
-    this.input.detach();
-  }
 }

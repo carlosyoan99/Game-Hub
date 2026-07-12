@@ -1,4 +1,5 @@
-import { InputManager } from '../../engine/InputManager.js';
+import { GameBase } from '../../engine/GameBase.js';
+import { renderOverlay } from '../../engine/GameUI.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { pointInRect } from '../../engine/CollisionUtils.js';
 import { AudioManager } from '../../engine/AudioManager.js';
@@ -54,24 +55,16 @@ const STATION_ROWS = 2;
 
 // ─── Game Class ────────────────────────────────────────────────────────
 
-export class PapaPizzeria {
+export class PapaPizzeria extends GameBase {
   init(engine) {
-    this.engine = engine;
-    this.canvas = engine.canvas;
-    this.input = new InputManager();
-    this.input.attach(this.canvas);
-    this.storage = new StorageManager('papa-pizzeria');
-
-    this.width = this.canvas.width;
-    this.height = this.canvas.height;
+    super.init(engine, 'papa-pizzeria');
     this.bestScore = this.storage.get('bestScore', 0);
 
     this._restart();
   }
 
   handleResize(width, height) {
-    this.width = width;
-    this.height = height;
+    super.handleResize(width, height);
     this._layoutStations();
   }
 
@@ -232,7 +225,7 @@ export class PapaPizzeria {
   _serveCustomer(index) {
     const c = this.queue[index];
     this.money += MONEY_PER_PIZZA;
-    AudioManager.sfx({ type: 'coin', volume: 0.35 });
+    AudioManager.sfx({ type: 'papa_serve', volume: 0.35 });
     HapticManager.vibrate('coin');
 
     const timeRatio = 1 - (c.patienceMax - c.patience) / c.patienceMax;
@@ -274,7 +267,7 @@ export class PapaPizzeria {
 
   _customerLeft(index) {
     this.anger += 1;
-    AudioManager.sfx({ type: 'hit', volume: 0.3 });
+    AudioManager.sfx({ type: 'papa_burn', volume: 0.3 });
     HapticManager.vibrate('hit');
     this._showMessage(t('papa.message.left'));
 
@@ -342,7 +335,7 @@ export class PapaPizzeria {
     ctx.textAlign = 'left';
     ctx.fillStyle = '#7c8894';
     ctx.font = '10px monospace';
-    ctx.fillText(t('game.seed', { seed: this.seedCode }), 10, 46);
+
 
     // ── Cola de clientes ──
     for (let i = 0; i < this.queue.length; i++) {
@@ -457,25 +450,15 @@ export class PapaPizzeria {
   }
 
   _renderEndScreen(ctx) {
-    ctx.fillStyle = '#e7edf3';
-    ctx.font = 'bold 26px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'alphabetic';
-
-    if (this.status === 'won') {
-      ctx.fillText(t('papa.end.won'), this.width / 2, this.height / 2 - 40);
-    } else {
-      ctx.fillText(t('papa.end.lost'), this.width / 2, this.height / 2 - 40);
-    }
-
-    ctx.font = '15px monospace';
-    ctx.fillText(t('papa.end.stats', { n: this.totalServed, score: this.score }), this.width / 2, this.height / 2 + 2);
-    ctx.fillText(t('papa.end.bestScore', { n: this.bestScore }), this.width / 2, this.height / 2 + 24);
-    ctx.fillText(t('papa.end.restart'), this.width / 2, this.height / 2 + 52);
-    ctx.textAlign = 'left';
+    const title = this.status === 'won' ? t('papa.end.won') : t('papa.end.lost');
+    const stats = t('papa.end.stats', { n: this.totalServed, score: this.score });
+    const best = t('papa.end.bestScore', { n: this.bestScore });
+    renderOverlay(ctx, {
+      width: this.width, height: this.height,
+      title,
+      subtitle: `${stats} | ${best}`,
+      actionText: t('papa.end.restart'),
+    });
   }
 
-  destroy() {
-    this.input.detach();
-  }
 }

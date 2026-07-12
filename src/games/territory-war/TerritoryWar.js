@@ -7,7 +7,8 @@
  * sus unidades, atacan al enemigo y capturan territorio. El equipo que
  * elimina a todas las unidades enemigas o captura todo el territorio gana.
  */
-import { InputManager } from '../../engine/InputManager.js';
+import { GameBase } from '../../engine/GameBase.js';
+import { renderOverlay } from '../../engine/GameUI.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { pointInRect, clamp } from '../../engine/CollisionUtils.js';
 import { ParticleSystem } from '../../engine/ParticleSystem.js';
@@ -17,16 +18,9 @@ import { t } from '../../engine/i18n.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
 import { COLORS, TERRAIN_COLS, TERRAIN_ROWS, UNIT_TYPES } from './constants.js';
 
-export class TerritoryWar {
+export class TerritoryWar extends GameBase {
   init(engine) {
-    this.engine = engine;
-    this.canvas = engine.canvas;
-    this.input = new InputManager();
-    this.input.attach(this.canvas);
-    this.storage = new StorageManager('territory-war');
-
-    this.width = this.canvas.width;
-    this.height = this.canvas.height;
+    super.init(engine, 'territory-war');
     this.highscore = this.storage.get('highscore', 0);
     this.wins = this.storage.get('wins', 0);
 
@@ -44,8 +38,7 @@ export class TerritoryWar {
   }
 
   handleResize(width, height) {
-    this.width = width;
-    this.height = height;
+    super.handleResize(width, height);
     this._recomputeGrid();
   }
 
@@ -193,6 +186,7 @@ export class TerritoryWar {
         this.animUnit = unit;
         this.animTarget = target;
         this.phase = 'attacking';
+        AudioManager.sfx({ type: 'territory_attack', volume: 0.2 });
         return;
       }
     }
@@ -315,13 +309,7 @@ export class TerritoryWar {
   }
 
   update(dt) {
-    if (this.phase === 'won' || this.phase === 'lost') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
-        this._restart();
-      }
-      this.input.endFrame();
-      return;
-    }
+    if (this.handleRestartInput(['won', 'lost'])) return;
 
     if (this.messageTimer > 0) this.messageTimer -= dt;
     this.particles.update(dt);
@@ -343,6 +331,7 @@ export class TerritoryWar {
 
         if (this.animUnit) {
           if (this.animTarget) {
+            AudioManager.sfx({ type: 'territory_hit', volume: 0.25 });
             this.animTarget.hp -= this.animUnit.damage;
             this.animUnit.hasAttacked = true;
             this.particles.burst(
@@ -410,6 +399,7 @@ export class TerritoryWar {
           this.animUnit = this.selectedUnit;
           this.animTarget = target;
           this.phase = 'attacking';
+          AudioManager.sfx({ type: 'territory_attack', volume: 0.2 });
           this.selectedUnit = null;
           this.validTargets = [];
           return;
@@ -664,7 +654,7 @@ export class TerritoryWar {
 
     ctx.fillStyle = COLORS.inkDim;
     ctx.fillText(t('territory.resources', { n: this.playerResources }), this.width / 2 - 60, 10);
-    ctx.fillText(t('game.seed', { seed: this.seedCode }), this.width / 2 - 60, 28);
+
 
     if (this.highscore > 0) {
       ctx.fillText(t('territory.record', { n: this.highscore }), this.width - 200, 10);
@@ -718,29 +708,25 @@ export class TerritoryWar {
     }
 
     if (this.phase === 'won' || this.phase === 'lost') {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
-      ctx.fillRect(0, 0, this.width, this.height);
-      ctx.fillStyle = COLORS.ink;
-      ctx.font = 'bold 28px monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
+      const colors = { text: COLORS.ink };
       if (this.phase === 'won') {
-        ctx.fillText(t('territory.victory'), this.width / 2, this.height / 2 - 30);
-        ctx.font = '16px monospace';
-        ctx.fillText(t('territory.victoryMsg', { n: this.turnNumber }), this.width / 2, this.height / 2 + 10);
+        renderOverlay(ctx, {
+          width: this.width, height: this.height,
+          title: t('territory.victory'),
+          subtitle: t('territory.victoryMsg', { n: this.turnNumber }),
+          actionText: t('game.restart'),
+          colors,
+        });
       } else {
-        ctx.fillText(t('territory.defeat'), this.width / 2, this.height / 2 - 30);
-        ctx.font = '16px monospace';
-        ctx.fillText(t('territory.defeatMsg'), this.width / 2, this.height / 2 + 10);
+        renderOverlay(ctx, {
+          width: this.width, height: this.height,
+          title: t('territory.defeat'),
+          subtitle: t('territory.defeatMsg'),
+          actionText: t('game.restart'),
+          colors,
+        });
       }
-
-      ctx.fillText(t('game.restart'), this.width / 2, this.height / 2 + 40);
-      ctx.textAlign = 'left';
     }
   }
 
-  destroy() {
-    this.input.detach();
-  }
 }

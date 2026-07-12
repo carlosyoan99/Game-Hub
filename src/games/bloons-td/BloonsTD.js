@@ -7,7 +7,8 @@
  * cercanos. Cada oleada trae más bloons y más resistentes.
  * Sistema de dinero y vidas.
  */
-import { InputManager } from '../../engine/InputManager.js';
+import { GameBase } from '../../engine/GameBase.js';
+import { renderOverlay } from '../../engine/GameUI.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { ParticleSystem } from '../../engine/ParticleSystem.js';
 import { AudioManager } from '../../engine/AudioManager.js';
@@ -16,24 +17,16 @@ import { t } from '../../engine/i18n.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
 import { COLORS, RELATIVE_WAYPOINTS, MAX_WAVE, TOWER_TYPES, TOWER_KEYS, BLOON_TYPES, BLOON_ORDER } from './constants.js';
 
-export class BloonsTD {
+export class BloonsTD extends GameBase {
   init(engine) {
-    this.engine = engine;
-    this.canvas = engine.canvas;
-    this.input = new InputManager();
-    this.input.attach(this.canvas);
-    this.storage = new StorageManager('bloons-td');
-
-    this.width = this.canvas.width;
-    this.height = this.canvas.height;
+    super.init(engine, 'bloons-td');
     this.highscore = this.storage.get('highscore', 0);
 
     this._restart();
   }
 
   handleResize(width, height) {
-    this.width = width;
-    this.height = height;
+    super.handleResize(width, height);
     this._calculatePath();
   }
 
@@ -126,13 +119,7 @@ export class BloonsTD {
   }
 
   update(dt) {
-    if (this.status === 'won' || this.status === 'lost') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
-        this._restart();
-      }
-      this.input.endFrame();
-      return;
-    }
+    if (this.handleRestartInput()) return;
 
     this.particles.update(dt);
 
@@ -297,7 +284,7 @@ export class BloonsTD {
           proj.target.alive = false;
           this.money += proj.target.points * 2;
           this.score += proj.target.points;
-          AudioManager.sfx({ type: 'coin', volume: 0.25 });
+          AudioManager.sfx({ type: 'bloons_pop', volume: 0.25 });
           HapticManager.vibrate('coin');
           this.particles.burst(proj.target.x, proj.target.y, proj.target.color, 12, 120);
         }
@@ -350,6 +337,7 @@ export class BloonsTD {
     });
 
     this.money -= type.cost;
+    AudioManager.sfx({ type: 'bloons_place', volume: 0.25 });
     return true;
   }
 
@@ -507,8 +495,7 @@ export class BloonsTD {
     ctx.textBaseline = 'top';
     ctx.fillText(t('bloons.lives', { n: this.lives }), 10, 10);
     ctx.fillText(t('bloons.money', { n: this.money }), 10, 30);
-    ctx.fillText(t('game.wave', { n: this.wave }), 10, 50);
-    ctx.fillText(t('game.seed', { seed: this.seedCode }), 10, 70);
+
 
     if (this.highscore > 0) {
       ctx.fillText(t('bloons.record', { n: this.highscore }), this.width - 120, 10);
@@ -562,28 +549,9 @@ export class BloonsTD {
     }
 
     if (this.status === 'won' || this.status === 'lost') {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
-      ctx.fillRect(0, 0, this.width, this.height);
-      ctx.fillStyle = COLORS.ink;
-      ctx.font = 'bold 28px monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      if (this.status === 'won') {
-        ctx.fillText(t('game.victory'), this.width / 2, this.height / 2 - 30);
-        ctx.font = '16px monospace';
-        ctx.fillText(t('bloons.score', { n: this.score }), this.width / 2, this.height / 2 + 10);
-        ctx.fillText(t('game.restart'), this.width / 2, this.height / 2 + 40);
-      } else {
-        ctx.fillText(t('bloons.gameOver'), this.width / 2, this.height / 2 - 30);
-        ctx.font = '16px monospace';
-        ctx.fillText(t('bloons.score', { n: this.score }), this.width / 2, this.height / 2 + 10);
-        ctx.fillText(t('game.restart'), this.width / 2, this.height / 2 + 40);
-      }
-      ctx.textAlign = 'left';
+      const title = this.status === 'won' ? t('game.victory') : t('bloons.gameOver');
+      renderOverlay(ctx, { width: this.width, height: this.height, title, score: this.score });
     }
   }
 
-  destroy() {
-    this.input.detach();
-  }
 }

@@ -1,4 +1,5 @@
-import { InputManager } from '../../engine/InputManager.js';
+import { renderOverlay, setupHUDContext, clearHUDContext } from '../../engine/GameUI.js';
+import { GameBase } from '../../engine/GameBase.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { Vector2 } from '../../engine/Vector2.js';
 import { circleIntersects } from '../../engine/CollisionUtils.js';
@@ -15,24 +16,12 @@ import { MAX_WAVE, SHIP_RADIUS, SHIP_TURN_SPEED, SHIP_THRUST, SHIP_FRICTION, SHI
  * Oleadas 3-4: asteroides + enemigos que persiguen.
  * Oleadas 5+: asteroides + enemigos que disparan.
  */
-export class Asteroids {
+export class Asteroids extends GameBase {
   init(engine) {
-    this.engine = engine;
-    this.canvas = engine.canvas;
-    this.input = new InputManager();
-    this.input.attach(this.canvas);
-    this.storage = new StorageManager('asteroids');
-
-    this.width = this.canvas.width;
-    this.height = this.canvas.height;
+    super.init(engine, 'asteroids');
     this.highscore = this.storage.get('highscore', 0);
 
     this._restart();
-  }
-
-  handleResize(width, height) {
-    this.width = width;
-    this.height = height;
   }
 
   _restart() {
@@ -119,13 +108,7 @@ export class Asteroids {
   }
 
   update(dt) {
-    if (this.status !== 'playing') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
-        this._restart();
-      }
-      this.input.endFrame();
-      return;
-    }
+    if (this.handleRestartInput()) return;
 
     this._updateShip(dt);
     this._updateBullets(dt);
@@ -176,7 +159,7 @@ export class Asteroids {
 
   _fireBullet() {
     const dir = Vector2.fromAngle(this.ship.angle, 1);
-    AudioManager.sfx({ type: 'shoot', volume: 0.2 });
+    AudioManager.sfx({ type: 'asteroids_shoot', volume: 0.2 });
     this.bullets.push({
       x: this.ship.x + dir.x * SHIP_RADIUS,
       y: this.ship.y + dir.y * SHIP_RADIUS,
@@ -232,7 +215,7 @@ export class Asteroids {
           radius: 3,
           alive: true,
         });
-        AudioManager.sfx({ type: 'shoot', volume: 0.15 });
+        AudioManager.sfx({ type: 'asteroids_shoot', volume: 0.15 });
       }
     }
     for (const b of this.enemyBullets) {
@@ -278,7 +261,7 @@ export class Asteroids {
             if (enemy.hp <= 0) {
               enemy.alive = false;
               this.score += 50 + this.wave * 10;
-              AudioManager.sfx({ type: 'explosion', volume: 0.4 });
+              AudioManager.sfx({ type: 'asteroids_explosion', volume: 0.4 });
               HapticManager.vibrate('explosion');
               this.particles.burst(enemy.x, enemy.y, '#ffb454', 15, 150, { vyOffset: -40 });
             } else {
@@ -396,33 +379,17 @@ export class Asteroids {
       ctx.fill();
     }
 
-    ctx.fillStyle = '#9aa7b2';
-    ctx.font = '14px monospace';
-    ctx.textBaseline = 'top';
+    setupHUDContext(ctx);
     ctx.fillText(t('asteroids.score', { n: this.score }), 10, 10);
     ctx.fillText(t('asteroids.lives', { n: this.lives }), this.width - 90, 10);
     ctx.fillText(t('asteroids.wave', { n: this.wave }), this.width / 2 - 40, 10);
     ctx.fillText(t('asteroids.record', { n: this.highscore }), this.width / 2 - 40, 28);
-    ctx.fillText(t('game.seed', { seed: this.seedCode }), 10, 46);
 
-    if (this.status !== 'playing') {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-      ctx.fillRect(0, 0, this.width, this.height);
-      ctx.fillStyle = '#e7edf3';
-      ctx.font = 'bold 28px monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      if (this.status === 'won') {
-        ctx.fillText(t('game.victory'), this.width / 2, this.height / 2 - 30);
-        ctx.font = '16px monospace';
-        ctx.fillText(t('game.score', { n: this.score }), this.width / 2, this.height / 2 + 5);
-        ctx.fillText(t('game.restart'), this.width / 2, this.height / 2 + 30);
-      } else {
-        ctx.fillText(t('game.gameOver'), this.width / 2, this.height / 2 - 20);
-        ctx.font = '16px monospace';
-        ctx.fillText(t('game.restart'), this.width / 2, this.height / 2 + 15);
-      }
-      ctx.textAlign = 'left';
+
+    if (this.status === 'won') {
+      renderOverlay(ctx, { width: this.width, height: this.height, title: t('game.victory'), score: this.score });
+    } else if (this.status === 'lost') {
+      renderOverlay(ctx, { width: this.width, height: this.height });
     }
   }
 
@@ -495,7 +462,4 @@ export class Asteroids {
     ctx.restore();
   }
 
-  destroy() {
-    this.input.detach();
-  }
 }

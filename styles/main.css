@@ -205,6 +205,48 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   SVG icons (used in hub)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.icon {
+  display: inline-block;
+  vertical-align: middle;
+  color: var(--ink-dim);
+  filter: none;
+  flex-shrink: 0;
+}
+
+.toggle-icon {
+  margin-right: 4px;
+  vertical-align: -2px;
+}
+
+/* ─── Settings button uses currentColor from parent text color ─────── */
+
+.settings-btn .icon {
+  color: inherit;
+}
+
+/* ─── Search wrapper ───────────────────────────────────────────────── */
+
+.menu__search-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.menu__search-wrap .icon--search {
+  position: absolute;
+  left: 10px;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.menu__search-wrap .menu__search {
+  padding-left: 32px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    Menu
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -334,12 +376,6 @@ body {
   filter: brightness(1.08);
 }
 
-.game-card__level {
-  font-size: 11px;
-  color: var(--marquee);
-  letter-spacing: 0.08em;
-}
-
 .game-card__title {
   font-size: 16px;
   font-weight: bold;
@@ -348,29 +384,22 @@ body {
 .game-card__tagline {
   font-size: 12px;
   color: var(--ink-dim);
-}
-
-/* Nivel badge – uses accent colors for visual hierarchy */
-.game-card[data-level='1'] .game-card__level { color: var(--accent-green); }
-.game-card[data-level='2'] .game-card__level { color: var(--accent-cyan); }
-.game-card[data-level='3'] .game-card__level { color: var(--marquee); }
-.game-card[data-level='4'] .game-card__level { color: var(--accent-red); }
-.game-card[data-level='5'] .game-card__level { color: #d870d8; } /* purple/magenta for top tier */
+} /* purple/magenta for top tier */
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Game canvas
+   Game canvas wrapper
    ═══════════════════════════════════════════════════════════════════════════ */
 
-#game-canvas {
+#game-canvas-wrapper {
+  display: inline-block;
+  position: relative;
   border: 2px solid var(--line);
   box-shadow: 4px 4px 0 var(--shadow);
-  image-rendering: pixelated;
   max-width: 100%;
-  position: relative;
 }
 
-/* Double-border on canvas */
-#game-canvas::before {
+/* Double-border on canvas wrapper */
+#game-canvas-wrapper::before {
   content: '';
   position: absolute;
   top: -1px;
@@ -381,6 +410,82 @@ body {
   pointer-events: none;
 }
 
+#game-canvas {
+  display: block;
+  image-rendering: pixelated;
+  max-width: 100%;
+}
+
+/* Loading indicator – retro progress bar */
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: var(--bg);
+  user-select: none;
+}
+
+.loading-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.loading-bar__track {
+  width: 220px;
+  height: 16px;
+  background: var(--bg-alt);
+  border: 2px solid var(--line);
+  box-shadow: inset 2px 2px 0 rgba(0,0,0,0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.loading-bar__fill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--accent-cyan) 0%,
+    var(--accent-cyan) 40%,
+    #5ad8f0 50%,
+    var(--accent-cyan) 60%,
+    var(--accent-cyan) 100%
+  );
+  background-size: 220px 100%;
+  animation: loading-sweep 1.2s ease-in-out infinite;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  /* Pixelated edge via box-shadow steps (NES-style) */
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.15),
+    inset 0 -1px 0 rgba(0,0,0,0.15);
+}
+
+@keyframes loading-sweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.loading-bar__label {
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: 0.15em;
+  color: var(--ink-dim);
+  animation: loading-label-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes loading-label-pulse {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 1; }
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    Settings Modal – retro NES
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -388,8 +493,10 @@ body {
 /* Forzar que el atributo hidden funcione incluso con display:flex/grid */
 .settings-overlay[hidden],
 .hud[hidden],
-#game-canvas[hidden],
-#search-empty[hidden] {
+#game-canvas-wrapper[hidden],
+#search-empty[hidden],
+.game-card[hidden],
+.loading-indicator[hidden] {
   display: none !important;
 }
 

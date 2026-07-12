@@ -26,7 +26,7 @@ const TRANSLATIONS = {
   // ── Hub: menú ────────────────────────────────────────────────────────
 
   'menu.eyebrow':            { es: 'Selecciona un juego',             en: 'Select a game' },
-  'menu.searchPlaceholder':  { es: '🔍 Buscar juegos...',             en: '🔍 Search games...' },
+  'menu.searchPlaceholder':  { es: 'Buscar juegos...',              en: 'Search games...' },
   'menu.empty':              { es: 'No se encontraron juegos',        en: 'No games found' },
   'menu.level':              { es: 'Nivel',                           en: 'Level' },
   'menu.back':               { es: '← Menú',                          en: '← Menu' },
@@ -70,6 +70,8 @@ const TRANSLATIONS = {
   'game.turn':               { es: 'Turno: {n}',                      en: 'Turn: {n}' },
   'game.wind':               { es: 'VIENTO',                          en: 'WIND' },
   'game.seed':               { es: 'Semilla: {seed}',                  en: 'Seed: {seed}' },
+  'game.lives':              { es: 'Vidas: {n}',                       en: 'Lives: {n}' },
+  'game.paused':             { es: 'PAUSA',                            en: 'PAUSED' },
 
   'registry.breakout.title':  { es: 'Breakout',                       en: 'Breakout' },
   'registry.breakout.tagline':{ es: 'Rebotes y destrucción de ladrillos', en: 'Bouncing and brick destruction' },
@@ -105,6 +107,25 @@ const TRANSLATIONS = {
   'registry.swords-and-souls.tagline': { es: 'Entrenamiento, combate por turnos y subida de nivel', en: 'Training, turn-based combat, leveling up' },
   'registry.henry-stickmin.title':   { es: 'Henry Stickmin',          en: 'Henry Stickmin' },
   'registry.henry-stickmin.tagline': { es: 'Árbol de decisiones, finales múltiples y humor', en: 'Decision tree, multiple endings, humor' },
+
+  // ── Registro: juegos retro/arcade ───────────────────────────────────────
+
+  'registry.space-invaders.title':    { es: 'Space Invaders',           en: 'Space Invaders' },
+  'registry.space-invaders.tagline':  { es: 'Disparos verticales con oleadas de aliens', en: 'Vertical shooter with alien waves' },
+  'registry.centipede.title':         { es: 'Centipede',                en: 'Centipede' },
+  'registry.centipede.tagline':       { es: 'Cienpiés serpenteante y hongos', en: 'Serpentine centipede and mushrooms' },
+  'registry.missile-command.title':   { es: 'Missile Command',          en: 'Missile Command' },
+  'registry.missile-command.tagline': { es: 'Defensa antimisiles con el ratón', en: 'Anti-missile defense with mouse aim' },
+  'registry.galaga.title':            { es: 'Galaga',                   en: 'Galaga' },
+  'registry.galaga.tagline':          { es: 'Formaciones y bombardeo en picada', en: 'Formations and dive-bomb attacks' },
+  'registry.frogger.title':           { es: 'Frogger',                  en: 'Frogger' },
+  'registry.frogger.tagline':         { es: 'Cruza la carretera y el río', en: 'Cross the road and the river' },
+  'registry.tetris.title':            { es: 'Tetris',                   en: 'Tetris' },
+  'registry.tetris.tagline':          { es: 'Piezas que caen, rotación y líneas', en: 'Falling pieces, rotation, line clearing' },
+  'registry.pac-man.title':           { es: 'Pac-Man',                  en: 'Pac-Man' },
+  'registry.pac-man.tagline':         { es: 'Laberinto, puntos y fantasmas con IA', en: 'Maze, dots, and ghost AI' },
+  'registry.donkey-kong.title':       { es: 'Donkey Kong',              en: 'Donkey Kong' },
+  'registry.donkey-kong.tagline':     { es: 'Barriles, escaleras y rescate', en: 'Barrels, ladders, and rescue' },
 
 };
 

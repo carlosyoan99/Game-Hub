@@ -1,10 +1,12 @@
-import { InputManager } from '../../engine/InputManager.js';
+import { renderOverlay, setupHUDContext, clearHUDContext } from '../../engine/GameUI.js';
+import { GameBase } from '../../engine/GameBase.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { Tilemap } from '../../engine/Tilemap.js';
 import { Camera } from '../../engine/Camera.js';
 import { aabbIntersects, clamp } from '../../engine/CollisionUtils.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
+import { t } from '../../engine/i18n.js';
 
 const TILE_SIZE = 32;
 const GRAVITY = 1500;
@@ -150,24 +152,16 @@ const LEGEND = { '#': 1 };
 /**
  * FancyPants — expandido con 5 niveles de dificultad progresiva.
  */
-export class FancyPants {
+export class FancyPants extends GameBase {
   init(engine) {
-    this.engine = engine;
-    this.canvas = engine.canvas;
-    this.input = new InputManager();
-    this.input.attach(this.canvas);
-    this.storage = new StorageManager('fancy-pants');
-
-    this.width = this.canvas.width;
-    this.height = this.canvas.height;
+    super.init(engine, 'fancy-pants');
     this.bestTime = this.storage.get('bestTime', null);
     this.currentLevel = this.storage.get('savedLevel', 1);
     this._loadLevel();
   }
 
   handleResize(width, height) {
-    this.width = width;
-    this.height = height;
+    super.handleResize(width, height);
     this.camera.resize(width, height);
   }
 
@@ -227,8 +221,9 @@ export class FancyPants {
       this.input.endFrame();
       return;
     }
-    if (this.status !== 'playing') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) this._restart();
+    if (this.handleRestartInput()) return;
+    if (this.status === 'level-complete') {
+      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) this._nextLevel();
       this.input.endFrame();
       return;
     }
@@ -298,7 +293,7 @@ export class FancyPants {
         this.player.vy = JUMP_VELOCITY;
         this.coyoteTimer = 0;
         this.player.jumpCut = false;
-        AudioManager.sfx({ type: 'jump', volume: 0.3 });
+        AudioManager.sfx({ type: 'fancy_jump', volume: 0.3 });
       } else if (this.isWallSliding) {
         this.player.vy = WALL_JUMP_VY;
         this.player.vx = this.player.wallSide === 'left' ? WALL_JUMP_VX : -WALL_JUMP_VX;
@@ -306,7 +301,7 @@ export class FancyPants {
         this.wallJumpLock = WALL_JUMP_LOCK_TIME;
         this.isWallSliding = false;
         this.player.jumpCut = false;
-        AudioManager.sfx({ type: 'jump', volume: 0.4 });
+        AudioManager.sfx({ type: 'fancy_walljump', volume: 0.4 });
         HapticManager.vibrate('jump');
       }
     }
@@ -386,31 +381,29 @@ export class FancyPants {
 
     ctx.restore();
 
-    ctx.fillStyle = '#9aa7b2';
-    ctx.font = '14px monospace';
-    ctx.textBaseline = 'top';
-    ctx.fillText(`Vidas: ${this.lives}`, 10, 10);
-    ctx.fillText(`Tiempo: ${this.elapsed.toFixed(1)}s`, this.width - 130, 10);
+    setupHUDContext(ctx);
+    ctx.fillText(t('fancy.lives', { n: this.lives }), 10, 10);
+    ctx.fillText(t('fancy.time', { n: this.elapsed.toFixed(1) }), this.width - 130, 10);
     if (this.bestTime !== null) {
-      ctx.fillText(`Mejor: ${this.bestTime.toFixed(1)}s`, this.width / 2 - 50, 10);
+      ctx.fillText(t('fancy.bestTime', { n: this.bestTime.toFixed(1) }), this.width / 2 - 50, 10);
     }
 
-    if (this.status !== 'playing') {
+    if (this.status === 'level-complete') {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
       ctx.fillRect(0, 0, this.width, this.height);
       ctx.fillStyle = '#e7edf3';
       ctx.font = 'bold 28px monospace';
       ctx.textAlign = 'center';
-      const overlayTitle = this.status === 'level-complete' ? '¡NIVEL COMPLETADO!' : this.status === 'won' ? '¡META!' : 'GAME OVER';
-      ctx.fillText(overlayTitle, this.width / 2, this.height / 2 - 20);
+      ctx.fillText(t('game.levelComplete'), this.width / 2, this.height / 2 - 20);
       ctx.font = '16px monospace';
-      const overlayAction = this.status === 'level-complete' ? 'Click o Espacio para continuar' : 'Click o Espacio para reiniciar';
-      ctx.fillText(overlayAction, this.width / 2, this.height / 2 + 15);
+      ctx.fillText(t('game.continue'), this.width / 2, this.height / 2 + 15);
       ctx.textAlign = 'left';
+    }
+
+    if (this.status === 'won' || this.status === 'lost') {
+      const title = this.status === 'won' ? t('fancy.meta') : undefined;
+      renderOverlay(ctx, { width: this.width, height: this.height, title });
     }
   }
 
-  destroy() {
-    this.input.detach();
-  }
 }

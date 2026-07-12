@@ -7,7 +7,8 @@
  * afectada por viento. La IA enemiga apunta con margen de error variable
  * según dificultad. El viento cambia cada turno.
  */
-import { InputManager } from '../../engine/InputManager.js';
+import { GameBase } from '../../engine/GameBase.js';
+import { renderOverlay, setupHUDContext, clearHUDContext } from '../../engine/GameUI.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { clamp } from '../../engine/CollisionUtils.js';
 import { ParticleSystem } from '../../engine/ParticleSystem.js';
@@ -17,24 +18,16 @@ import { t } from '../../engine/i18n.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
 import { GRAVITY, WIND_MAX, ARROW_RADIUS, MAX_TURNS, COLORS } from './constants.js';
 
-export class Bowman {
+export class Bowman extends GameBase {
   init(engine) {
-    this.engine = engine;
-    this.canvas = engine.canvas;
-    this.input = new InputManager();
-    this.input.attach(this.canvas);
-    this.storage = new StorageManager('bowman');
-
-    this.width = this.canvas.width;
-    this.height = this.canvas.height;
+    super.init(engine, 'bowman');
     this.highscore = this.storage.get('highscore', 0);
 
     this._restart();
   }
 
   handleResize(width, height) {
-    this.width = width;
-    this.height = height;
+    super.handleResize(width, height);
     this.player.y = this.height - 60 - (this.terrainType === 2 ? 40 : this.terrainType === 1 ? 20 : 0);
     this.enemy.x = this.width - 80;
     this.enemy.y = this.height - 60 - (this.terrainType === 2 ? 60 : this.terrainType === 1 ? 15 : 0);
@@ -127,13 +120,7 @@ export class Bowman {
   }
 
   update(dt) {
-    if (this.status === 'won' || this.status === 'lost') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
-        this._restart();
-      }
-      this.input.endFrame();
-      return;
-    }
+    if (this.handleRestartInput()) return;
 
     if (this.lastHitTimer > 0) this.lastHitTimer -= dt;
     this.particles.update(dt);
@@ -200,6 +187,7 @@ export class Bowman {
       angle: angle,
     };
 
+    AudioManager.sfx({ type: 'bowman_fire', volume: 0.25 });
     this.trail = [];
     this.status = 'flying';
   }
@@ -260,7 +248,7 @@ export class Bowman {
 
     this.hasShield = false;
     this.lastHitTimer = 2;
-    AudioManager.sfx({ type: 'hit', volume: 0.5 });
+    AudioManager.sfx({ type: 'bowman_hit', volume: 0.5 });
     HapticManager.vibrate('hit');
     this.particles.burst(this.targetArcher.x, this.targetArcher.y - 10, '#ffb454', 15, 150);
     this.particles.burst(this.targetArcher.x, this.targetArcher.y - 10, '#e74c3c', 8, 100);
@@ -397,12 +385,10 @@ export class Bowman {
 
     this.particles.render(ctx);
 
-    ctx.fillStyle = '#9aa7b2';
-    ctx.font = '14px monospace';
-    ctx.textBaseline = 'top';
+    setupHUDContext(ctx);
     ctx.fillText(t('bowman.turn', { n: this.turn === 1 ? t('bowman.turnPlayer') : t('bowman.turnBot') }), 10, 10);
     ctx.fillText(t('bowman.round', { n: (this.turnsPlayed || 0) + 1 }), this.width / 2 - 40, 10);
-    ctx.fillText(t('game.seed', { seed: this.seedCode }), 10, 28);
+
 
     if (this.highscore > 0) {
       ctx.fillText(t('bowman.record', { n: this.highscore }), this.width - 120, 10);
@@ -446,21 +432,8 @@ export class Bowman {
     }
 
     if (this.status === 'won' || this.status === 'lost') {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-      ctx.fillRect(0, 0, this.width, this.height);
-      ctx.fillStyle = '#e7edf3';
-      ctx.font = 'bold 28px monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      if (this.status === 'won') {
-        ctx.fillText(t('game.victory'), this.width / 2, this.height / 2 - 30);
-      } else {
-        ctx.fillText(t('game.defeat'), this.width / 2, this.height / 2 - 30);
-      }
-      ctx.font = '16px monospace';
-      ctx.fillText(t('game.restart'), this.width / 2, this.height / 2 + 20);
-      ctx.textAlign = 'left';
+      const title = this.status === 'won' ? t('game.victory') : t('game.defeat');
+      renderOverlay(ctx, { width: this.width, height: this.height, title });
     }
   }
 
@@ -621,7 +594,4 @@ export class Bowman {
     ctx.restore();
   }
 
-  destroy() {
-    this.input.detach();
-  }
 }

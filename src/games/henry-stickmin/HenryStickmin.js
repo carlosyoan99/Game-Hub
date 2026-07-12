@@ -11,7 +11,8 @@
  *
  * Inspirado en la saga Henry Stickmin de PuffballsUnited.
  */
-import { InputManager } from '../../engine/InputManager.js';
+import { GameBase } from '../../engine/GameBase.js';
+import { renderOverlay } from '../../engine/GameUI.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { pointInRect } from '../../engine/CollisionUtils.js';
 import { AudioManager } from '../../engine/AudioManager.js';
@@ -19,24 +20,12 @@ import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
 import { TYPE_SPEED, SCENES, SCENE_IDS } from './constants.js';
 
-export class HenryStickmin {
+export class HenryStickmin extends GameBase {
   init(engine) {
-    this.engine = engine;
-    this.canvas = engine.canvas;
-    this.input = new InputManager();
-    this.input.attach(this.canvas);
-    this.storage = new StorageManager('henry-stickmin');
-
-    this.width = this.canvas.width;
-    this.height = this.canvas.height;
+    super.init(engine, 'henry-stickmin');
     this.bestEndings = this.storage.get('bestEndings', null);
 
     this._restart();
-  }
-
-  handleResize(width, height) {
-    this.width = width;
-    this.height = height;
   }
 
   _restart() {
@@ -120,7 +109,7 @@ export class HenryStickmin {
       if (this.typeChars >= rawText.length) {
         this.timeToSkip += dt;
         if (this.timeToSkip > 0.5 || this.input.mouse.clickedThisFrame || this.input.wasPressed('Space')) {
-          AudioManager.sfx({ type: 'select', volume: 0.2 });
+          AudioManager.sfx({ type: 'henry_choose', volume: 0.2 });
           HapticManager.vibrate('select');
           this.phase = 'choices';
           this.timeToSkip = 0;
@@ -146,7 +135,7 @@ export class HenryStickmin {
 
         for (const btn of buttons) {
           if (pointInRect(mx, my, btn)) {
-            AudioManager.sfx({ type: 'select', volume: 0.3 });
+            AudioManager.sfx({ type: 'henry_choose', volume: 0.3 });
             HapticManager.vibrate('select');
             if (btn.choice.next) {
               this._loadScene(btn.choice.next);
@@ -165,7 +154,7 @@ export class HenryStickmin {
 
     if (this.phase === 'ending') {
       if (this.input.mouse.clickedThisFrame || this.input.wasPressed('Space')) {
-        AudioManager.sfx({ type: this.endingDisplay?.type === 'success' ? 'powerup' : 'hit', volume: 0.4 });
+        AudioManager.sfx({ type: this.endingDisplay?.type === 'success' ? 'henry_success' : 'henry_fail', volume: 0.4 });
         HapticManager.vibrate(this.endingDisplay?.type === 'success' ? 'powerup' : 'hit');
         this.phase = 'end_screen';
       }
@@ -535,33 +524,29 @@ export class HenryStickmin {
   }
 
   _renderEndScreen(ctx) {
-    ctx.fillStyle = '#e7edf3';
-    ctx.font = 'bold 22px monospace';
+    const isSuccess = this.endingDisplay?.type === 'success';
+    const title = isSuccess ? t('henry.success') : t('henry.fail');
+    renderOverlay(ctx, {
+      width: this.width, height: this.height,
+      title,
+      actionText: t('game.restart'),
+    });
+
+    // Stats extra después del overlay
+    ctx.fillStyle = '#9aa7b2';
+    ctx.font = '13px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-
-    if (this.endingDisplay) {
-      const isSuccess = this.endingDisplay.type === 'success';
-      ctx.fillText(isSuccess ? t('henry.success') : t('henry.fail'), this.width / 2, this.height / 2 - 50);
-    }
-
-    ctx.font = '14px monospace';
-    ctx.fillStyle = '#9aa7b2';
-    ctx.fillText(t('henry.endingsFound', { n: this.currentEndings.length }), this.width / 2, this.height / 2 - 14);
-    ctx.fillText(t('henry.totalEndings', { n: this.totalEndingsFound }), this.width / 2, this.height / 2 + 10);
-
+    const midY = this.height / 2 + 55;
+    ctx.fillText(t('henry.endingsFound', { n: this.currentEndings.length }), this.width / 2, midY);
+    ctx.fillText(t('henry.totalEndings', { n: this.totalEndingsFound }), this.width / 2, midY + 20);
     if (this.bestEndings !== null) {
-      ctx.fillText(t('henry.bestSession', { n: this.bestEndings }), this.width / 2, this.height / 2 + 34);
+      ctx.fillText(t('henry.bestSession', { n: this.bestEndings }), this.width / 2, midY + 40);
     }
-
     ctx.fillStyle = '#7c8894';
     ctx.font = '11px monospace';
-    ctx.fillText(t('henry.keepTrying'), this.width / 2, this.height / 2 + 62);
-    ctx.fillText(t('game.restart'), this.width / 2, this.height / 2 + 82);
+    ctx.fillText(t('henry.keepTrying'), this.width / 2, midY + 60);
     ctx.textAlign = 'left';
   }
 
-  destroy() {
-    this.input.detach();
-  }
 }

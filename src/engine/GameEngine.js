@@ -1,3 +1,5 @@
+import { InputManager } from './InputManager.js';
+
 /**
  * GameEngine
  * Bucle de juego genérico basado en requestAnimationFrame con delta time
@@ -10,6 +12,11 @@
  *   render(ctx)           -> dibujo sobre el contexto 2D
  *   handleResize(w, h)   -> opcional, se llama al redimensionar el canvas
  *   destroy()             -> opcional, limpieza de listeners/estado
+ *
+ * InputManager:
+ *   El engine crea y gestiona un InputManager compartido. Los juegos
+ *   acceden a él via this.engine.input — no deben crear el suyo propio.
+ *   El attach se hace al cargar el juego y el detach al descargarlo.
  */
 export class GameEngine {
   constructor(canvas, { maxDt = 0.25 } = {}) {
@@ -19,6 +26,8 @@ export class GameEngine {
     this.lastTime = 0;
     this.maxDt = maxDt;
     this.currentGame = null;
+    this.input = new InputManager();
+    this.input.attach(this.canvas);
 
     this._rafId = null;
     this._loop = this._loop.bind(this);
@@ -38,6 +47,7 @@ export class GameEngine {
     this.stop();
     this.currentGame?.destroy?.();
     this.currentGame = null;
+    // InputManager se mantiene vivo y attached para el siguiente juego
   }
 
   start() {

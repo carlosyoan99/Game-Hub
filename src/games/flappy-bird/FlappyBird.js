@@ -1,9 +1,11 @@
-import { InputManager } from '../../engine/InputManager.js';
+
+import { GameBase } from '../../engine/GameBase.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { circleIntersectsAABB } from '../../engine/CollisionUtils.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
+import { renderOverlay, setupHUDContext, clearHUDContext } from '../../engine/GameUI.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
 
 const GRAVITY = 900;
@@ -29,16 +31,9 @@ const LEVELS = [
  * Flappy Bird con sistema de 5 niveles: velocidad y gap de tuberías
  * progresivos, puntuación objetivo para avanzar al siguiente nivel.
  */
-export class FlappyBird {
+export class FlappyBird extends GameBase {
   init(engine) {
-    this.engine = engine;
-    this.canvas = engine.canvas;
-    this.input = new InputManager();
-    this.input.attach(this.canvas);
-    this.storage = new StorageManager('flappy-bird');
-
-    this.width = this.canvas.width;
-    this.height = this.canvas.height;
+    super.init(engine, 'flappy-bird');
     this.highscore = this.storage.get('highscore', 0);
     this._computePipeMetrics();
 
@@ -46,8 +41,7 @@ export class FlappyBird {
   }
 
   handleResize(width, height) {
-    this.width = width;
-    this.height = height;
+    super.handleResize(width, height);
     this._computePipeMetrics();
   }
 
@@ -99,7 +93,7 @@ export class FlappyBird {
 
     if (flapPressed) {
       this.bird.vy = FLAP_IMPULSE;
-      AudioManager.sfx({ type: 'jump', volume: 0.3 });
+      AudioManager.sfx({ type: 'flappy_flap', volume: 0.3 });
     }
 
     this.bird.vy += GRAVITY * dt;
@@ -136,7 +130,7 @@ export class FlappyBird {
         pipe.passed = true;
         this.score += 1;
         this.totalScore += 10;
-        AudioManager.sfx({ type: 'coin', volume: 0.3 });
+        AudioManager.sfx({ type: 'flappy_score', volume: 0.3 });
         HapticManager.vibrate('coin');
 
         // Comprobar si completa el nivel
@@ -232,13 +226,11 @@ export class FlappyBird {
     ctx.restore();
 
     // HUD
-    ctx.fillStyle = '#9aa7b2';
-    ctx.font = '14px monospace';
-    ctx.textBaseline = 'top';
+    setupHUDContext(ctx);
     ctx.fillText(t('flappy.level', { n: this.currentLevel, max: MAX_LEVEL, label: t(cfg.labelKey) }), 10, 10);
     ctx.fillText(t('flappy.score', { n: this.score, target: this._getTargetScore() }), 10, 28);
     ctx.fillText(t('flappy.total', { n: this.totalScore }), 10, 46);
-    ctx.fillText(t('game.seed', { seed: this.seedCode }), 10, 64);
+
     ctx.fillText(t('game.record', { n: this.highscore }), this.width / 2 - 50, 10);
 
     if (this.status === 'level-complete') {
@@ -255,27 +247,12 @@ export class FlappyBird {
     }
 
     if (this.status === 'won' || this.status === 'lost') {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-      ctx.fillRect(0, 0, this.width, this.height);
-      ctx.fillStyle = '#e7edf3';
-      ctx.font = 'bold 28px monospace';
-      ctx.textAlign = 'center';
-      if (this.status === 'won') {
-        ctx.fillText(t('flappy.gameComplete'), this.width / 2, this.height / 2 - 30);
-        ctx.font = '16px monospace';
-        ctx.fillText(t('flappy.finalScore', { n: this.totalScore }), this.width / 2, this.height / 2 + 5);
-      } else {
-        ctx.fillText(t('game.gameOver'), this.width / 2, this.height / 2 - 20);
-      }
-      ctx.font = '16px monospace';
-      ctx.fillText(t('game.restart'), this.width / 2, this.height / 2 + 30);
-      ctx.textAlign = 'left';
+      const title = this.status === 'won' ? t('flappy.gameComplete') : undefined;
+      const subtitle = this.status === 'won' ? t('flappy.finalScore', { n: this.totalScore }) : undefined;
+      renderOverlay(ctx, { width: this.width, height: this.height, title, subtitle, actionText: t('game.restart') });
     }
   }
 
-  destroy() {
-    this.input.detach();
-  }
 }
 
 function clampTiltAngle(vy) {

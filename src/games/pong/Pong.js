@@ -1,4 +1,6 @@
-import { InputManager } from '../../engine/InputManager.js';
+
+import { GameBase } from '../../engine/GameBase.js';
+import { renderOverlay } from '../../engine/GameUI.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { circleIntersectsAABB, clamp } from '../../engine/CollisionUtils.js';
 import { AudioManager } from '../../engine/AudioManager.js';
@@ -25,24 +27,16 @@ const LEVELS = [
  * Pong con sistema de 5 niveles: IA progresa en velocidad,
  * la bola es más rápida, y necesitas más puntos para ganar.
  */
-export class Pong {
+export class Pong extends GameBase {
   init(engine) {
-    this.engine = engine;
-    this.canvas = engine.canvas;
-    this.input = new InputManager();
-    this.input.attach(this.canvas);
-    this.storage = new StorageManager('pong');
-
-    this.width = this.canvas.width;
-    this.height = this.canvas.height;
+    super.init(engine, 'pong');
     this.bestStreak = this.storage.get('bestStreak', 0);
 
     this._restart();
   }
 
   handleResize(width, height) {
-    this.width = width;
-    this.height = height;
+    super.handleResize(width, height);
     this.player.y = clamp(this.player.y, 0, this.height - this.player.height);
     this.ai.y = clamp(this.ai.y, 0, this.height - this.ai.height);
   }
@@ -94,13 +88,7 @@ export class Pong {
       return;
     }
 
-    if (this.status === 'won' || this.status === 'lost') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
-        this._restart();
-      }
-      this.input.endFrame();
-      return;
-    }
+    if (this.handleRestartInput()) return;
 
     this._movePlayer(dt);
     this._moveAI(dt);
@@ -187,19 +175,19 @@ export class Pong {
     this.ball.vx = Math.cos(angle) * speed * direction;
     this.ball.vy = Math.sin(angle) * speed;
     this.ball.x = direction === 1 ? paddle.x + paddle.width + this.ball.radius : paddle.x - this.ball.radius;
-    AudioManager.sfx({ type: 'select', volume: 0.25 });
+    AudioManager.sfx({ type: 'pong_hit', volume: 0.25 });
     HapticManager.vibrate('select');
   }
 
   _checkScoring() {
     if (this.ball.x + this.ball.radius < 0) {
       this.aiScore += 1;
-      AudioManager.sfx({ type: 'hit', volume: 0.5 });
+      AudioManager.sfx({ type: 'pong_hit', volume: 0.5 });
       HapticManager.vibrate('hit');
       this._afterPoint();
     } else if (this.ball.x - this.ball.radius > this.width) {
       this.playerScore += 1;
-      AudioManager.sfx({ type: 'coin', volume: 0.35 });
+      AudioManager.sfx({ type: 'pong_score', volume: 0.35 });
       HapticManager.vibrate('coin');
       this._afterPoint();
     }
@@ -225,7 +213,7 @@ export class Pong {
         }
       } else {
         this.status = 'lost';
-        AudioManager.sfx({ type: 'hit', volume: 0.6 });
+        AudioManager.sfx({ type: 'pong_hit', volume: 0.6 });
         HapticManager.vibrate('hit');
       }
     } else {
@@ -272,7 +260,7 @@ export class Pong {
     ctx.fillStyle = '#7c8894';
     ctx.textAlign = 'left';
     ctx.font = '11px monospace';
-    ctx.fillText(t('game.seed', { seed: this.seedCode }), 10, this.height - 14);
+
     ctx.textAlign = 'center';
     ctx.font = '14px monospace';
     ctx.fillText(t('pong.bestLevel', { n: this.bestStreak }), this.width / 2, this.height - 14);
@@ -291,23 +279,9 @@ export class Pong {
     }
 
     if (this.status === 'won' || this.status === 'lost') {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-      ctx.fillRect(0, 0, this.width, this.height);
-      ctx.fillStyle = '#e7edf3';
-      ctx.font = 'bold 28px monospace';
-      ctx.textAlign = 'center';
-      if (this.status === 'won') {
-        ctx.fillText(t('pong.gameComplete'), this.width / 2, this.height / 2 - 30);
-      } else {
-        ctx.fillText(t('pong.lost'), this.width / 2, this.height / 2 - 20);
-      }
-      ctx.font = '16px monospace';
-      ctx.fillText(t('game.restart'), this.width / 2, this.height / 2 + 30);
+      const title = this.status === 'won' ? t('pong.gameComplete') : t('pong.lost');
+      renderOverlay(ctx, { width: this.width, height: this.height, title });
     }
-    ctx.textAlign = 'left';
   }
 
-  destroy() {
-    this.input.detach();
-  }
 }

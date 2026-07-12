@@ -1,6 +1,19 @@
 # Dependencies
 node_modules/
 
+# Lock files (commit these for reproducible builds)
+package-lock.json
+
+# Build output
+dist/
+build/
+
+# Package manager cache directories
+.npm/
+.cache/
+.yarn/
+.pnpm/
+
 # Environment variables
 .env
 .env.local
@@ -9,7 +22,6 @@ node_modules/
 # Logs
 logs/
 *.log
-npm-debug.log*
 
 # Editor directories and files
 .vscode/
@@ -27,5 +39,9 @@ Desktop.ini
 # Coverage directory used by tools like istanbul
 coverage/
 
+# TypeScript (if added in the future)
+*.tsbuildinfo
+
 # Misc
 *.bak
+*.tmp

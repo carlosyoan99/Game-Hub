@@ -44,7 +44,7 @@ export default {
   'swords.shopItemsDesc':      { es: 'Pociones, mejoras y libros',     en: 'Potions, upgrades and books' },
   'swords.shopEquipped':       { es: '✅ EQUIPADO',                     en: '✅ EQUIPPED' },
   'swords.shopFree':           { es: 'GRATIS',                         en: 'FREE' },
-  'swords.shopCost':           { es: '${n} oro',                      en: '${n} gold' },
+  'swords.shopCost':           { es: '{n} oro',                      en: '{n} gold' },
   'swords.shopCategories':     { es: '← Categorías',                   en: '← Categories' },
   'swords.trainingClickRhythm':  { es: '🏃 ¡Haz clic para mantener el ritmo!', en: '🏃 Click to keep the rhythm!' },
   'swords.trainingClickFast':    { es: 'Clickea lo más rápido que puedas',    en: 'Click as fast as you can' },

@@ -13,20 +13,33 @@
       <span id="current-title" class="hud__title"></span>
       <button id="back-button" class="hud__back" data-i18n="menu.back">← Menú</button>
     </div>
-    <button id="settings-btn" class="settings-btn" aria-label="Configuración" data-i18n="settings.title">⚙️</button>
+    <button id="settings-btn" class="settings-btn" aria-label="Configuración"><img src="assets/icons/gear.svg" alt="" class="icon" width="18" height="18" /></button>
   </header>
 
   <main class="stage">
     <section id="menu" class="menu">
       <div class="menu__toolbar">
         <p class="menu__eyebrow" data-i18n="menu.eyebrow">Selecciona un juego</p>
-        <input id="game-search" class="menu__search" type="text" placeholder="🔍 Buscar juegos..." autocomplete="off" data-i18n-placeholder="menu.searchPlaceholder" />
+        <div class="menu__search-wrap">
+          <img src="assets/icons/search.svg" alt="" class="icon icon--search" width="16" height="16" />
+          <input id="game-search" class="menu__search" type="text" placeholder="Buscar juegos..." autocomplete="off" data-i18n-placeholder="menu.searchPlaceholder" />
+        </div>
       </div>
       <div id="game-grid" class="game-grid"></div>
       <p id="search-empty" class="menu__empty" data-i18n="menu.empty" hidden>No se encontraron juegos</p>
     </section>
 
-    <canvas id="game-canvas" width="900" height="540" hidden></canvas>
+    <div id="game-canvas-wrapper" hidden>
+      <div id="loading-indicator" class="loading-indicator" hidden>
+        <div class="loading-bar">
+          <div class="loading-bar__track">
+            <div class="loading-bar__fill"></div>
+          </div>
+          <span class="loading-bar__label">Cargando...</span>
+        </div>
+      </div>
+      <canvas id="game-canvas" width="900" height="540"></canvas>
+    </div>
   </main>
 
   <!-- ─── Settings Modal ──────────────────────────────────────────── -->
@@ -34,7 +47,7 @@
     <div class="settings-modal" role="dialog" aria-label="Configuración">
       <div class="settings-header">
         <h2 class="settings-title" data-i18n="settings.title">CONFIGURACIÓN</h2>
-        <button id="settings-close" class="settings-close" aria-label="Cerrar" data-i18n="settings.close">✕</button>
+        <button id="settings-close" class="settings-close" aria-label="Cerrar" data-i18n="settings.close"><img src="assets/icons/close.svg" alt="" class="icon" width="16" height="16" /></button>
       </div>
 
       <div class="settings-body">
@@ -46,8 +59,8 @@
             <span class="settings-row__label" data-i18n="settings.theme">Tema</span>
             <div class="settings-row__widget">
               <button id="settings-theme" class="settings-toggle">
-                <span class="settings-toggle__opt" data-value="dark">🌙 OSCURO</span>
-                <span class="settings-toggle__opt" data-value="light">☀️ CLARO</span>
+                <span class="settings-toggle__opt" data-value="dark"><img src="assets/icons/moon.svg" alt="" class="icon toggle-icon" width="14" height="14" /> OSCURO</span>
+                <span class="settings-toggle__opt" data-value="light"><img src="assets/icons/sun.svg" alt="" class="icon toggle-icon" width="14" height="14" /> CLARO</span>
               </button>
             </div>
           </div>
@@ -56,8 +69,8 @@
             <span class="settings-row__label" data-i18n="settings.language">Idioma</span>
             <div class="settings-row__widget">
               <button id="settings-language" class="settings-toggle">
-                <span class="settings-toggle__opt" data-value="es">🇪🇸 ES</span>
-                <span class="settings-toggle__opt" data-value="en">🇬🇧 EN</span>
+                <span class="settings-toggle__opt" data-value="es">ES</span>
+                <span class="settings-toggle__opt" data-value="en">EN</span>
               </button>
             </div>
           </div>
@@ -66,8 +79,8 @@
             <span class="settings-row__label" data-i18n="settings.reducedMotion">Animaciones</span>
             <div class="settings-row__widget">
               <button id="settings-motion" class="settings-toggle">
-                <span class="settings-toggle__opt" data-value="false">▶️ NORM</span>
-                <span class="settings-toggle__opt" data-value="true">⏸️ REDUC</span>
+                <span class="settings-toggle__opt" data-value="false"><img src="assets/icons/play.svg" alt="" class="icon toggle-icon" width="14" height="14" /> NORM</span>
+                <span class="settings-toggle__opt" data-value="true"><img src="assets/icons/pause.svg" alt="" class="icon toggle-icon" width="14" height="14" /> REDUC</span>
               </button>
             </div>
           </div>
@@ -110,8 +123,8 @@
             <span class="settings-row__label" data-i18n="settings.vibration">Vibración</span>
             <div class="settings-row__widget">
               <button id="settings-haptic" class="settings-toggle">
-                <span class="settings-toggle__opt" data-value="true">📳 ON</span>
-                <span class="settings-toggle__opt" data-value="false">🚫 OFF</span>
+                <span class="settings-toggle__opt" data-value="true"><img src="assets/icons/vibrate.svg" alt="" class="icon toggle-icon" width="14" height="14" /> ON</span>
+                <span class="settings-toggle__opt" data-value="false"><img src="assets/icons/vibrate-off.svg" alt="" class="icon toggle-icon" width="14" height="14" /> OFF</span>
               </button>
             </div>
           </div>

@@ -1,9 +1,10 @@
-import { InputManager } from '../../engine/InputManager.js';
+import { GameBase } from '../../engine/GameBase.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { circleIntersectsAABB, clamp } from '../../engine/CollisionUtils.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
+import { renderOverlay, setupHUDContext, clearHUDContext } from '../../engine/GameUI.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
 
 const PADDLE_WIDTH = 90;
@@ -26,16 +27,9 @@ const LEVELS = [
 /**
  * Breakout con sistema de 5 niveles.
  */
-export class Breakout {
+export class Breakout extends GameBase {
   init(engine) {
-    this.engine = engine;
-    this.canvas = engine.canvas;
-    this.input = new InputManager();
-    this.input.attach(this.canvas);
-    this.storage = new StorageManager('breakout');
-
-    this.width = this.canvas.width;
-    this.height = this.canvas.height;
+    super.init(engine, 'breakout');
 
     this.score = 0;
     this.lives = 3;
@@ -50,8 +44,7 @@ export class Breakout {
   }
 
   handleResize(width, height) {
-    this.width = width;
-    this.height = height;
+    super.handleResize(width, height);
     this.paddle.y = this.height - 30;
     if (this.status === 'playing' || this.status === 'level-complete') {
       this._buildBricks();
@@ -111,13 +104,7 @@ export class Breakout {
       return;
     }
 
-    if (this.status === 'won' || this.status === 'lost') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
-        this._restart();
-      }
-      this.input.endFrame();
-      return;
-    }
+    if (this.handleRestartInput()) return;
 
     // Paleta
     if (this.input.isDown('ArrowLeft') || this.input.isDown('KeyA')) {
@@ -156,7 +143,7 @@ export class Breakout {
       this.ball.vx = speed * Math.sin(angle);
       this.ball.vy = -Math.abs(speed * Math.cos(angle));
       this.ball.y = this.paddle.y - this.ball.radius;
-      AudioManager.sfx({ type: 'select', volume: 0.3 });
+      AudioManager.sfx({ type: 'breakout_hit', volume: 0.3 });
     }
 
     // Bola vs ladrillos
@@ -166,7 +153,7 @@ export class Breakout {
         brick.hp--;
         if (brick.hp <= 0) brick.alive = false;
         this.score += brick.hard ? 20 : 10;
-        AudioManager.sfx({ type: 'coin', volume: 0.25 });
+        AudioManager.sfx({ type: 'breakout_brick', volume: 0.25 });
         HapticManager.vibrate('coin');
         const overlapX = Math.min(
           this.ball.x + this.ball.radius - brick.x,
@@ -185,7 +172,7 @@ export class Breakout {
     // Bola cae
     if (this.ball.y - this.ball.radius > this.height) {
       this.lives -= 1;
-      AudioManager.sfx({ type: 'hit', volume: 0.4 });
+      AudioManager.sfx({ type: 'breakout_hit', volume: 0.4 });
       HapticManager.vibrate('hit');
       if (this.lives <= 0) {
         this._endGame('lost');
@@ -271,12 +258,10 @@ export class Breakout {
     ctx.fill();
 
     // HUD
-    ctx.fillStyle = '#9aa7b2';
-    ctx.font = '14px monospace';
-    ctx.textBaseline = 'top';
+    setupHUDContext(ctx);
     ctx.fillText(t('breakout.level', { n: this.currentLevel, max: MAX_LEVEL, label: t(cfg.labelKey) }), 10, 10);
     ctx.fillText(t('game.score', { n: this.score }), 10, 28);
-    ctx.fillText(t('game.seed', { seed: this.seedCode }), 10, 46);
+
     ctx.fillText(`${t('breakout.lives')} ${'❤'.repeat(Math.max(0, this.lives))}`, this.width - 100, 10);
     ctx.fillText(t('game.record', { n: this.highscore }), this.width / 2 - 50, 10);
 
@@ -294,25 +279,10 @@ export class Breakout {
     }
 
     if (this.status === 'won' || this.status === 'lost') {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-      ctx.fillRect(0, 0, this.width, this.height);
-      ctx.fillStyle = '#e7edf3';
-      ctx.font = 'bold 28px monospace';
-      ctx.textAlign = 'center';
-      if (this.status === 'won') {
-        ctx.fillText(t('breakout.gameComplete'), this.width / 2, this.height / 2 - 30);
-        ctx.font = '16px monospace';
-        ctx.fillText(t('breakout.finalScore', { n: this.score }), this.width / 2, this.height / 2 + 5);
-      } else {
-        ctx.fillText(t('game.gameOver'), this.width / 2, this.height / 2 - 20);
-      }
-      ctx.font = '16px monospace';
-      ctx.fillText(t('game.restart'), this.width / 2, this.height / 2 + 30);
-      ctx.textAlign = 'left';
+      const title = this.status === 'won' ? t('breakout.gameComplete') : undefined;
+      const subtitle = this.status === 'won' ? t('breakout.finalScore', { n: this.score }) : undefined;
+      renderOverlay(ctx, { width: this.width, height: this.height, title, subtitle, actionText: t('game.restart') });
     }
   }
 
-  destroy() {
-    this.input.detach();
-  }
 }

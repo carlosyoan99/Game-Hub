@@ -6,6 +6,8 @@ import { SettingsManager } from './engine/SettingsManager.js';
 import { t, applyI18n, loadGameTranslations } from './engine/i18n.js';
 
 const canvas = document.getElementById('game-canvas');
+const canvasWrapper = document.getElementById('game-canvas-wrapper');
+const loadingIndicator = document.getElementById('loading-indicator');
 const menu = document.getElementById('menu');
 const gameGrid = document.getElementById('game-grid');
 const hud = document.getElementById('game-hud');
@@ -37,7 +39,6 @@ function renderMenu() {
     // Guardamos title, tagline y level en data attributes para filtrar y estilizar sin re-render
     card.dataset.title = t(game.title_i18n).toLowerCase();
     card.dataset.tagline = t(game.tagline_i18n).toLowerCase();
-    card.dataset.level = String(game.level);
     // Búsqueda bilingüe: id + título/tagline en ES y EN
     card.dataset.searchTokens = [
       game.id,
@@ -47,7 +48,6 @@ function renderMenu() {
       t(game.tagline_i18n, {}, 'en'),
     ].join(' ').toLowerCase();
     card.innerHTML = `
-      <span class="game-card__level">${t('menu.level')} ${game.level}</span>
       <span class="game-card__title">${t(game.title_i18n)}</span>
       <span class="game-card__tagline">${t(game.tagline_i18n)}</span>
     `;
@@ -61,7 +61,8 @@ function renderMenu() {
 const searchInput = document.getElementById('game-search');
 const searchEmpty = document.getElementById('search-empty');
 
-searchInput.addEventListener('input', () => {
+/** Aplica el filtro de búsqueda sobre las cards actuales del grid. */
+function _applySearchFilter() {
   const query = searchInput.value.trim().toLowerCase();
   let visibleCount = 0;
 
@@ -73,28 +74,34 @@ searchInput.addEventListener('input', () => {
   }
 
   searchEmpty.hidden = visibleCount > 0;
-});
+}
+
+searchInput.addEventListener('input', _applySearchFilter);
 
 async function launchGame(gameMeta) {
+  // Mostrar loading inmediatamente
+  menu.hidden = true;
+  settingsBtn.hidden = true;
+  hud.hidden = false;
+  currentTitle.textContent = t(gameMeta.title_i18n);
+  canvasWrapper.hidden = false;  // Muestra el indicador "Cargando..."
+  loadingIndicator.hidden = false;
+
   // Cargar el código del juego y sus traducciones en paralelo
   const [GameClass] = await Promise.all([
     gameMeta.load(),
     loadGameTranslations(gameMeta.id),
   ]);
 
+  // Ocultar loading, inicializar canvas
+  loadingIndicator.hidden = true;
   fitCanvas();
   engine.loadGame(new GameClass());
-
-  menu.hidden = true;
-  hud.hidden = false;
-  canvas.hidden = false;
-  currentTitle.textContent = t(gameMeta.title_i18n);
-  settingsBtn.hidden = true;
 }
 
 function returnToMenu() {
   engine.unloadGame();
-  canvas.hidden = true;
+  canvasWrapper.hidden = true;
   hud.hidden = true;
   menu.hidden = false;
   settingsBtn.hidden = false;
@@ -253,6 +260,7 @@ SettingsManager.onChange('reducedMotion', (value) => {
 SettingsManager.onChange('language', (value) => {
   renderMenu();
   applyI18n();
+  _applySearchFilter();
   if (!settingsOverlay.hidden) _syncToggle('settings-language', value);
 });
 
@@ -288,7 +296,7 @@ window.addEventListener('keydown', (e) => {
   }
 });
 window.addEventListener('resize', () => {
-  if (!canvas.hidden) fitCanvas();
+  if (!canvasWrapper.hidden) fitCanvas();
 });
 
 renderMenu();

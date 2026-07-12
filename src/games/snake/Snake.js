@@ -1,8 +1,9 @@
-import { InputManager } from '../../engine/InputManager.js';
+import { GameBase } from '../../engine/GameBase.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
+import { renderOverlay, setupHUDContext, clearHUDContext } from '../../engine/GameUI.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
 
 const COLS = 28;
@@ -29,16 +30,9 @@ const DIRECTIONS = {
  * Snake con sistema de 5 niveles: obstáculos, velocidad progresiva,
  * y puntuación objetivo para avanzar al siguiente nivel.
  */
-export class Snake {
+export class Snake extends GameBase {
   init(engine) {
-    this.engine = engine;
-    this.canvas = engine.canvas;
-    this.input = new InputManager();
-    this.input.attach(this.canvas);
-    this.storage = new StorageManager('snake');
-
-    this.width = this.canvas.width;
-    this.height = this.canvas.height;
+    super.init(engine, 'snake');
     this.highscore = this.storage.get('highscore', 0);
 
     this.cols = COLS;
@@ -48,8 +42,7 @@ export class Snake {
   }
 
   handleResize(width, height) {
-    this.width = width;
-    this.height = height;
+    super.handleResize(width, height);
     this.rows = Math.max(10, Math.floor((this.height / this.width) * this.cols));
   }
 
@@ -141,13 +134,7 @@ export class Snake {
       return;
     }
 
-    if (this.status === 'won' || this.status === 'lost') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
-        this._restart();
-      }
-      this.input.endFrame();
-      return;
-    }
+    if (this.handleRestartInput()) return;
 
     this.moveTimer += dt;
     const cfg = this._getLevelConfig();
@@ -206,7 +193,7 @@ export class Snake {
     if (newHead.x === this.food.x && newHead.y === this.food.y) {
       this.score += 1;
       this.totalScore += 10;
-      AudioManager.sfx({ type: 'coin', volume: 0.35 });
+      AudioManager.sfx({ type: 'snake_eat', volume: 0.35 });
       HapticManager.vibrate('coin');
       if (this.score >= SCORE_TO_ADVANCE && this.currentLevel < MAX_LEVEL) {
         this.status = 'level-complete';
@@ -224,7 +211,7 @@ export class Snake {
 
   _endGame(type) {
     this.status = type || 'lost';
-    AudioManager.sfx({ type: 'explosion', volume: 0.5 });
+    AudioManager.sfx({ type: 'snake_die', volume: 0.5 });
     HapticManager.vibrate('explosion');
     if (this.totalScore > this.highscore) {
       this.highscore = this.totalScore;
@@ -260,13 +247,11 @@ export class Snake {
     });
 
     // HUD
-    ctx.fillStyle = '#9aa7b2';
-    ctx.font = '14px monospace';
-    ctx.textBaseline = 'top';
+    setupHUDContext(ctx);
     ctx.fillText(t('snake.level', { n: this.currentLevel, max: MAX_LEVEL, label: t(cfg.labelKey) }), 10, 10);
     ctx.fillText(t('snake.food', { n: this.score, target: SCORE_TO_ADVANCE }), 10, 28);
     ctx.fillText(t('snake.total', { n: this.totalScore }), 10, 46);
-    ctx.fillText(t('game.seed', { seed: this.seedCode }), 10, 64);
+
     ctx.fillText(t('game.record', { n: this.highscore }), this.width / 2 - 50, 10);
 
     if (this.status === 'level-complete') {
@@ -283,23 +268,9 @@ export class Snake {
     }
 
     if (this.status === 'won' || this.status === 'lost') {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-      ctx.fillRect(0, 0, this.width, this.height);
-      ctx.fillStyle = '#e7edf3';
-      ctx.font = 'bold 28px monospace';
-      ctx.textAlign = 'center';
-      if (this.status === 'won') {
-        ctx.fillText(t('snake.gameComplete'), this.width / 2, this.height / 2 - 30);
-      } else {
-        ctx.fillText(t('game.gameOver'), this.width / 2, this.height / 2 - 20);
-      }
-      ctx.font = '16px monospace';
-      ctx.fillText(t('game.restart'), this.width / 2, this.height / 2 + 30);
-      ctx.textAlign = 'left';
+      const title = this.status === 'won' ? t('snake.gameComplete') : undefined;
+      renderOverlay(ctx, { width: this.width, height: this.height, title });
     }
   }
 
-  destroy() {
-    this.input.detach();
-  }
 }

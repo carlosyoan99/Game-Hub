@@ -7,7 +7,8 @@
  * enemiga, cada bloque tiene puntos de vida que se reducen con el impacto.
  * El objetivo es eliminar a los soldados enemigos dentro del castillo.
  */
-import { InputManager } from '../../engine/InputManager.js';
+import { GameBase } from '../../engine/GameBase.js';
+import { renderOverlay } from '../../engine/GameUI.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { clamp } from '../../engine/CollisionUtils.js';
 import { ParticleSystem } from '../../engine/ParticleSystem.js';
@@ -17,24 +18,16 @@ import { t } from '../../engine/i18n.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
 import { GRAVITY, BLOCK_SIZE, BLOCK_GAP, PROJECTILE_RADIUS, DEBRIS_OPTS, COLORS, BLOCK_TYPES } from './constants.js';
 
-export class CrushTheCastle {
+export class CrushTheCastle extends GameBase {
   init(engine) {
-    this.engine = engine;
-    this.canvas = engine.canvas;
-    this.input = new InputManager();
-    this.input.attach(this.canvas);
-    this.storage = new StorageManager('crush-the-castle');
-
-    this.width = this.canvas.width;
-    this.height = this.canvas.height;
+    super.init(engine, 'crush-the-castle');
     this.highscore = this.storage.get('highscore', 0);
 
     this._restart();
   }
 
   handleResize(width, height) {
-    this.width = width;
-    this.height = height;
+    super.handleResize(width, height);
     this.catapult.y = this.height - 60;
     if (this.status === 'aiming' || this.status === 'flying' || this.status === 'exploding') {
       this._buildCastle();
@@ -138,7 +131,8 @@ export class CrushTheCastle {
   }
 
   update(dt) {
-    if (this.status === 'won' || this.status === 'lost') {
+    if (this.handleRestartInput()) return;
+    if (this.status === 'level-complete') {
       if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
         this._nextWave();
       }
@@ -207,7 +201,7 @@ export class CrushTheCastle {
     this.status = 'flying';
 
     this.particles.burst(this.catapult.x, this.catapult.y - 10, '#ffb454', 12, 80, DEBRIS_OPTS);
-    AudioManager.sfx({ type: 'shoot', volume: 0.35 });
+    AudioManager.sfx({ type: 'castle_shoot', volume: 0.35 });
     HapticManager.vibrate('shoot');
   }
 
@@ -241,7 +235,7 @@ export class CrushTheCastle {
       if (distSq <= p.radius * p.radius) {
         block.hp--;
         block.wiggling = 0.15;
-        AudioManager.sfx({ type: 'hit', volume: 0.3 });
+        AudioManager.sfx({ type: 'castle_hit', volume: 0.3 });
         HapticManager.vibrate('hit');
 
         this.particles.burst(p.x, p.y, block.color, 8, 120, DEBRIS_OPTS);
@@ -277,11 +271,11 @@ export class CrushTheCastle {
               }
             }
             this.particles.burst(block.x + block.width / 2, block.y + block.height / 2, '#ffb454', 30, 300, DEBRIS_OPTS);
-            AudioManager.sfx({ type: 'explosion', volume: 0.6 });
+            AudioManager.sfx({ type: 'castle_destroy', volume: 0.6 });
             HapticManager.vibrate('explosion');
           } else {
             this.particles.burst(block.x + block.width / 2, block.y + block.height / 2, block.color, 16, 200, DEBRIS_OPTS);
-            AudioManager.sfx({ type: 'explosion', volume: 0.35 });
+            AudioManager.sfx({ type: 'castle_destroy', volume: 0.35 });
           }
           this.score += 10;
 
@@ -312,7 +306,7 @@ export class CrushTheCastle {
               }
               if (!standing) {
                 soldier.alive = false;
-                AudioManager.sfx({ type: 'hit', volume: 0.4 });
+                AudioManager.sfx({ type: 'castle_hit', volume: 0.4 });
                 this.particles.burst(soldier.x, soldier.y, '#c0392b', 6, 100, DEBRIS_OPTS);
                 this.score += 25;
               }
@@ -329,7 +323,7 @@ export class CrushTheCastle {
       const dy = p.y - soldier.y;
       if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
         soldier.alive = false;
-        AudioManager.sfx({ type: 'explosion', volume: 0.4 });
+        AudioManager.sfx({ type: 'castle_destroy', volume: 0.4 });
         HapticManager.vibrate('explosion');
         this.particles.burst(soldier.x, soldier.y, '#c0392b', 10, 150, DEBRIS_OPTS);
         this.score += 25;
@@ -379,7 +373,7 @@ export class CrushTheCastle {
 
     if (this.ammo <= 0) {
       this.status = 'lost';
-      AudioManager.sfx({ type: 'hit', volume: 0.5 });
+      AudioManager.sfx({ type: 'castle_hit', volume: 0.5 });
       HapticManager.vibrate('hit');
       return;
     }
@@ -533,10 +527,8 @@ export class CrushTheCastle {
     ctx.fillStyle = COLORS.inkDim;
     ctx.font = '14px monospace';
     ctx.textBaseline = 'top';
-    ctx.fillText(t('game.wave', { n: this.wave }), 10, 10);
-    ctx.fillText(t('crush.score', { n: this.score }), 10, 28);
-    ctx.fillText(t('crush.ammo') + ` ${'●'.repeat(this.ammo)}${'○'.repeat(this.maxAmmo - this.ammo)}`, 10, 46);
-    ctx.fillText(t('game.seed', { seed: this.seedCode }), 10, 64);
+    ctx.fillText(t('crush.score', { n: this.score }), 10, 10);
+    ctx.fillText(t('crush.ammo') + ` ${'●'.repeat(this.ammo)}${'○'.repeat(this.maxAmmo - this.ammo)}`, 10, 28);
 
     if (this.highscore > 0) {
       ctx.fillText(t('crush.record', { n: this.highscore }), this.width / 2 - 40, 10);
@@ -557,23 +549,24 @@ export class CrushTheCastle {
     }
 
     if (this.status === 'won' || this.status === 'lost') {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-      ctx.fillRect(0, 0, this.width, this.height);
-      ctx.fillStyle = COLORS.ink;
-      ctx.font = 'bold 28px monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+      const colors = { bg: 'rgba(0, 0, 0, 0.6)', text: COLORS.ink };
       if (this.status === 'won') {
-        ctx.fillText(t('crush.victory'), this.width / 2, this.height / 2 - 30);
-        ctx.font = '16px monospace';
-        ctx.fillText(t('crush.nextWave'), this.width / 2, this.height / 2 + 20);
+        renderOverlay(ctx, {
+          width: this.width, height: this.height,
+          title: t('crush.victory'),
+          actionText: t('crush.nextWave'),
+          score: this.score,
+          colors,
+        });
       } else {
-        ctx.fillText(t('game.gameOver'), this.width / 2, this.height / 2 - 30);
-        ctx.font = '16px monospace';
-        ctx.fillText(t('crush.soldiersLeft', { n: this.soldiers.filter(s => s.alive).length }), this.width / 2, this.height / 2 + 20);
-        ctx.fillText(t('game.restart'), this.width / 2, this.height / 2 + 45);
+        renderOverlay(ctx, {
+          width: this.width, height: this.height,
+          title: t('game.gameOver'),
+          subtitle: t('crush.soldiersLeft', { n: this.soldiers.filter(s => s.alive).length }),
+          actionText: t('game.restart'),
+          colors,
+        });
       }
-      ctx.textAlign = 'left';
     }
   }
 
@@ -624,7 +617,4 @@ export class CrushTheCastle {
     }
   }
 
-  destroy() {
-    this.input.detach();
-  }
 }

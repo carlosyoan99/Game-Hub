@@ -1,4 +1,5 @@
-import { InputManager } from '../../engine/InputManager.js';
+import { GameBase } from '../../engine/GameBase.js';
+import { renderOverlay } from '../../engine/GameUI.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { pointInRect } from '../../engine/CollisionUtils.js';
 import { wrapText } from '../../engine/wrapText.js';
@@ -52,24 +53,16 @@ const QUESTIONS = [
  * Nivel 1, aquí usada por primera vez de verdad (antes solo AABB/círculo
  * tenían casos de uso reales).
  */
-export class TrickQuiz {
+export class TrickQuiz extends GameBase {
   init(engine) {
-    this.engine = engine;
-    this.canvas = engine.canvas;
-    this.input = new InputManager();
-    this.input.attach(this.canvas);
-    this.storage = new StorageManager('trick-quiz');
-
-    this.width = this.canvas.width;
-    this.height = this.canvas.height;
+    super.init(engine, 'trick-quiz');
     this.bestQuestion = this.storage.get('bestQuestion', 0);
 
     this._restart();
   }
 
   handleResize(width, height) {
-    this.width = width;
-    this.height = height;
+    super.handleResize(width, height);
     this._layoutCurrentQuestion();
   }
 
@@ -123,11 +116,7 @@ export class TrickQuiz {
   }
 
   update(dt) {
-    if (this.status === 'lost' || this.status === 'won') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) this._restart();
-      this.input.endFrame();
-      return;
-    }
+    if (this.handleRestartInput()) return;
 
     if (this.status === 'feedback') {
       this.feedbackTimer -= dt;
@@ -170,13 +159,13 @@ export class TrickQuiz {
     this.status = 'feedback';
     this.feedbackKind = 'correct';
     this.feedbackTimer = FEEDBACK_DURATION;
-    AudioManager.sfx({ type: 'coin', volume: 0.3 });
+    AudioManager.sfx({ type: 'tquiz_correct', volume: 0.3 });
     HapticManager.vibrate('coin');
   }
 
   _onWrong() {
     this.lives -= 1;
-    AudioManager.sfx({ type: 'hit', volume: 0.4 });
+    AudioManager.sfx({ type: 'tquiz_wrong', volume: 0.4 });
     HapticManager.vibrate('hit');
     if (this.lives <= 0) {
       this.status = 'lost';
@@ -260,22 +249,16 @@ export class TrickQuiz {
   }
 
   _renderEndScreen(ctx) {
-    ctx.fillStyle = '#e7edf3';
-    ctx.font = 'bold 26px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'alphabetic';
     const message = this.status === 'won' ? '¡COMPLETASTE EL CUESTIONARIO!' : 'GAME OVER';
-    ctx.fillText(message, this.width / 2, this.height / 2 - 30);
-
-    ctx.font = '15px monospace';
-    ctx.fillText(`Llegaste a la pregunta ${this.questionIndex + 1} de ${QUESTIONS.length}`, this.width / 2, this.height / 2 + 4);
-    ctx.fillText(`Mejor progreso: pregunta ${this.bestQuestion + 1}`, this.width / 2, this.height / 2 + 26);      ctx.fillText(t('game.restart'), this.width / 2, this.height / 2 + 52);
-    ctx.textAlign = 'left';
+    const subtitle = `Pregunta ${this.questionIndex + 1}/${QUESTIONS.length} | Mejor: ${this.bestQuestion + 1}`;
+    renderOverlay(ctx, {
+      width: this.width, height: this.height,
+      title: message,
+      subtitle,
+      actionText: t('game.restart'),
+    });
   }
 
-  destroy() {
-    this.input.detach();
-  }
 }
 
 

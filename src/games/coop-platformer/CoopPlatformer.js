@@ -1,10 +1,12 @@
-import { InputManager } from '../../engine/InputManager.js';
+import { renderOverlay, setupHUDContext, clearHUDContext } from '../../engine/GameUI.js';
+import { GameBase } from '../../engine/GameBase.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { Tilemap } from '../../engine/Tilemap.js';
 import { Camera } from '../../engine/Camera.js';
 import { aabbIntersects, clamp } from '../../engine/CollisionUtils.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
+import { t } from '../../engine/i18n.js';
 
 const TILE_SIZE = 32;
 const GRAVITY = 1400;
@@ -121,24 +123,16 @@ const GATE_ROWS = [9, 10, 11, 12];
 /**
  * CoopPlatformer — expandido con 5 niveles cooperativos.
  */
-export class CoopPlatformer {
+export class CoopPlatformer extends GameBase {
   init(engine) {
-    this.engine = engine;
-    this.canvas = engine.canvas;
-    this.input = new InputManager();
-    this.input.attach(this.canvas);
-    this.storage = new StorageManager('coop-platformer');
-
-    this.width = this.canvas.width;
-    this.height = this.canvas.height;
+    super.init(engine, 'coop-platformer');
     this.bestTime = this.storage.get('bestTime', null);
     this.currentLevel = this.storage.get('savedLevel', 1);
     this._loadLevel();
   }
 
   handleResize(width, height) {
-    this.width = width;
-    this.height = height;
+    super.handleResize(width, height);
     this.camera.resize(width, height);
   }
 
@@ -213,8 +207,9 @@ export class CoopPlatformer {
       this.input.endFrame();
       return;
     }
-    if (this.status !== 'playing') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) this._restart();
+    if (this.handleRestartInput()) return;
+    if (this.status === 'level-complete') {
+      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) this._nextLevel();
       this.input.endFrame();
       return;
     }
@@ -259,7 +254,7 @@ export class CoopPlatformer {
       player.vy = JUMP_VELOCITY;
       player.coyoteTimer = 0;
       player.jumpCut = false;
-      AudioManager.sfx({ type: 'jump', volume: 0.3 });
+      AudioManager.sfx({ type: 'coop_jump', volume: 0.3 });
     }
     const jumpHeld = this.input.isDown(keys.jump);
     if (!jumpHeld && player.vy < 0 && !player.jumpCut) {
@@ -305,7 +300,7 @@ export class CoopPlatformer {
     const someoneOnLever = aabbIntersects(this.player1, this.leverRect) || aabbIntersects(this.player2, this.leverRect);
     this.gateOpen = someoneOnLever;
     if (someoneOnLever && !this._leverWasPressed) {
-      AudioManager.sfx({ type: 'select', volume: 0.3 });
+      AudioManager.sfx({ type: 'coop_lever', volume: 0.3 });
       HapticManager.vibrate('select');
     }
     this._leverWasPressed = someoneOnLever;
@@ -393,31 +388,29 @@ export class CoopPlatformer {
 
     ctx.restore();
 
-    ctx.fillStyle = '#9aa7b2';
-    ctx.font = '14px monospace';
-    ctx.textBaseline = 'top';
-    ctx.fillText('J1 (WASD)  J2 (Flechas)', 10, 10);
-    ctx.fillText(`Tiempo: ${this.elapsed.toFixed(1)}s`, this.width - 130, 10);
+    setupHUDContext(ctx);
+    ctx.fillText(t('coop.controls'), 10, 10);
+    ctx.fillText(t('coop.time', { n: this.elapsed.toFixed(1) }), this.width - 130, 10);
     if (this.bestTime !== null) {
-      ctx.fillText(`Mejor: ${this.bestTime.toFixed(1)}s`, this.width / 2 - 50, 10);
+      ctx.fillText(t('coop.bestTime', { n: this.bestTime.toFixed(1) }), this.width / 2 - 50, 10);
     }
 
-    if (this.status !== 'playing') {
+    if (this.status === 'level-complete') {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
       ctx.fillRect(0, 0, this.width, this.height);
       ctx.fillStyle = '#e7edf3';
       ctx.font = 'bold 28px monospace';
       ctx.textAlign = 'center';
-      const overlayTitle = this.status === 'level-complete' ? '¡NIVEL COMPLETADO!' : '¡META!';
-      ctx.fillText(overlayTitle, this.width / 2, this.height / 2 - 20);
+      ctx.fillText(t('game.levelComplete'), this.width / 2, this.height / 2 - 20);
       ctx.font = '16px monospace';
-      const overlayAction = this.status === 'level-complete' ? 'Click o Espacio para continuar' : 'Click o Espacio para reiniciar';
-      ctx.fillText(overlayAction, this.width / 2, this.height / 2 + 15);
+      ctx.fillText(t('game.continue'), this.width / 2, this.height / 2 + 15);
       ctx.textAlign = 'left';
+    }
+
+    if (this.status === 'won' || this.status === 'lost') {
+      const title = this.status === 'won' ? t('coop.meta') : undefined;
+      renderOverlay(ctx, { width: this.width, height: this.height, title });
     }
   }
 
-  destroy() {
-    this.input.detach();
-  }
 }

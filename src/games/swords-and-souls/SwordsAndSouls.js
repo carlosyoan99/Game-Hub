@@ -13,7 +13,7 @@
  *
  * Persistencia: localStorage vía StorageManager.
  */
-import { InputManager } from '../../engine/InputManager.js';
+import { GameBase } from '../../engine/GameBase.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { pointInRect } from '../../engine/CollisionUtils.js';
 import { ParticleSystem } from '../../engine/ParticleSystem.js';
@@ -25,16 +25,9 @@ import { BASE_HP, HP_PER_LEVEL, SCENES, SCENE_NAME_KEYS, SCENE_SUBTITLE_KEYS, EQ
 
 // ─── Clase principal ────────────────────────────────────────────────────
 
-export class SwordsAndSouls {
+export class SwordsAndSouls extends GameBase {
   init(engine) {
-    this.engine = engine;
-    this.canvas = engine.canvas;
-    this.input = new InputManager();
-    this.input.attach(this.canvas);
-    this.storage = new StorageManager('swords-and-souls');
-
-    this.width = this.canvas.width;
-    this.height = this.canvas.height;
+    super.init(engine, 'swords-and-souls');
     this.bestWave = this.storage.get('bestWave', 0);
     this.totalGold = this.storage.get('totalGold', 0);
 
@@ -42,8 +35,7 @@ export class SwordsAndSouls {
   }
 
   handleResize(width, height) {
-    this.width = width;
-    this.height = height;
+    super.handleResize(width, height);
     this._layoutScene();
   }
 
@@ -386,7 +378,7 @@ export class SwordsAndSouls {
         if (Math.hypot(dx, dy) < this.trainTarget.radius) {
           this.trainClicks++;
           this.particles.emit(this.trainTarget.x, this.trainTarget.y, '#ffb454', 8, 80, { vyOffset: -20 });
-          AudioManager.sfx({ type: 'shoot', volume: 0.25 });
+          AudioManager.sfx({ type: 'swords_attack', volume: 0.25 });
           HapticManager.vibrate('shoot');
           this._spawnArcheryTarget();
           if (this.trainClicks >= this.trainMax) {
@@ -399,7 +391,7 @@ export class SwordsAndSouls {
         const sparBtn = this._getSparButton();
         if (pointInRect(mx, my, sparBtn)) {
           this.trainClicks++;
-          AudioManager.sfx({ type: 'hit', volume: 0.2 });
+          AudioManager.sfx({ type: 'swords_hit', volume: 0.2 });
           this.particles.emit(mx, my, '#e7edf3', 4, 60, { vyOffset: -15 });
           if (this.trainClicks >= this.trainMax) {
             this._finishTraining();
@@ -531,7 +523,7 @@ export class SwordsAndSouls {
         const dmg = Math.max(1, atk - def + this.rng.nextInt(0, 2));
         enemy.hp -= dmg;
         msg = `⚔️ ¡${dmg} de daño!`;
-        AudioManager.sfx({ type: 'hit', volume: 0.35, playbackRate: 0.9 });
+        AudioManager.sfx({ type: 'swords_hit', volume: 0.35, playbackRate: 0.9 });
         HapticManager.vibrate('hit');
         this.particles.emit(this.width * 0.7, this.height * 0.35, '#ff6b4a', 10, 120, { vyOffset: -30 });
         enemy.lastAction = 'player-attack';
@@ -543,7 +535,7 @@ export class SwordsAndSouls {
         const dmg = Math.max(1, atk - def + this.rng.nextInt(0, 2));
         enemy.hp -= dmg;
         msg = `🏹 ¡${dmg} de daño preciso!`;
-        AudioManager.sfx({ type: 'shoot', volume: 0.35 });
+        AudioManager.sfx({ type: 'swords_attack', volume: 0.35 });
         HapticManager.vibrate('shoot');
         this.particles.emit(this.width * 0.7, this.height * 0.35, '#4a9eff', 8, 140, { vyOffset: -40 });
         enemy.lastAction = 'player-archery';
@@ -646,7 +638,7 @@ export class SwordsAndSouls {
         const dmg = Math.max(1, atk - def + this.rng.nextInt(0, 1));
         player.hp -= dmg;
         msg = `💥 ${enemy.name} ataca: ¡${dmg} de daño!`;
-        AudioManager.sfx({ type: 'hit', volume: 0.4 });
+        AudioManager.sfx({ type: 'swords_hit', volume: 0.4 });
         HapticManager.vibrate('hit');
         this.particles.emit(this.width * 0.3, this.height * 0.4, '#e74c3c', 8, 100, { vyOffset: -25 });
         break;
@@ -656,7 +648,7 @@ export class SwordsAndSouls {
         const dmg = Math.max(1, atk + this.rng.nextInt(0, 1));
         player.hp -= dmg;
         msg = `🏹 ${enemy.name} dispara: ¡${dmg} de daño!`;
-        AudioManager.sfx({ type: 'shoot', volume: 0.3 });
+        AudioManager.sfx({ type: 'swords_attack', volume: 0.3 });
         HapticManager.vibrate('shoot');
         this.particles.emit(this.width * 0.3, this.height * 0.4, '#e74c3c', 6, 120, { vyOffset: -30 });
         break;
@@ -807,24 +799,24 @@ export class SwordsAndSouls {
     switch (category) {
       case 'weapons':
         p.weapon = item;
-        AudioManager.sfx({ type: 'select', volume: 0.4 });
+        AudioManager.sfx({ type: 'swords_train', volume: 0.4 });
         HapticManager.vibrate('select');
         this._showMessage(`🗡️ ${item.name} equipada!`);
         break;
       case 'armor':
         p.armor = item;
-        AudioManager.sfx({ type: 'select', volume: 0.4 });
+        AudioManager.sfx({ type: 'swords_train', volume: 0.4 });
         HapticManager.vibrate('select');
         this._showMessage(`🛡️ ${item.name} equipada!`);
         break;
       case 'items':
         if (item.id === 'potion_hp') {
           p.potions++;
-          AudioManager.sfx({ type: 'coin', volume: 0.3 });
+          AudioManager.sfx({ type: 'swords_buy', volume: 0.3 });
           this._showMessage(`🧪 ${item.name} adquirida! (${p.potions})`);
         } else if (item.id === 'potion_big') {
           p.bigPotions++;
-          AudioManager.sfx({ type: 'coin', volume: 0.3 });
+          AudioManager.sfx({ type: 'swords_buy', volume: 0.3 });
           this._showMessage(`🧪 ${item.name} adquirida! (${p.bigPotions})`);
         } else if (item.id === 'sharpening_stone') {
           p.atkBonus += 2;
@@ -1030,7 +1022,7 @@ export class SwordsAndSouls {
       ctx.font = '10px monospace';
       ctx.fillText(t('swords.bestWave', { n: this.bestWave }), 15, this.height - 95);
       ctx.fillText(t('swords.totalGold', { n: this.totalGold }), 15, this.height - 81);
-      ctx.fillText(t('game.seed', { seed: this.seedCode }), 15, this.height - 67);
+
     }
 
     // Scene nav buttons
@@ -1493,7 +1485,4 @@ export class SwordsAndSouls {
 
   // ─── Limpieza ────────────────────────────────────────────────────────
 
-  destroy() {
-    this.input.detach();
-  }
 }
