@@ -1,6 +1,6 @@
 # Breakout
 
-**Nivel 1 — Arcade Clásico**
+**Arcade Clásico**
 
 Breakout con sistema de **5 niveles** de dificultad progresiva. Rompe todos los ladrillos de cada nivel usando una paleta y una bola que rebota. Cada nivel aumenta el número de ladrillos, la velocidad de la bola y añade ladrillos duros (2 golpes).
 

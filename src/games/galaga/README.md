@@ -1,8 +1,8 @@
 # Galaga
 
-**Nivel 1 — Disparos / Formaciones**
+**Arcade Clásico**
 
-El clásico juego de disparos con formaciones de enemigos. Los aliens vuelan en formación y atacan en picada. ¡Consigue la nave gemela disparando al enemigo que te haya capturado!
+El clásico juego de disparos con formaciones de enemigos. Los aliens vuelan en formación y atacan en picada. ¡Consigue la nave gemela disparando al enemigo que te haya capturado! Oleadas infinitas con transición automática a los 5 segundos si no se hace click.
 
 ## Gameplay
 
@@ -24,12 +24,23 @@ Los enemigos están organizados en una formación de 5x8. Periódicamente, algun
 
 ## Mecánicas
 
-- **Formación oscilante:** Los enemigos se mueven suavemente en formación
-- **Picadas:** Enemigos que atacan en patrones de vuelo
-- **Tractor beam:** Captura tu nave para luego obtener la gemela al liberarla
-- **Nave gemela:** Triple disparo al tener la nave gemela
-- **Oleadas progresivas:** Más enemigos y más picadas por oleada
-- **3 vidas:** Respawn tras 1.5 segundos
+- **Formación oscilante**: los enemigos se mueven suavemente en formación
+- **Picadas**: enemigos que atacan en patrones de vuelo
+- **Tractor beam**: captura tu nave para luego obtener la gemela al liberarla
+- **Nave gemela**: disparo doble/doble al tener la nave gemela
+- **Oleadas infinitas**: progresión continua mientras tengas vidas
+- **Transición automática**: 5 segundos entre oleadas si no se hace click
+- **3 vidas**: respawn tras 1.5 segundos
+
+## Estructura del código
+
+- **`Galaga.js`**: Clase principal
+  - `_startWave()` → configura enemigos en formación
+  - `_updateFormation()` → movimiento oscilante de la formación
+  - `_updateDivers()` → enemigos en picada
+  - `_startDive()` → selecciona enemigos para atacar
+  - `_checkCollisions()` → balas, tractor beam, muertes
+  - `_nextWave()` → transición con timer automático
 
 ## Dependencias del engine
 

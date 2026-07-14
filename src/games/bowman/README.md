@@ -1,12 +1,12 @@
 # Bowman
 
-**Nivel 4 — Estrategia / Defensa**
+**Estrategia**
 
 Dos arqueros en lados opuestos del campo de batalla. El jugador apunta con el ratón (ángulo y potencia) y dispara flechas con física parabólica afectada por viento. La IA enemiga apunta con margen de error variable según la dificultad, que escala con las rondas jugadas.
 
 ## Gameplay
 
-Por turnos, tú y la IA os disparáis flechas. El viento cambia cada turno y afecta la trayectoria. La dificultad de la IA escala: cada 4 rondas se vuelve más precisa. Cada 3 rondas completas recibes un power-up aleatorio. Gana el que reduzca la vida del contrario a 0.
+Por turnos, tú y la IA os disparáis flechas. El viento cambia cada turno y afecta la trayectoria (puede soplar a favor o en contra de cualquiera de los dos). La dificultad de la IA escala: cada 4 rondas se vuelve más precisa. Cada 3 rondas completas recibes un power-up aleatorio. Gana el que reduzca la vida del contrario a 0.
 
 | Aspecto | Descripción |
 |---------|-------------|
@@ -29,7 +29,7 @@ Por turnos, tú y la IA os disparáis flechas. El viento cambia cada turno y afe
 | Parámetro | Valor |
 |-----------|-------|
 | Gravedad | 350 px/s² |
-| Viento máximo | ±80 px/s² |
+| Viento máximo | ±80 px/s² (aleatorio, puede favorecer a cualquier lado) |
 | Velocidad flecha | 500 × potencia |
 | HP inicial | 100 por arquero |
 | Daño por flecha | 15-50 (según cercanía al centro) |
@@ -38,9 +38,9 @@ Por turnos, tú y la IA os disparáis flechas. El viento cambia cada turno y afe
 
 | Power-up | Efecto |
 |----------|--------|
-| 🛡️ Escudo | Reduce daño recibido a la mitad (un golpe) |
-| 🏹 Multidisparo | Dispara 2 flechas |
-| 💚 Curación | +25 HP |
+| Escudo | Reduce daño recibido a la mitad (un golpe) |
+| Multidisparo | Dispara 2 flechas |
+| Curación | +25 HP |
 
 ### Dificultad de IA
 

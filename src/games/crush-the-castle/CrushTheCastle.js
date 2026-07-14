@@ -36,7 +36,6 @@ export class CrushTheCastle extends GameBase {
 
   _restart() {
     this.rng = new SeededRandom();
-    this.seedCode = SeededRandom.encode(this.rng.seed);
     this.score = 0;
     this.wave = 1;
     this.status = 'aiming'; // 'aiming' | 'flying' | 'exploding' | 'won' | 'lost'
@@ -179,6 +178,14 @@ export class CrushTheCastle extends GameBase {
     if (this.status === 'flying') {
       this._updateProjectile(dt);
       this.particles.update(dt);
+      // El proyectil pudo haberse desactivado dentro de _updateProjectile
+      // sin que se cambiara el estado. Garantizar limpieza.
+      if (this.currentProjectile && !this.currentProjectile.active && this.status === 'flying') {
+        this._checkWaveEnd();
+        if (this.status === 'aiming' || this.status === 'won') {
+          this.trail = [];
+        }
+      }
     }
 
     this.input.endFrame();

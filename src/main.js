@@ -87,16 +87,22 @@ async function launchGame(gameMeta) {
   canvasWrapper.hidden = false;  // Muestra el indicador "Cargando..."
   loadingIndicator.hidden = false;
 
-  // Cargar el código del juego y sus traducciones en paralelo
-  const [GameClass] = await Promise.all([
-    gameMeta.load(),
-    loadGameTranslations(gameMeta.id),
-  ]);
+  try {
+    // Cargar el código del juego y sus traducciones en paralelo
+    const [GameClass] = await Promise.all([
+      gameMeta.load(),
+      loadGameTranslations(gameMeta.id),
+    ]);
 
-  // Ocultar loading, inicializar canvas
-  loadingIndicator.hidden = true;
-  fitCanvas();
-  engine.loadGame(new GameClass());
+    // Ocultar loading, inicializar canvas
+    loadingIndicator.hidden = true;
+    fitCanvas();
+    engine.loadGame(new GameClass());
+  } catch (err) {
+    console.error('Error al cargar el juego:', err);
+    loadingIndicator.hidden = true;
+    returnToMenu();
+  }
 }
 
 function returnToMenu() {

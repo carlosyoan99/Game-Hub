@@ -1,6 +1,6 @@
 # Platformer
 
-**Nivel 2 — Plataformas**
+**Plataformas**
 
 Platformer con **5 niveles** de dificultad creciente. Corre y salta a través de niveles diseñados con tiles ASCII, usando el sistema de tilemap y cámara del motor. Incluye coyote time, salto variable y 3 vidas.
 

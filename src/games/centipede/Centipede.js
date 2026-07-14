@@ -62,6 +62,7 @@ export class Centipede extends GameBase {
     this.moveTimer = 0;
     this.moveInterval = 0.15;
     this.spiderTimer = 3;
+    this.waveTransitionTimer = 0;
 
     this._initMushrooms();
     this._spawnCentipede();
@@ -121,7 +122,17 @@ export class Centipede extends GameBase {
   // ── Update ─────────────────────────────────────────────────────────────
 
   update(dt) {
-    if (this.status !== 'playing') {
+    if (this.status === 'wave-transition') {
+      this.waveTransitionTimer -= dt;
+      this.particles.update(dt);
+      if (this.waveTransitionTimer <= 0 || this.input.mouse.clickedThisFrame || this.input.wasPressed('Space')) {
+        this._startNextWave();
+      }
+      this.input.endFrame();
+      return;
+    }
+
+    if (this.status === 'game-over') {
       if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
         this._restart();
       }
@@ -386,8 +397,8 @@ export class Centipede extends GameBase {
     if (liveSegments.length === 0 && this.status === 'playing') {
       this.wave += 1;
       AudioManager.sfx({ type: 'powerup', volume: 0.5 });
-      this._spawnCentipede();
-      this._initMushrooms();
+      this.waveTransitionTimer = 5; // auto-avance en 5 segundos
+      this.status = 'wave-transition';
     }
   }
 
@@ -404,6 +415,13 @@ export class Centipede extends GameBase {
     } else {
       this.player.respawnTimer = 1.5;
     }
+  }
+
+  _startNextWave() {
+    this.status = 'playing';
+    this._spawnCentipede();
+    this._initMushrooms();
+    this.waveTransitionTimer = 0;
   }
 
   _endGame() {
@@ -427,7 +445,22 @@ export class Centipede extends GameBase {
     this._renderPlayer(ctx);
     this.particles.render(ctx);      this.renderHUD(ctx);
 
-    if (this.status !== 'playing') {
+    if (this.status === 'wave-transition') {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx.fillRect(0, 0, this.width, this.height);
+      ctx.fillStyle = '#ffb454';
+      ctx.font = 'bold 24px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(t('game.wave', { n: this.wave }), this.width / 2, this.height / 2 - 20);
+      ctx.fillStyle = '#e7edf3';
+      ctx.font = '14px monospace';
+      ctx.fillText(t('game.continue') + ` (${Math.ceil(this.waveTransitionTimer)}s)`, this.width / 2, this.height / 2 + 15);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+    }
+
+    if (this.status === 'game-over') {
       renderOverlay(ctx, { width: this.width, height: this.height, score: this.score });
     }
   }

@@ -3,21 +3,13 @@ import { StorageManager } from '../../engine/StorageManager.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
-import { renderOverlay, setupHUDContext, clearHUDContext } from '../../engine/GameUI.js';
+import { renderOverlay, setupHUDContext } from '../../engine/GameUI.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
 
 const COLS = 28;
-const MAX_LEVEL = 5;
-const SCORE_TO_ADVANCE = 30; // comida necesaria por nivel
-
-/** Configuración por nivel: intervalo de movimiento y número de obstáculos. */
-const LEVELS = [
-  { moveInterval: 0.11, obstacles: 0, labelKey: 'level.easy' },
-  { moveInterval: 0.10, obstacles: 4, labelKey: 'level.medium' },
-  { moveInterval: 0.09, obstacles: 6, labelKey: 'level.hard' },
-  { moveInterval: 0.08, obstacles: 8, labelKey: 'level.expert' },
-  { moveInterval: 0.07, obstacles: 12, labelKey: 'level.impossible' },
-];
+const BASE_INTERVAL = 0.13;
+const MIN_INTERVAL = 0.05;
+const SPEED_INCREASE_PER_FOOD = 0.002; // cada comida acelera un poco
 
 const DIRECTIONS = {
   up: { x: 0, y: -1 },
@@ -27,8 +19,9 @@ const DIRECTIONS = {
 };
 
 /**
- * Snake con sistema de 5 niveles: obstáculos, velocidad progresiva,
- * y puntuación objetivo para avanzar al siguiente nivel.
+ * Snake en modo endless.
+ * Sin niveles, sin obstáculos. Velocidad progresiva (más comida = más rápido).
+ * La serpiente muere al chocar con bordes o consigo misma.
  */
 export class Snake extends GameBase {
   init(engine) {
@@ -46,17 +39,20 @@ export class Snake extends GameBase {
     this.rows = Math.max(10, Math.floor((this.height / this.width) * this.cols));
   }
 
-  _getLevelConfig() {
-    return LEVELS[Math.min(this.currentLevel - 1, LEVELS.length - 1)];
+  _getSpeedLevel() {
+    // 1-based speed level for display
+    return 1 + Math.floor(this.score / 5);
+  }
+
+  _getMoveInterval() {
+    const interval = BASE_INTERVAL - this.score * SPEED_INCREASE_PER_FOOD;
+    return Math.max(MIN_INTERVAL, interval);
   }
 
   _restart() {
     this.rng = new SeededRandom();
-    this.seedCode = SeededRandom.encode(this.rng.seed);
     const startX = Math.floor(this.cols / 2);
     const startY = Math.floor(this.rows / 2);
-    this.currentLevel = 1;
-    this.totalScore = 0;
     this.snake = [
       { x: startX, y: startY },
       { x: startX - 1, y: startY },
@@ -65,33 +61,9 @@ export class Snake extends GameBase {
     this.direction = { ...DIRECTIONS.right };
     this.pendingDirection = { ...DIRECTIONS.right };
     this.score = 0;
-    this.status = 'playing'; // 'playing' | 'level-complete' | 'won' | 'lost'
+    this.status = 'playing';
     this.moveTimer = 0;
-    this.obstacles = [];
-    this._buildObstacles();
     this._spawnFood();
-  }
-
-  _buildObstacles() {
-    const cfg = this._getLevelConfig();
-    this.obstacles = [];
-    for (let i = 0; i < cfg.obstacles; i++) {
-      let cell;
-      let attempts = 0;
-      do {
-        cell = {
-          x: 2 + this.rng.nextInt(0, this.cols - 4),
-          y: 2 + this.rng.nextInt(0, this.rows - 4),
-        };
-        attempts++;
-      } while (
-        attempts < 50 &&
-        (this.snake.some((s) => s.x === cell.x && s.y === cell.y) ||
-          this.obstacles.some((o) => o.x === cell.x && o.y === cell.y) ||
-          (Math.abs(cell.x - this.snake[0].x) < 3 && Math.abs(cell.y - this.snake[0].y) < 3))
-      );
-      this.obstacles.push(cell);
-    }
   }
 
   _spawnFood() {
@@ -105,8 +77,7 @@ export class Snake extends GameBase {
       attempts++;
     } while (
       attempts < 100 &&
-      (this.snake.some((s) => s.x === cell.x && s.y === cell.y) ||
-        this.obstacles.some((o) => o.x === cell.x && o.y === cell.y))
+      this.snake.some((s) => s.x === cell.x && s.y === cell.y)
     );
     this.food = cell;
   }
@@ -124,45 +95,17 @@ export class Snake extends GameBase {
   }
 
   update(dt) {
-    this._handleDirectionInput();
-
-    if (this.status === 'level-complete') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
-        this._nextLevel();
-      }
-      this.input.endFrame();
-      return;
-    }
-
     if (this.handleRestartInput()) return;
 
+    this._handleDirectionInput();
+
     this.moveTimer += dt;
-    const cfg = this._getLevelConfig();
-    if (this.moveTimer >= cfg.moveInterval) {
-      this.moveTimer -= cfg.moveInterval;
+    if (this.moveTimer >= this._getMoveInterval()) {
+      this.moveTimer -= this._getMoveInterval();
       this._step();
     }
 
     this.input.endFrame();
-  }
-
-  _nextLevel() {
-    this.currentLevel++;
-    // Reset snake to starting position but keep total score
-    const startX = Math.floor(this.cols / 2);
-    const startY = Math.floor(this.rows / 2);
-    this.snake = [
-      { x: startX, y: startY },
-      { x: startX - 1, y: startY },
-      { x: startX - 2, y: startY },
-    ];
-    this.direction = { ...DIRECTIONS.right };
-    this.pendingDirection = { ...DIRECTIONS.right };
-    this.score = 0;
-    this.status = 'playing';
-    this.moveTimer = 0;
-    this._buildObstacles();
-    this._spawnFood();
   }
 
   _step() {
@@ -182,57 +125,33 @@ export class Snake extends GameBase {
       return;
     }
 
-    // Colisión con obstáculos
-    if (this.obstacles.some((o) => o.x === newHead.x && o.y === newHead.y)) {
-      this._endGame();
-      return;
-    }
-
     this.snake.unshift(newHead);
 
     if (newHead.x === this.food.x && newHead.y === this.food.y) {
       this.score += 1;
-      this.totalScore += 10;
       AudioManager.sfx({ type: 'snake_eat', volume: 0.35 });
       HapticManager.vibrate('coin');
-      if (this.score >= SCORE_TO_ADVANCE && this.currentLevel < MAX_LEVEL) {
-        this.status = 'level-complete';
-        AudioManager.sfx({ type: 'powerup', volume: 0.5 });
-        HapticManager.vibrate('powerup');
-      } else if (this.currentLevel >= MAX_LEVEL && this.score >= SCORE_TO_ADVANCE) {
-        this._endGame('won');
-      } else {
-        this._spawnFood();
-      }
+      this._spawnFood();
     } else {
       this.snake.pop();
     }
   }
 
-  _endGame(type) {
-    this.status = type || 'lost';
+  _endGame() {
+    this.status = 'lost';
     AudioManager.sfx({ type: 'snake_die', volume: 0.5 });
     HapticManager.vibrate('explosion');
-    if (this.totalScore > this.highscore) {
-      this.highscore = this.totalScore;
+    if (this.score > this.highscore) {
+      this.highscore = this.score;
       this.storage.set('highscore', this.highscore);
     }
   }
 
   render(ctx) {
     const cellSize = this.width / this.cols;
-    const cfg = this._getLevelConfig();
 
     ctx.fillStyle = '#0b0f14';
     ctx.fillRect(0, 0, this.width, this.height);
-
-    // Obstáculos
-    for (const obs of this.obstacles) {
-      ctx.fillStyle = '#8a3a3a';
-      ctx.fillRect(obs.x * cellSize, obs.y * cellSize, cellSize, cellSize);
-      ctx.fillStyle = '#6a2a2a';
-      ctx.fillRect(obs.x * cellSize + 1, obs.y * cellSize + 1, cellSize - 2, cellSize - 2);
-    }
 
     // Comida
     ctx.fillStyle = '#ffb454';
@@ -248,28 +167,14 @@ export class Snake extends GameBase {
 
     // HUD
     setupHUDContext(ctx);
-    ctx.fillText(t('snake.level', { n: this.currentLevel, max: MAX_LEVEL, label: t(cfg.labelKey) }), 10, 10);
-    ctx.fillText(t('snake.food', { n: this.score, target: SCORE_TO_ADVANCE }), 10, 28);
-    ctx.fillText(t('snake.total', { n: this.totalScore }), 10, 46);
+    ctx.fillText(t('snake.score', { n: this.score }), 10, 10);
+    ctx.fillText(t('snake.speed', { n: this._getSpeedLevel() }), 10, 28);
+    ctx.fillText(t('snake.length', { n: this.snake.length }), 10, 46);
 
     ctx.fillText(t('game.record', { n: this.highscore }), this.width / 2 - 50, 10);
 
-    if (this.status === 'level-complete') {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-      ctx.fillRect(0, 0, this.width, this.height);
-      ctx.fillStyle = '#ffb454';
-      ctx.font = 'bold 24px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(t('game.levelComplete'), this.width / 2, this.height / 2 - 30);
-      ctx.fillStyle = '#e7edf3';
-      ctx.font = '16px monospace';
-      ctx.fillText(t('game.continue'), this.width / 2, this.height / 2 + 10);
-      ctx.textAlign = 'left';
-    }
-
-    if (this.status === 'won' || this.status === 'lost') {
-      const title = this.status === 'won' ? t('snake.gameComplete') : undefined;
-      renderOverlay(ctx, { width: this.width, height: this.height, title });
+    if (this.status === 'lost') {
+      renderOverlay(ctx, { width: this.width, height: this.height });
     }
   }
 

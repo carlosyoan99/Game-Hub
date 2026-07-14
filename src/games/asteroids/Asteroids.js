@@ -1,4 +1,4 @@
-import { renderOverlay, setupHUDContext, clearHUDContext } from '../../engine/GameUI.js';
+import { renderOverlay, setupHUDContext } from '../../engine/GameUI.js';
 import { GameBase } from '../../engine/GameBase.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { Vector2 } from '../../engine/Vector2.js';
@@ -26,7 +26,6 @@ export class Asteroids extends GameBase {
 
   _restart() {
     this.rng = new SeededRandom();
-    this.seedCode = SeededRandom.encode(this.rng.seed);
     this.ship = {
       x: this.width / 2,
       y: this.height / 2,

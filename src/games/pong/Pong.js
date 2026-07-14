@@ -1,8 +1,7 @@
-
 import { GameBase } from '../../engine/GameBase.js';
 import { renderOverlay } from '../../engine/GameUI.js';
 import { StorageManager } from '../../engine/StorageManager.js';
-import { circleIntersectsAABB, clamp } from '../../engine/CollisionUtils.js';
+import { circleIntersectsAABB, clamp, pointInRect } from '../../engine/CollisionUtils.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
@@ -12,43 +11,47 @@ const PADDLE_WIDTH = 12;
 const PADDLE_HEIGHT = 80;
 const PADDLE_MARGIN = 24;
 const BALL_RADIUS = 7;
-const MAX_LEVEL = 5;
+const WIN_SCORE = 5;
 
-/** Configuración de cada nivel: velocidad de IA, velocidad base de bola, puntos para ganar. */
-const LEVELS = [
-  { aiSpeed: 260, ballSpeed: 320, winScore: 5, labelKey: 'level.easy' },
-  { aiSpeed: 300, ballSpeed: 340, winScore: 5, labelKey: 'level.medium' },
-  { aiSpeed: 340, ballSpeed: 360, winScore: 6, labelKey: 'level.hard' },
-  { aiSpeed: 380, ballSpeed: 380, winScore: 6, labelKey: 'level.expert' },
-  { aiSpeed: 430, ballSpeed: 410, winScore: 7, labelKey: 'level.impossible' },
+/** Configuración por dificultad: velocidad de IA y velocidad base de bola. */
+const DIFFICULTIES = [
+  { id: 'easy', aiSpeed: 260, ballSpeed: 320, aiPredict: false, deadZone: 8 },
+  { id: 'normal', aiSpeed: 340, ballSpeed: 360, aiPredict: true, deadZone: 5 },
+  { id: 'hard', aiSpeed: 430, ballSpeed: 410, aiPredict: true, deadZone: 2 },
 ];
 
 /**
- * Pong con sistema de 5 niveles: IA progresa en velocidad,
- * la bola es más rápida, y necesitas más puntos para ganar.
+ * Pong con selector de dificultad al iniciar.
+ * Se mantiene victoria a los 5 puntos, sin niveles.
  */
 export class Pong extends GameBase {
   init(engine) {
     super.init(engine, 'pong');
-    this.bestStreak = this.storage.get('bestStreak', 0);
+    this.highscore = this.storage.get('highscore', 0);
 
-    this._restart();
+    this.phase = 'select-difficulty'; // 'select-difficulty' | 'playing' | 'won' | 'lost'
+    this.selectedDifficulty = -1;
   }
 
   handleResize(width, height) {
     super.handleResize(width, height);
-    this.player.y = clamp(this.player.y, 0, this.height - this.player.height);
-    this.ai.y = clamp(this.ai.y, 0, this.height - this.ai.height);
+    if (this.player) {
+      this.player.y = clamp(this.player.y, 0, this.height - this.player.height);
+    }
+    if (this.ai) {
+      this.ai.y = clamp(this.ai.y, 0, this.height - this.ai.height);
+    }
   }
 
-  _getLevelConfig() {
-    return LEVELS[Math.min(this.currentLevel - 1, LEVELS.length - 1)];
+  _getDifficulty() {
+    if (this.selectedDifficulty < 0) return DIFFICULTIES[0];
+    return DIFFICULTIES[this.selectedDifficulty];
   }
 
-  _restart() {
+  _startGame(difficultyIndex) {
+    this.selectedDifficulty = difficultyIndex;
+    this.phase = 'playing';
     this.rng = new SeededRandom();
-    this.seedCode = SeededRandom.encode(this.rng.seed);
-    this.currentLevel = 1;
     this.player = {
       x: PADDLE_MARGIN,
       y: this.height / 2 - PADDLE_HEIGHT / 2,
@@ -63,26 +66,33 @@ export class Pong extends GameBase {
     };
     this.playerScore = 0;
     this.aiScore = 0;
-    this.status = 'playing'; // 'playing' | 'level-complete' | 'won' | 'lost'
+    this.status = 'playing';
     this._serve(1);
   }
 
   _serve(direction) {
-    const angle = (this.rng.nextFloat() - 0.5) * (Math.PI / 6);
-    const cfg = this._getLevelConfig();
+    const angle = (this.rng.next() - 0.5) * (Math.PI / 6);
+    const diff = this._getDifficulty();
     this.ball = {
       x: this.width / 2,
       y: this.height / 2,
       radius: BALL_RADIUS,
-      vx: Math.cos(angle) * cfg.ballSpeed * direction,
-      vy: Math.sin(angle) * cfg.ballSpeed,
+      vx: Math.cos(angle) * diff.ballSpeed * direction,
+      vy: Math.sin(angle) * diff.ballSpeed,
     };
   }
 
   update(dt) {
-    if (this.status === 'level-complete') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
-        this._nextLevel();
+    if (this.phase === 'select-difficulty') {
+      if (this.input.mouse.clickedThisFrame) {
+        const buttons = this._getDifficultyButtons();
+        for (let i = 0; i < buttons.length; i++) {
+          if (pointInRect(this.input.mouse.x, this.input.mouse.y, buttons[i])) {
+            AudioManager.sfx({ type: 'select', volume: 0.25 });
+            this._startGame(i);
+            break;
+          }
+        }
       }
       this.input.endFrame();
       return;
@@ -96,14 +106,6 @@ export class Pong extends GameBase {
     this._checkScoring();
 
     this.input.endFrame();
-  }
-
-  _nextLevel() {
-    this.currentLevel++;
-    this.playerScore = 0;
-    this.aiScore = 0;
-    this.status = 'playing';
-    this._serve(1);
   }
 
   _movePlayer(dt) {
@@ -120,24 +122,20 @@ export class Pong extends GameBase {
   }
 
   _moveAI(dt) {
-    const cfg = this._getLevelConfig();
+    const diff = this._getDifficulty();
     const paddleCenter = this.ai.y + this.ai.height / 2;
-    // La IA predice dónde estará la bola (más precisa en niveles altos)
     let targetY = this.ball.y;
-    // En niveles altos, la IA anticipa mejor el rebote
-    if (this.currentLevel >= 3 && this.ball.vx > 0) {
+    if (diff.aiPredict && this.ball.vx > 0) {
       targetY = this._predictAim();
     }
-    const diff = targetY - paddleCenter;
-    const deadZone = this.currentLevel >= 4 ? 3 : 6;
-    if (Math.abs(diff) > deadZone) {
-      this.ai.y += Math.sign(diff) * Math.min(cfg.aiSpeed * dt, Math.abs(diff));
+    const diffY = targetY - paddleCenter;
+    if (Math.abs(diffY) > diff.deadZone) {
+      this.ai.y += Math.sign(diffY) * Math.min(diff.aiSpeed * dt, Math.abs(diffY));
     }
     this.ai.y = clamp(this.ai.y, 0, this.height - this.ai.height);
   }
 
   _predictAim() {
-    // Predicción simple: simular cuántos rebotes hará la bola
     let y = this.ball.y;
     let vy = this.ball.vy;
     const steps = Math.floor(Math.abs(this.width - this.ball.x) / Math.abs(this.ball.vx));
@@ -170,8 +168,8 @@ export class Pong extends GameBase {
   _bounce(paddle, direction) {
     const hitPos = (this.ball.y - paddle.y) / paddle.height;
     const angle = (hitPos - 0.5) * (Math.PI / 3);
-    const cfg = this._getLevelConfig();
-    const speed = cfg.ballSpeed * 1.02;
+    const diff = this._getDifficulty();
+    const speed = diff.ballSpeed * 1.02;
     this.ball.vx = Math.cos(angle) * speed * direction;
     this.ball.vy = Math.sin(angle) * speed;
     this.ball.x = direction === 1 ? paddle.x + paddle.width + this.ball.radius : paddle.x - this.ball.radius;
@@ -194,38 +192,56 @@ export class Pong extends GameBase {
   }
 
   _afterPoint() {
-    const cfg = this._getLevelConfig();
-    if (this.playerScore >= cfg.winScore || this.aiScore >= cfg.winScore) {
+    if (this.playerScore >= WIN_SCORE || this.aiScore >= WIN_SCORE) {
       if (this.playerScore > this.aiScore) {
-        // Victoria del jugador en este nivel
-        if (this.currentLevel >= MAX_LEVEL) {
-          this.status = 'won';
-          AudioManager.sfx({ type: 'powerup', volume: 0.5 });
-          HapticManager.vibrate('powerup');
-          if (this.currentLevel > this.bestStreak) {
-            this.bestStreak = this.currentLevel;
-            this.storage.set('bestStreak', this.bestStreak);
-          }
-        } else {
-          this.status = 'level-complete';
-          AudioManager.sfx({ type: 'powerup', volume: 0.5 });
-          HapticManager.vibrate('powerup');
-        }
+        this.status = 'won';
+        AudioManager.sfx({ type: 'powerup', volume: 0.5 });
+        HapticManager.vibrate('powerup');
       } else {
         this.status = 'lost';
         AudioManager.sfx({ type: 'pong_hit', volume: 0.6 });
         HapticManager.vibrate('hit');
+      }
+      if (this.status === 'won') {
+        const streak = this.storage.get('bestStreak', 0) + 1;
+        this.storage.set('bestStreak', streak);
       }
     } else {
       this._serve(this.playerScore > this.aiScore ? 1 : -1);
     }
   }
 
-  render(ctx) {
-    const cfg = this._getLevelConfig();
+  _restart() {
+    this.phase = 'select-difficulty';
+    this.selectedDifficulty = -1;
+  }
 
+  _getDifficultyButtons() {
+    const count = DIFFICULTIES.length;
+    const btnW = 160;
+    const btnH = 50;
+    const gap = 16;
+    const totalW = count * btnW + (count - 1) * gap;
+    const startX = (this.width - totalW) / 2;
+    const y = this.height / 2 + 10;
+    return DIFFICULTIES.map((_, i) => ({
+      x: startX + i * (btnW + gap),
+      y,
+      width: btnW,
+      height: btnH,
+    }));
+  }
+
+  render(ctx) {
     ctx.fillStyle = '#0b0f14';
     ctx.fillRect(0, 0, this.width, this.height);
+
+    if (this.phase === 'select-difficulty') {
+      this._renderDifficultySelect(ctx);
+      return;
+    }
+
+    const diff = this._getDifficulty();
 
     // Línea central
     ctx.strokeStyle = '#1e2731';
@@ -251,37 +267,48 @@ export class Pong extends GameBase {
     ctx.fillText(String(this.playerScore), this.width / 2 - 60, 40);
     ctx.fillText(String(this.aiScore), this.width / 2 + 60, 40);
 
-    // Info de nivel
-    ctx.font = '13px monospace';
+    // Info de dificultad
+    ctx.font = '12px monospace';
     ctx.fillStyle = '#9aa7b2';
-    ctx.fillText(t('pong.level', { n: this.currentLevel, max: MAX_LEVEL, label: t(cfg.labelKey) }), this.width / 2, 8);
-    ctx.fillText(t('pong.target', { n: cfg.winScore }), this.width / 2, 24);
+    ctx.fillText(t('pong.difficulty') + ': ' + t(diff.id === 'easy' ? 'level.easy' : diff.id === 'normal' ? 'level.medium' : 'level.hard'), this.width / 2, 10);
+    ctx.fillText(t('pong.target', { n: WIN_SCORE }), this.width / 2, 26);
 
-    ctx.fillStyle = '#7c8894';
     ctx.textAlign = 'left';
-    ctx.font = '11px monospace';
-
-    ctx.textAlign = 'center';
-    ctx.font = '14px monospace';
-    ctx.fillText(t('pong.bestLevel', { n: this.bestStreak }), this.width / 2, this.height - 14);
-
-    if (this.status === 'level-complete') {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-      ctx.fillRect(0, 0, this.width, this.height);
-      ctx.fillStyle = '#ffb454';
-      ctx.font = 'bold 24px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(t('game.levelComplete'), this.width / 2, this.height / 2 - 30);
-      ctx.fillStyle = '#e7edf3';
-      ctx.font = '16px monospace';
-      ctx.fillText(t('game.continue'), this.width / 2, this.height / 2 + 10);
-      ctx.textAlign = 'left';
-    }
 
     if (this.status === 'won' || this.status === 'lost') {
       const title = this.status === 'won' ? t('pong.gameComplete') : t('pong.lost');
       renderOverlay(ctx, { width: this.width, height: this.height, title });
     }
+  }
+
+  _renderDifficultySelect(ctx) {
+    ctx.fillStyle = '#e7edf3';
+    ctx.font = 'bold 28px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(t('pong.selectDifficulty'), this.width / 2, this.height / 2 - 60);
+
+    ctx.font = '14px monospace';
+    ctx.fillStyle = '#7c8894';
+    ctx.fillText(t('pong.firstTo', { n: WIN_SCORE }), this.width / 2, this.height / 2 - 25);
+
+    const buttons = this._getDifficultyButtons();
+    for (let i = 0; i < buttons.length; i++) {
+      const btn = buttons[i];
+      ctx.fillStyle = '#11161d';
+      ctx.strokeStyle = '#1e2731';
+      ctx.fillRect(btn.x, btn.y, btn.width, btn.height);
+      ctx.strokeRect(btn.x, btn.y, btn.width, btn.height);
+
+      ctx.fillStyle = '#e7edf3';
+      ctx.font = '16px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const label = DIFFICULTIES[i].id === 'easy' ? t('level.easy') : DIFFICULTIES[i].id === 'normal' ? t('level.medium') : t('level.hard');
+      ctx.fillText(label, btn.x + btn.width / 2, btn.y + btn.height / 2);
+    }
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
   }
 
 }

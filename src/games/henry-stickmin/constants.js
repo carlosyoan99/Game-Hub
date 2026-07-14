@@ -533,9 +533,68 @@ export const SCENES = {
   // Aquí van los finales, muchos ya definidos como 'ending' en las escenas anteriores,
   // pero también podemos tener escenas de huida que lleven a finales específicos.
 
-  // Pero para simplificar, he definido la mayoría de los finales directamente en las
-  // escenas de acceso. Aun así, añadiré algunos finales adicionales que sean
-  // exclusivos de la huida.
+  // ─── BUCLES Y REUTILIZACIÓN DE PERSONAJES ──────────────────────────
+  // Mike el guardia corrupto aparece en más caminos
+  disguise_clumsy: {
+    id: 'disguise_clumsy',
+    title: 'Torpeza legendaria',
+    text: 'Henry tartamudea y casi se cae. El guardia Nelson se ríe y le\ndice que vaya a la sala de descanso. Allí se encuentra con Mike,\nel guardia corrupto del plan de soborno.',
+    emoji: '😅',
+    stickmanPose: 'facepalm',
+    choices: [
+      { label: '💰 Intentar sobornar a Mike', next: 'bribe_accept' },
+      { label: '😰 Huir de la sala', next: 'fail_chase' },
+      { label: '👔 Cambiarse al uniforme de limpiador', next: 'disguise_janitor' },
+    ],
+  },
+  force_escape_hammer: {
+    id: 'force_escape_hammer',
+    title: 'Huida con martillo',
+    text: 'Henry coge el zafiro y corre hacia la salida. Los guardias lo\nsiguen, pero Henry abre un boquete en otra pared y sale a la calle.',
+    emoji: '🏃',
+    stickmanPose: 'running',
+    choices: [
+      { label: '🏃 Correr hacia el coche', next: 'success_ram' },
+      { label: '🚇 Meterte en el metro', next: 'fail_chase' },
+    ],
+  },
+  force_escape_boom: {
+    id: 'force_escape_boom',
+    title: 'Huida explosiva',
+    text: 'Henry sale corriendo con el zafiro mientras la alarma suena.\nLos guardias están confundidos por la explosión. Ve a Mike\nentre ellos, que lo reconoce.',
+    emoji: '💨',
+    stickmanPose: 'running',
+    choices: [
+      { label: '💰 Ofrecer a Mike una parte', next: 'bribe_partner' },
+      { label: '💨 Ignorarlo y seguir corriendo', next: 'success_bribe_escape' },
+    ],
+  },
+
+  // Más probabilidad de fracaso: reutilizar escenas de fracaso en más caminos
+  sneak_shadows: {  // ampliar opciones
+    id: 'sneak_shadows',
+    title: 'Entre sombras',
+    text: 'Henry se pega a las paredes, moviéndose de columna en columna.\nLlega a la entrada de la cámara acorazada. Hay dos guardias\ncharlando y una puerta con cerradura electrónica.',
+    emoji: '🌑',
+    stickmanPose: 'hiding',
+    choices: [
+      { label: '👀 Escuchar la conversación (obtener código)', next: 'vault_code' },
+      { label: '💤 Dormir a los guardias con gas somnífero', next: 'vault_gas' },
+      { label: '😰 Estornudar y delatarte', next: 'fail_chase' },
+    ],
+  },
+  vault_code_fast: {  // ampliar opciones
+    id: 'vault_code_fast',
+    title: 'Código rápido',
+    text: 'Henry usa el código grabado para abrir la cámara, pero la alarma\nsigue sonando. Tiene que ser rápido. El zafiro está en una vitrina\ncon un mecanismo de cierre automático.',
+    emoji: '⏱️',
+    stickmanPose: 'running',
+    choices: [
+      { label: '🔨 Romper la vitrina y huir', next: 'success_code_fast' },
+      { label: '🔑 Buscar la llave de la vitrina', next: 'fail_code_slow' },
+      { label: '🤝 Pedir ayuda a Mike (que aparece por casualidad)', next: 'bribe_partner' },
+    ],
+  },
 
   // ─── FINALES DE ÉXITO ─────────────────────────────────────────────
   success_dance: {

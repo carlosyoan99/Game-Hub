@@ -1,6 +1,6 @@
 # Fancy Pants
 
-**Nivel 2 — Plataformas**
+**Plataformas**
 
 Fancy Pants con **5 niveles** de dificultad progresiva. Similar al Platformer base pero con físicas más avanzadas: aceleración/fricción en el movimiento horizontal, deslizamiento por paredes y saltos de pared. La gravedad se reduce cerca del ápice del salto (hang time).
 

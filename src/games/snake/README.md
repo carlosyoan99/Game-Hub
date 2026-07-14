@@ -1,50 +1,49 @@
 # Snake
 
-**Nivel 1 — Arcade Clásico**
+**Arcade Clásico**
 
-Snake con sistema de **5 niveles** de dificultad progresiva. Controla una serpiente que crece al comer comida. Aparecen obstáculos en niveles superiores. Debes alcanzar 30 puntos de comida por nivel para avanzar.
+Snake en modo **endless** con dificultad progresiva. Controla una serpiente que crece al comer comida mientras esquivas obstáculos. La velocidad aumenta gradualmente y aparecen más obstáculos a medida que avanzas. ¿Qué puntuación máxima puedes alcanzar?
 
 ## Gameplay
 
-La serpiente se mueve continuamente por una cuadrícula. Debes dirigirla hacia la comida (círculo naranja) evitando chocar con las paredes, tu propio cuerpo y los obstáculos. Cada comida suma 1 punto de nivel y 10 puntos totales.
+La serpiente se mueve continuamente por una cuadrícula. Debes dirigirla hacia la comida (círculo naranja) evitando chocar con las paredes, tu propio cuerpo y los obstáculos. Cada comida suma 10 puntos. El juego se vuelve más rápido y aparecen más obstáculos con cada 10 comidas.
 
 | Aspecto | Descripción |
 |---------|-------------|
-| **Objetivo** | Completar los 5 niveles |
-| **Victoria** | Completar el nivel 5 (30 comidas en nivel 5) |
+| **Objetivo** | Máxima puntuación posible |
 | **Derrota** | Chocar contra pared, cuerpo u obstáculo |
-| **Puntuación** | 10 pts por comida. Se guarda el récord total. |
+| **Puntuación** | 10 pts por comida. Récord total. |
+| **Dificultad** | Velocidad + obstáculos aumentan cada 10 comidas |
 
 ## Controles
 
 | Tecla | Acción |
 |-------|--------|
 | ↑↓←→ / WASD | Cambiar dirección |
-| Click / Espacio | Avanzar al siguiente nivel / Reiniciar |
+| Click / Espacio | Reiniciar |
 
 ## Constantes de balance
 
-| Nivel | Intervalo movimiento | Obstáculos | Dificultad |
+| Tramo | Intervalo movimiento | Obstáculos | Dificultad |
 |-------|---------------------|------------|------------|
-| 1 | 0.11s (9 fps) | 0 | Fácil |
-| 2 | 0.10s (10 fps) | 4 | Medio |
-| 3 | 0.09s (11 fps) | 6 | Difícil |
-| 4 | 0.08s (12.5 fps) | 8 | Experto |
-| 5 | 0.07s (14 fps) | 12 | Imposible |
+| 0-9 comidas | 0.11s (9 fps) | 0 | Fácil |
+| 10-19 | 0.10s (10 fps) | 4 | Medio |
+| 20-29 | 0.09s (11 fps) | 6 | Difícil |
+| 30-39 | 0.08s (12.5 fps) | 8 | Experto |
+| 40+ | 0.07s (14 fps) | 12 | Imposible |
 
-- **Comida necesaria por nivel**: 30 (constante `SCORE_TO_ADVANCE`)
 - **Cuadrícula**: 28 columnas, filas proporcionales al aspect ratio
-- **Puntuación total**: se acumula entre niveles (10 pts por comida)
+- **Puntuación**: 10 pts por comida
 - **Récord**: mejor puntuación total persistida en localStorage
 
 ## Estructura del código
 
 - **`Snake.js`**: Clase principal
-  - `_getLevelConfig()` → configuración del nivel actual
+  - `_getLevelConfig()` → configuración según comidas acumuladas
   - `_step()` → lógica de movimiento por turnos (grid-based)
   - `_handleDirectionInput()` → cola de dirección pendiente
   - `_spawnFood()` / `_buildObstacles()` → generación procedural
-  - `_nextLevel()` / `_endGame()` / `_restart()` → gestión de estado
+  - `_endGame()` / `_restart()` → gestión de estado
 - **`i18n.js`**: Traducciones específicas (snake.*)
 
 ## Dependencias del engine

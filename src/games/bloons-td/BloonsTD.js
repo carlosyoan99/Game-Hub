@@ -15,6 +15,7 @@ import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
+import { icon } from '../../engine/IconRenderer.js';
 import { COLORS, RELATIVE_WAYPOINTS, MAX_WAVE, TOWER_TYPES, TOWER_KEYS, BLOON_TYPES, BLOON_ORDER } from './constants.js';
 
 export class BloonsTD extends GameBase {
@@ -32,7 +33,6 @@ export class BloonsTD extends GameBase {
 
   _restart() {
     this.rng = new SeededRandom();
-    this.seedCode = SeededRandom.encode(this.rng.seed);
     this.lives = 20;
     this.money = 300;
     this.score = 0;
@@ -52,6 +52,8 @@ export class BloonsTD extends GameBase {
     this.spawnInterval = 0.6;
     this.status = 'pre-wave'; // 'pre-wave' | 'wave' | 'won' | 'lost'
     this.lastWaveWon = false;
+    this.speedMultiplier = 1; // 1x, 2x, 3x
+    this.autoAdvanceTimer = 0; // cuenta regresiva 5s para auto-avance
 
     this._calculatePath();
   }
@@ -121,10 +123,13 @@ export class BloonsTD extends GameBase {
   update(dt) {
     if (this.handleRestartInput()) return;
 
-    this.particles.update(dt);
+    // Aplicar multiplicador de velocidad
+    const gameDt = dt * this.speedMultiplier;
+
+    this.particles.update(gameDt);
 
     if (this.status === 'wave' && this.bloonsSpawned < this.bloonsTotal) {
-      this.spawnTimer -= dt;
+      this.spawnTimer -= gameDt;
       if (this.spawnTimer <= 0) {
         this._spawnBloon(this.waveBloonTypes[this.bloonsSpawned]);
         this.bloonsSpawned++;
@@ -132,9 +137,12 @@ export class BloonsTD extends GameBase {
       }
     }
 
-    this._updateBloons(dt);
-    this._updateTowers(dt);
-    this._updateProjectiles(dt);
+    this._updateBloons(gameDt);
+    this._updateTowers(gameDt);
+    this._updateProjectiles(gameDt);
+
+    // Auto-advance timer usa dt real, no gameDt (5s reales)
+    const realDt = dt;
 
     if (
       this.status === 'wave' &&
@@ -155,18 +163,34 @@ export class BloonsTD extends GameBase {
       } else {
         this.status = 'pre-wave';
         this.money += 20 + this.wave * 5;
+        this.autoAdvanceTimer = 5; // auto-avance en 5 segundos
       }
     }
 
     this._handlePlacement();
 
+    // Speed multiplier: 4=1x, 5=2x, 6=3x
     if (this.input.wasPressed('Digit1')) this.selectedTowerType = 'dart';
     if (this.input.wasPressed('Digit2')) this.selectedTowerType = 'cannon';
     if (this.input.wasPressed('Digit3')) this.selectedTowerType = 'sniper';
+    if (this.input.wasPressed('Digit4')) this.speedMultiplier = 1;
+    if (this.input.wasPressed('Digit5')) this.speedMultiplier = 2;
+    if (this.input.wasPressed('Digit6')) this.speedMultiplier = 3;
     if (this.input.wasPressed('KeyP')) this.placingTower = !this.placingTower;
 
-    if (this.status === 'pre-wave' && (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame)) {
-      this._startWave();
+    if (this.status === 'pre-wave') {
+      // Auto-advance timer: 5 segundos reales después de completar oleada
+      if (this.lastWaveWon) {
+        this.autoAdvanceTimer -= realDt;
+        if (this.autoAdvanceTimer <= 0) {
+          this.autoAdvanceTimer = 0;
+          this._startWave();
+        }
+      }
+      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
+        this.autoAdvanceTimer = 0;
+        this._startWave();
+      }
     }
 
     this.input.endFrame();
@@ -535,12 +559,37 @@ export class BloonsTD extends GameBase {
       ctx.font = 'bold 16px monospace';
       ctx.textAlign = 'center';
       if (this.lastWaveWon) {
-        ctx.fillText(t('bloons.waveComplete', { n: this.wave }) + ' ' + t('bloons.nextWave'), this.width / 2, 80);
+        const autoMsg = this.autoAdvanceTimer > 0 ? ` (${Math.ceil(this.autoAdvanceTimer)}s)` : '';
+        ctx.fillText(t('bloons.waveComplete', { n: this.wave }) + ' ' + t('bloons.nextWave') + autoMsg, this.width / 2, 80);
       } else {
         ctx.fillText(t('bloons.nextWave'), this.width / 2, 80);
       }
       ctx.textAlign = 'left';
     }
+
+    // Indicador de velocidad con icono SVG de reloj
+    ctx.textAlign = 'right';
+    ctx.font = '12px monospace';
+    ctx.fillStyle = COLORS.inkDim;
+    const speedOpts = [
+      { key: '4', mult: 1 },
+      { key: '5', mult: 2 },
+      { key: '6', mult: 3 },
+    ];
+    let speedX = this.width - 10;
+    for (let i = speedOpts.length - 1; i >= 0; i--) {
+      const s = speedOpts[i];
+      const label = `${s.mult}x`;
+      ctx.fillText(label, speedX, 10);
+      speedX -= ctx.measureText(label).width;
+      if (this.speedMultiplier === s.mult) {
+        speedX -= 16;
+        icon(ctx, 'clock', speedX + 8, 17, 12, '#9aa7b2');
+      }
+      ctx.fillText(`[${s.key}] `, speedX, 10);
+      speedX -= ctx.measureText(`[${s.key}] `).width;
+    }
+    ctx.textAlign = 'left';
 
     if (this.status === 'wave') {
       ctx.fillStyle = COLORS.inkDim;

@@ -106,20 +106,27 @@ export class HenryStickmin extends GameBase {
       this.typeChars = Math.floor(this.typeTimer / TYPE_SPEED);
 
       const rawText = this.textLines.join('\n');
-      if (this.typeChars >= rawText.length) {
-        this.timeToSkip += dt;
-        if (this.timeToSkip > 0.5 || this.input.mouse.clickedThisFrame || this.input.wasPressed('Space')) {
-          AudioManager.sfx({ type: 'henry_choose', volume: 0.2 });
-          HapticManager.vibrate('select');
-          this.phase = 'choices';
-          this.timeToSkip = 0;
-        }
-      }
 
+      // Click / espacio: si el texto aún se está revelando, lo completa;
+      // si ya está completo, avanza a opciones inmediatamente.
       if (this.input.mouse.clickedThisFrame || this.input.wasPressed('Space')) {
         if (this.typeChars < rawText.length) {
           this.typeChars = rawText.length;
-          this.typeTimer = 0;
+          this.typeTimer = rawText.length * TYPE_SPEED;
+        } else {
+          AudioManager.sfx({ type: 'henry_choose', volume: 0.2 });
+          HapticManager.vibrate('select');
+          this.phase = 'choices';
+        }
+        this.timeToSkip = 0;
+      }
+
+      // Auto-avance tras 3 segundos de texto completo
+      if (this.typeChars >= rawText.length) {
+        this.timeToSkip += dt;
+        if (this.timeToSkip > 3) {
+          this.phase = 'choices';
+          this.timeToSkip = 0;
         }
       }
 

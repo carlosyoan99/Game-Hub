@@ -5,7 +5,7 @@ import { circleIntersectsAABB } from '../../engine/CollisionUtils.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
-import { renderOverlay, setupHUDContext, clearHUDContext } from '../../engine/GameUI.js';
+import { renderOverlay, setupHUDContext } from '../../engine/GameUI.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
 
 const GRAVITY = 900;
@@ -13,23 +13,15 @@ const FLAP_IMPULSE = -320;
 const BIRD_RADIUS = 12;
 const BIRD_X_RATIO = 0.3;
 const PIPE_WIDTH = 60;
-const MAX_LEVEL = 5;
-
-/** Puntuación necesaria para avanzar de nivel. Aumenta con cada nivel. */
-const SCORE_TO_ADVANCE = [5, 7, 9, 11, 15];
-
-/** Configuración por nivel: velocidad de tuberías, gap, intervalo de spawn. */
-const LEVELS = [
-  { pipeSpeed: 180, pipeGapRatio: 1.0, pipeInterval: 1.4, labelKey: 'level.easy' },
-  { pipeSpeed: 200, pipeGapRatio: 0.93, pipeInterval: 1.3, labelKey: 'level.medium' },
-  { pipeSpeed: 220, pipeGapRatio: 0.86, pipeInterval: 1.2, labelKey: 'level.hard' },
-  { pipeSpeed: 245, pipeGapRatio: 0.79, pipeInterval: 1.1, labelKey: 'level.expert' },
-  { pipeSpeed: 270, pipeGapRatio: 0.72, pipeInterval: 1.0, labelKey: 'level.impossible' },
-];
+const BASE_PIPE_SPEED = 180;
+const BASE_PIPE_INTERVAL = 1.4;
+const SPEED_INCREASE_PER_POINT = 6; // velocidad +6 por cada punto
+const GAP_DECREASE_PER_POINT = 1.5; // gap -1.5px por cada punto
+const MIN_GAP = 60;
 
 /**
- * Flappy Bird con sistema de 5 niveles: velocidad y gap de tuberías
- * progresivos, puntuación objetivo para avanzar al siguiente nivel.
+ * Flappy Bird en modo endless.
+ * Sin niveles. Velocidad y dificultad progresan con cada punto.
  */
 export class FlappyBird extends GameBase {
   init(engine) {
@@ -46,22 +38,24 @@ export class FlappyBird extends GameBase {
   }
 
   _computePipeMetrics() {
-    this.basePipeGap = Math.min(150, Math.max(70, this.height * 0.4));
+    this.basePipeGap = Math.min(160, Math.max(80, this.height * 0.42));
     this.pipeMargin = Math.min(60, this.height * 0.15);
   }
 
-  _getLevelConfig() {
-    return LEVELS[Math.min(this.currentLevel - 1, LEVELS.length - 1)];
+  _getPipeSpeed() {
+    return BASE_PIPE_SPEED + this.score * SPEED_INCREASE_PER_POINT;
   }
 
-  _getTargetScore() {
-    return SCORE_TO_ADVANCE[Math.min(this.currentLevel - 1, SCORE_TO_ADVANCE.length - 1)];
+  _getPipeGap() {
+    return Math.max(MIN_GAP, this.basePipeGap - this.score * GAP_DECREASE_PER_POINT);
+  }
+
+  _getPipeInterval() {
+    return Math.max(0.8, BASE_PIPE_INTERVAL - this.score * 0.02);
   }
 
   _restart() {
     this.rng = new SeededRandom();
-    this.seedCode = SeededRandom.encode(this.rng.seed);
-    this.currentLevel = 1;
     this.bird = {
       x: this.width * BIRD_X_RATIO,
       y: this.height / 2,
@@ -71,21 +65,14 @@ export class FlappyBird extends GameBase {
     this.pipes = [];
     this.spawnTimer = 0;
     this.score = 0;
-    this.totalScore = 0;
-    this.status = 'playing'; // 'playing' | 'level-complete' | 'won' | 'lost'
+    this.status = 'playing';
   }
 
   update(dt) {
     const flapPressed =
       this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame || this.input.wasPressed('ArrowUp');
 
-    if (this.status === 'level-complete') {
-      if (flapPressed) this._nextLevel();
-      this.input.endFrame();
-      return;
-    }
-
-    if (this.status === 'won' || this.status === 'lost') {
+    if (this.status === 'lost') {
       if (flapPressed) this._restart();
       this.input.endFrame();
       return;
@@ -105,49 +92,27 @@ export class FlappyBird extends GameBase {
     this.input.endFrame();
   }
 
-  _nextLevel() {
-    this.currentLevel++;
-    this.bird.y = this.height / 2;
-    this.bird.vy = 0;
-    this.pipes = [];
-    this.spawnTimer = 0;
-    this.score = 0;
-    this.status = 'playing';
-  }
-
   _updatePipes(dt) {
-    const cfg = this._getLevelConfig();
+    const speed = this._getPipeSpeed();
 
     this.spawnTimer -= dt;
     if (this.spawnTimer <= 0) {
-      this.spawnTimer = cfg.pipeInterval;
+      this.spawnTimer = this._getPipeInterval();
       this._spawnPipe();
     }
 
     for (const pipe of this.pipes) {
-      pipe.x -= cfg.pipeSpeed * dt;
+      pipe.x -= speed * dt;
       if (!pipe.passed && pipe.x + PIPE_WIDTH < this.bird.x) {
         pipe.passed = true;
         this.score += 1;
-        this.totalScore += 10;
         AudioManager.sfx({ type: 'flappy_score', volume: 0.3 });
         HapticManager.vibrate('coin');
 
-        // Comprobar si completa el nivel
-        if (this.score >= this._getTargetScore()) {
-          if (this.currentLevel >= MAX_LEVEL) {
-            this.status = 'won';
-            AudioManager.sfx({ type: 'powerup', volume: 0.5 });
-            HapticManager.vibrate('powerup');
-            if (this.totalScore > this.highscore) {
-              this.highscore = this.totalScore;
-              this.storage.set('highscore', this.highscore);
-            }
-          } else {
-            this.status = 'level-complete';
-            AudioManager.sfx({ type: 'powerup', volume: 0.5 });
-            HapticManager.vibrate('powerup');
-          }
+        // Actualizar highscore si se superó
+        if (this.score > this.highscore) {
+          this.highscore = this.score;
+          this.storage.set('highscore', this.highscore);
         }
       }
     }
@@ -156,11 +121,10 @@ export class FlappyBird extends GameBase {
   }
 
   _spawnPipe() {
-    const cfg = this._getLevelConfig();
     const margin = this.pipeMargin;
-    const gap = this.basePipeGap * cfg.pipeGapRatio;
+    const gap = this._getPipeGap();
     const availableRange = Math.max(0, this.height - margin * 2 - gap);
-    const gapCenter = margin + this.rng.nextFloat(0, availableRange) + gap / 2;
+    const gapCenter = margin + this.rng.next() * availableRange + gap / 2;
     this.pipes.push({ x: this.width, gapCenter, passed: false });
   }
 
@@ -170,9 +134,10 @@ export class FlappyBird extends GameBase {
       return;
     }
 
+    const gap = this._getPipeGap();
     for (const pipe of this.pipes) {
-      const topRect = { x: pipe.x, y: 0, width: PIPE_WIDTH, height: pipe.gapCenter - this.basePipeGap * this._getLevelConfig().pipeGapRatio / 2 };
-      const bottomY = pipe.gapCenter + this.basePipeGap * this._getLevelConfig().pipeGapRatio / 2;
+      const topRect = { x: pipe.x, y: 0, width: PIPE_WIDTH, height: pipe.gapCenter - gap / 2 };
+      const bottomY = pipe.gapCenter + gap / 2;
       const bottomRect = { x: pipe.x, y: bottomY, width: PIPE_WIDTH, height: this.height - bottomY };
 
       if (circleIntersectsAABB(this.bird, topRect) || circleIntersectsAABB(this.bird, bottomRect)) {
@@ -186,36 +151,30 @@ export class FlappyBird extends GameBase {
     this.status = 'lost';
     AudioManager.sfx({ type: 'explosion', volume: 0.4 });
     HapticManager.vibrate('explosion');
-    if (this.totalScore > this.highscore) {
-      this.highscore = this.totalScore;
-      this.storage.set('highscore', this.highscore);
-    }
+    // Highscore ya se actualiza al pasar cada tubería en _updatePipes()
   }
 
   render(ctx) {
-    const cfg = this._getLevelConfig();
-
     ctx.fillStyle = '#0b0f14';
     ctx.fillRect(0, 0, this.width, this.height);
 
     // Tuberías
+    const gap = this._getPipeGap();
     ctx.fillStyle = '#3a7d5c';
     for (const pipe of this.pipes) {
-      const gap = this.basePipeGap * cfg.pipeGapRatio;
       const topHeight = pipe.gapCenter - gap / 2;
       const bottomY = pipe.gapCenter + gap / 2;
       ctx.fillRect(pipe.x, 0, PIPE_WIDTH, topHeight);
       ctx.fillRect(pipe.x, bottomY, PIPE_WIDTH, this.height - bottomY);
 
-      // Detalle de borde en tuberías
       ctx.fillStyle = '#2a5c4a';
       ctx.fillRect(pipe.x - 3, topHeight - 20, PIPE_WIDTH + 6, 20);
       ctx.fillRect(pipe.x - 3, bottomY, PIPE_WIDTH + 6, 20);
       ctx.fillStyle = '#3a7d5c';
     }
 
-    // Pájaro (color variable según nivel)
-    const hue = 40 + this.currentLevel * 20;
+    // Pájaro (color varía con la puntuación para feedback visual)
+    const hue = 200 + Math.min(this.score * 5, 160);
     ctx.save();
     ctx.translate(this.bird.x, this.bird.y);
     ctx.rotate(clampTiltAngle(this.bird.vy));
@@ -227,29 +186,11 @@ export class FlappyBird extends GameBase {
 
     // HUD
     setupHUDContext(ctx);
-    ctx.fillText(t('flappy.level', { n: this.currentLevel, max: MAX_LEVEL, label: t(cfg.labelKey) }), 10, 10);
-    ctx.fillText(t('flappy.score', { n: this.score, target: this._getTargetScore() }), 10, 28);
-    ctx.fillText(t('flappy.total', { n: this.totalScore }), 10, 46);
+    ctx.fillText(t('flappy.score', { n: this.score }), 10, 10);
+    ctx.fillText(t('flappy.best', { n: this.highscore }), 10, 28);
 
-    ctx.fillText(t('game.record', { n: this.highscore }), this.width / 2 - 50, 10);
-
-    if (this.status === 'level-complete') {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-      ctx.fillRect(0, 0, this.width, this.height);
-      ctx.fillStyle = '#ffb454';
-      ctx.font = 'bold 24px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(t('game.levelComplete'), this.width / 2, this.height / 2 - 30);
-      ctx.fillStyle = '#e7edf3';
-      ctx.font = '16px monospace';
-      ctx.fillText(t('game.continue'), this.width / 2, this.height / 2 + 10);
-      ctx.textAlign = 'left';
-    }
-
-    if (this.status === 'won' || this.status === 'lost') {
-      const title = this.status === 'won' ? t('flappy.gameComplete') : undefined;
-      const subtitle = this.status === 'won' ? t('flappy.finalScore', { n: this.totalScore }) : undefined;
-      renderOverlay(ctx, { width: this.width, height: this.height, title, subtitle, actionText: t('game.restart') });
+    if (this.status === 'lost') {
+      renderOverlay(ctx, { width: this.width, height: this.height, score: this.score });
     }
   }
 

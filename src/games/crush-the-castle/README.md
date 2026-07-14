@@ -1,6 +1,6 @@
 # Crush the Castle
 
-**Nivel 4 — Estrategia / Defensa**
+**Estrategia**
 
 Derriba castillos enemigos disparando proyectiles desde una catapulta. El proyectil sigue una trayectoria parabólica con gravedad, y los bloques tienen puntos de vida que se reducen con el impacto. El objetivo es eliminar a todos los soldados enemigos dentro del castillo.
 

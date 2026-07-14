@@ -1,8 +1,8 @@
 # Frogger
 
-**Nivel 1 — Arcade / Plataformas**
+**Arcade Clásico**
 
-Ayuda a la rana a cruzar la carretera y el río para llegar a casa. Esquiva coches, camiones, y nada sobre troncos y tortugas para no ahogarte.
+Ayuda a la rana a cruzar la carretera y el río para llegar a casa. Esquiva coches, camiones, y nada sobre troncos y tortugas para no ahogarte. Oleadas infinitas con transición automática a los 5 segundos si no se hace click.
 
 ## Gameplay
 
@@ -26,13 +26,18 @@ La rana se mueve en cuadrícula por la pantalla. Debes cruzar 5 carriles de carr
 
 ## Mecánicas
 
-- **Movimiento en cuadrícula:** 30px por salto, con cooldown
-- **5 carriles de coches:** Diferentes velocidades y direcciones
-- **4 carriles de río:** Troncos y tortugas flotantes
-- **Tortugas que se sumergen:** Aparecen y desaparecen periódicamente
-- **Límite de tiempo:** 30 segundos por rana
-- **5 slots de meta:** Llena todos para avanzar al siguiente nivel
-- **3 vidas:** Pierde una vida al ser atropellado, ahogado, o por tiempo
+- **Movimiento en cuadrícula**: 30px por salto, con cooldown
+- **5 carriles de coches**: diferentes velocidades y direcciones
+- **4 carriles de río**: troncos y tortugas flotantes
+- **Tortugas que se sumergen**: aparecen y desaparecen periódicamente
+- **Límite de tiempo**: 30 segundos por rana
+- **5 slots de meta**: llena todos para avanzar al siguiente nivel
+- **3 vidas**: pierde una vida al ser atropellado, ahogado, o por tiempo
+- **Oleadas infinitas**: transición automática tras 5 segundos
+
+## Estructura del código
+
+- **`Frogger.js`**: Clase principal
 
 ## Dependencias del engine
 

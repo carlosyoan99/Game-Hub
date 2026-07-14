@@ -84,4 +84,11 @@ export default {
   'stick.event.dog':           { es: '🏃 Un perro te persigue. Corres 5 manzanas. +1 fuerza', en: '🏃 A dog chases you. You run 5 blocks. +1 strength' },
   'stick.event.gift':          { es: '💰 Un desconocido te da $5 por ser amable.', en: '💰 A stranger gives you $5 for being kind.' },
   'stick.event.nightmare':     { es: '😴 Tuviste una pesadilla. -10 energía al despertar.', en: '😴 You had a nightmare. -10 energy upon waking.' },
+  'stick.event.lottery':       { es: '🎰 ¡Te tocó un mini premio de lotería! +$20', en: '🎰 You won a mini lottery prize! +$20' },
+  'stick.event.mentor':        { es: '📚 Un mentor te da consejos valiosos. +2 inteligencia', en: '📚 A mentor gives you valuable advice. +2 intelligence' },
+  'stick.event.pickpocket':    { es: '👤 Un carterista te robó $5. -1 carisma', en: '👤 A pickpocket stole $5 from you. -1 charisma' },
+  'stick.event.freeSample':    { es: '🎁 Te dan una muestra gratis en la tienda. +15 energía', en: '🎁 You get a free sample at the store. +15 energy' },
+  'stick.event.argue':         { es: '💬 Discutes con un extraño. +1 fuerza, -1 carisma', en: '💬 You argue with a stranger. +1 strength, -1 charisma' },
+  'stick.event.medal':         { es: '🏅 ¡Ganaste una medalla en el gimnasio! +2 fuerza', en: '🏅 You won a medal at the gym! +2 strength' },
+  'stick.dialogue.closed':     { es: '🚫 {action} no está disponible hoy.', en: '🚫 {action} is not available today.' },
 };

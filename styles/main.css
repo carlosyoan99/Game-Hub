@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    GameHub Engine – Estética retro NES 8-bit
-   
+
    Paleta NES:
      Naranja quemado  #e8a838 / #c87820
      Verde hierba     #48a848 / #3a8838
@@ -491,6 +491,7 @@ body {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* Forzar que el atributo hidden funcione incluso con display:flex/grid */
+[hidden],
 .settings-overlay[hidden],
 .hud[hidden],
 #game-canvas-wrapper[hidden],

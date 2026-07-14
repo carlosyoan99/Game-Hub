@@ -7,6 +7,7 @@ import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
 import { t } from '../../engine/i18n.js';
+import { icon } from '../../engine/IconRenderer.js';
 
 /**
  * Stick RPG (versión simple)
@@ -83,7 +84,7 @@ const SCENE_CONNECTIONS = {
   market: ['streets'],
 };
 
-// Eventos aleatorios
+// Eventos aleatorios (ampliados)
 const RANDOM_EVENTS = [
   { textKey: 'stick.event.goldCoin', effect: (p) => { p.money += 10; } },
   { textKey: 'stick.event.rain', effect: null },
@@ -92,7 +93,68 @@ const RANDOM_EVENTS = [
   { textKey: 'stick.event.dog', effect: (p) => { p.strength += 1; } },
   { textKey: 'stick.event.gift', effect: (p) => { p.money += 5; } },
   { textKey: 'stick.event.nightmare', effect: (p) => { p.energy = Math.max(0, p.energy - 10); } },
+  { textKey: 'stick.event.lottery', effect: (p) => { p.money += 20; } },
+  { textKey: 'stick.event.mentor', effect: (p) => { p.intelligence += 2; } },
+  { textKey: 'stick.event.pickpocket', effect: (p) => { p.money -= 5; p.charisma -= 1; } },
+  { textKey: 'stick.event.freeSample', effect: (p) => { p.energy = Math.min(100, p.energy + 15); } },
+  { textKey: 'stick.event.argue', effect: (p) => { p.strength += 1; p.charisma -= 1; } },
+  { textKey: 'stick.event.medal', effect: (p) => { p.strength += 2; } },
 ];
+
+// Diálogos NPC adicionales por escena (variedad)
+const NPC_DIALOGUES = {
+  home: [
+    'Mamá: "¡Hola, cariño! ¿Has estado comiendo bien?"',
+    'Mamá: "He preparado tu plato favorito para cenar."',
+    'Hermano pequeño: "Oye, ¿me enseñas a hacer ese juego?"',
+    'Papá: "El periódico de hoy tiene buenas ofertas de trabajo."',
+    'Vecino: "¿Podrías cuidar a mi gato este fin de semana?"',
+  ],
+  streets: [
+    'Extraño: "Oye, ¿tienes hora? ... Bah, da igual."',
+    'Mendigo: "Una moneda, por favor. Que tengas buen día."',
+    'Turista: "Disculpe, ¿cómo llego al museo?"',
+    'Repartidor: "¡Aparta! ¡Pedidos urgentes!"',
+    'Anciana: "Los jóvenes de hoy... en mis tiempos todo era más barato."',
+    'Artista callejero: "¿Quieres un retrato? Solo $5."',
+  ],
+  gym: [
+    'Entrenador: "¡Sin dolor no hay ganancia!"',
+    'Chica musculosa: "¿Primera vez? No te rindas."',
+    'Viejo sabio: "La constancia es más importante que la fuerza."',
+    'Adolescente: "Mi récord son 100 flexiones. ¿Y el tuyo?"',
+  ],
+  library: [
+    'Bibliotecaria: "Shhh..."',
+    'Estudiante: "¿Entiendes esto de física cuántica? Yo tampoco."',
+    'Señor mayor: "Leo aquí desde que abrieron. Me sé todos los libros."',
+    'Niña: "¿Me recomiendas un libro de aventuras?"',
+  ],
+  job: [
+    'Jefe: "Buen trabajo hoy."',
+    'Compañero: "¿Viste el partido anoche? Increíble."',
+    'Compañera: "¿ Puedes cubrir mi turno mañana? Te invito un café."',
+    'Cliente: "¡Excelente servicio! Voy a dejar una reseña."',
+  ],
+  shop: [
+    'Dependiente: "Tenemos ofertas hoy."',
+    'Dueño: "Llevo 30 años aquí. Nunca vi algo igual."',
+    'Cliente: "¿Crees que esto le gustará a mi esposa?"',
+    'Reponedor: "Los nuevos productos llegaron esta mañana."',
+  ],
+  park: [
+    'Anciano: "He visto cosas maravillosas en este parque."',
+    'Jardinero: "Estas rosas las planté yo hace 10 años."',
+    'Niño: "¡Mira, un pato! ¡Quiero tocarlo!"',
+    'Corredor: "¿Cuántos kilómetros llevas? Yo voy por 5."',
+  ],
+  market: [
+    'Vendedor: "¡Llévelo, llévelo! ¡Todo está más caro!"',
+    'Pescadero: "¡Pescado fresco! ¡Hoy lo pesqué yo mismo!"',
+    'Señora: "Siempre regateo, es parte de la diversión."',
+    'Músico: "Toco aquí todos los días. Es mi escenario."',
+  ],
+};
 
 // ─── Game Class ────────────────────────────────────────────────────────
 
@@ -111,7 +173,6 @@ export class StickRPG extends GameBase {
 
   _restart() {
     this.rng = new SeededRandom();
-    this.seedCode = SeededRandom.encode(this.rng.seed);
     this.player = {
       energy: MAX_ENERGY,
       money: START_MONEY,
@@ -208,6 +269,12 @@ export class StickRPG extends GameBase {
   }
 
   _performAction(action) {
+    // Cada día, algunas acciones pueden no estar disponibles (variedad)
+    if (this.rng.next() < 0.08 && action.id !== 'sleep') {
+      this._showDialogue(t('stick.dialogue.closed', { action: t(action.labelKey) }));
+      return;
+    }
+
     const energyCost = action.energyCost || 0;
 
     // Compras: verificamos dinero
@@ -323,11 +390,27 @@ export class StickRPG extends GameBase {
     this.dialogueTimer = 3.5;
   }
 
+  _getRandomNpcDialogue(sceneKey) {
+    const dialogues = NPC_DIALOGUES[sceneKey];
+    if (!dialogues || dialogues.length === 0) return t(SCENES[sceneKey].npcDialogueKey);
+    // Usar el día como semilla de selección para que cambie cada día
+    const dayOffset = (this.player.day - 1) * 3;
+    const index = (this.rng.nextInt(0, dialogues.length - 1) + dayOffset) % dialogues.length;
+    return dialogues[index];
+  }
+
   _goToScene(sceneKey) {
     this.currentScene = sceneKey;
-    this.dialogueText = t(SCENES[sceneKey].npcDialogueKey);
+    this.dialogueText = this._getRandomNpcDialogue(sceneKey);
     this.dialogueTimer = 3.5;
     this._updateSceneActions();
+
+    // Evento aleatorio al entrar a una escena (30% de probabilidad)
+    if (this.rng.next() < 0.3) {
+      const evt = RANDOM_EVENTS[this.rng.nextInt(0, RANDOM_EVENTS.length - 1)];
+      if (evt.effect) evt.effect(this.player);
+      this._showDialogue(t(evt.textKey));
+    }
   }
 
   _checkWinCondition() {
@@ -393,10 +476,16 @@ export class StickRPG extends GameBase {
     ctx.textAlign = 'right';
     ctx.fillText(statsText, this.width - 12, 12);
 
-    // Stats secundarias
+    // Stats secundarias con iconos SVG
     ctx.font = '10px monospace';
     ctx.fillStyle = '#7c8894';
-    ctx.fillText(`💪${p.strength}  📖${p.intelligence}  🗣️${p.charisma}`, this.width - 12, 30);
+    const statsSecX = this.width - 12;
+    icon(ctx, 'muscle', statsSecX, 37, 12, '#b48a3a');
+    ctx.fillText(`${p.strength} `, statsSecX + 8, 30);
+    icon(ctx, 'brain', statsSecX + 40, 37, 12, '#4a7abb');
+    ctx.fillText(`${p.intelligence} `, statsSecX + 48, 30);
+    icon(ctx, 'chat', statsSecX + 80, 37, 12, '#3a9a5a');
+    ctx.fillText(`${p.charisma}`, statsSecX + 88, 30);
 
     ctx.textAlign = 'left';
     ctx.font = '10px monospace';

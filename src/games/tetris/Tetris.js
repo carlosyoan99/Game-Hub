@@ -100,7 +100,7 @@ export class Tetris extends GameBase {
     this.status = 'playing';
     this.paused = false;
     this.lockTimer = 0;
-    this.lockDelay = 0.5;
+    this.lockDelay = 0.1;
     this.bag = [];
     this.nextPiece = null;
 
@@ -302,14 +302,17 @@ export class Tetris extends GameBase {
       if (!this._collides(this.piece.x, this.piece.y + 1, this._getShape())) {
         this.piece.y++;
         this._updateGhost();
-        this.lockTimer = 0;
-      } else {
-        // Lock delay (independiente de velocidad de caída)
-        this.lockTimer += dt;
-        if (this.lockTimer >= this.lockDelay) {
-          this._lockPiece();
-        }
       }
+    }
+
+    // Lock delay — verifica CADA frame (no solo en ticks de caída)
+    if (this._collides(this.piece.x, this.piece.y + 1, this._getShape())) {
+      this.lockTimer += dt;
+      if (this.lockTimer >= this.lockDelay) {
+        this._lockPiece();
+      }
+    } else {
+      this.lockTimer = 0;
     }
 
     this.input.endFrame();

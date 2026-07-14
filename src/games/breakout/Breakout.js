@@ -4,8 +4,9 @@ import { circleIntersectsAABB, clamp } from '../../engine/CollisionUtils.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
-import { renderOverlay, setupHUDContext, clearHUDContext } from '../../engine/GameUI.js';
+import { renderOverlay, setupHUDContext } from '../../engine/GameUI.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
+import { icon } from '../../engine/IconRenderer.js';
 
 const PADDLE_WIDTH = 90;
 const PADDLE_HEIGHT = 14;
@@ -35,7 +36,6 @@ export class Breakout extends GameBase {
     this.lives = 3;
     this.highscore = this.storage.get('highscore', 0);
     this.rng = new SeededRandom();
-    this.seedCode = SeededRandom.encode(this.rng.seed);
     this.currentLevel = this.storage.get('savedLevel', 1);
     this.status = 'playing'; // 'playing' | 'won' | 'lost' | 'level-complete'
 
@@ -63,7 +63,7 @@ export class Breakout extends GameBase {
       height: PADDLE_HEIGHT,
     };
     const cfg = this._getLevelConfig();
-    const angle = (this.rng.nextFloat() - 0.5) * (Math.PI / 4);
+    const angle = (this.rng.next() - 0.5) * (Math.PI / 4);
     this.ball = {
       x: this.width / 2,
       y: this.height - 50,
@@ -217,7 +217,6 @@ export class Breakout extends GameBase {
 
   _restart() {
     this.rng = new SeededRandom();
-    this.seedCode = SeededRandom.encode(this.rng.seed);
     this.score = 0;
     this.lives = 3;
     this.currentLevel = this.storage.get('savedLevel', 1);
@@ -262,7 +261,11 @@ export class Breakout extends GameBase {
     ctx.fillText(t('breakout.level', { n: this.currentLevel, max: MAX_LEVEL, label: t(cfg.labelKey) }), 10, 10);
     ctx.fillText(t('game.score', { n: this.score }), 10, 28);
 
-    ctx.fillText(`${t('breakout.lives')} ${'❤'.repeat(Math.max(0, this.lives))}`, this.width - 100, 10);
+    const heartBaseX = this.width - 100 + ctx.measureText(t('breakout.lives')).width + 6;
+    const heartY = 17; // centrado vertical con texto de 14px usando textBaseline='top' en y=10
+    icon(ctx, 'heart', heartBaseX, heartY, 14, '#e74c3c');
+    if (this.lives > 1) icon(ctx, 'heart', heartBaseX + 16, heartY, 14, '#e74c3c');
+    if (this.lives > 2) icon(ctx, 'heart', heartBaseX + 32, heartY, 14, '#e74c3c');
     ctx.fillText(t('game.record', { n: this.highscore }), this.width / 2 - 50, 10);
 
     if (this.status === 'level-complete') {

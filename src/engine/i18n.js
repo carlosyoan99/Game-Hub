@@ -69,7 +69,6 @@ const TRANSLATIONS = {
   'game.round':              { es: 'Ronda: {n}',                      en: 'Round: {n}' },
   'game.turn':               { es: 'Turno: {n}',                      en: 'Turn: {n}' },
   'game.wind':               { es: 'VIENTO',                          en: 'WIND' },
-  'game.seed':               { es: 'Semilla: {seed}',                  en: 'Seed: {seed}' },
   'game.lives':              { es: 'Vidas: {n}',                       en: 'Lives: {n}' },
   'game.paused':             { es: 'PAUSA',                            en: 'PAUSED' },
 

@@ -152,7 +152,17 @@ export class Galaga extends GameBase {
   // ── Update ─────────────────────────────────────────────────────────────
 
   update(dt) {
-    if (this.status !== 'playing') {
+    if (this.status === 'wave-transition') {
+      this.waveTransitionTimer -= dt;
+      if (this.waveTransitionTimer <= 0 || this.input.mouse.clickedThisFrame || this.input.wasPressed('Space')) {
+        this._startNextWave();
+      }
+      this.particles.update(dt);
+      this.input.endFrame();
+      return;
+    }
+
+    if (this.status === 'game-over') {
       if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
         this._restart();
       }
@@ -462,7 +472,8 @@ export class Galaga extends GameBase {
     // Comprobar si la oleada terminó (todos muertos en formacion)
     if (!this.bonusActive) {
       const liveInFormation = this.enemies.filter((e) => e.alive && !e.diving);
-      if (liveInFormation.length === 0 && this.diveCount >= this.divesPerWave) {
+      const allDead = this.enemies.every((e) => !e.alive);
+      if (allDead || (liveInFormation.length === 0 && this.diveCount >= this.divesPerWave)) {
         this._nextWave();
       }
     }
@@ -471,8 +482,15 @@ export class Galaga extends GameBase {
   _nextWave() {
     this.wave += 1;
     AudioManager.sfx({ type: 'powerup', volume: 0.5 });
+    this.waveTransitionTimer = 5; // auto-avance en 5 segundos
+    this.status = 'wave-transition';
+  }
+
+  _startNextWave() {
+    this.status = 'playing';
     this._spawnFormation();
     this.diveTimer = 0;
+    this.waveTransitionTimer = 0;
   }
 
   _playerHit() {
@@ -521,7 +539,22 @@ export class Galaga extends GameBase {
     this._renderPlayer(ctx);
     this.particles.render(ctx);      this.renderHUD(ctx);
 
-    if (this.status !== 'playing') {
+    if (this.status === 'wave-transition') {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx.fillRect(0, 0, this.width, this.height);
+      ctx.fillStyle = '#ffb454';
+      ctx.font = 'bold 24px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(t('game.wave', { n: this.wave }), this.width / 2, this.height / 2 - 20);
+      ctx.fillStyle = '#e7edf3';
+      ctx.font = '14px monospace';
+      ctx.fillText(t('game.continue') + ` (${Math.ceil(this.waveTransitionTimer)}s)`, this.width / 2, this.height / 2 + 15);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+    }
+
+    if (this.status === 'game-over') {
       renderOverlay(ctx, { width: this.width, height: this.height, score: this.score });
     }
   }

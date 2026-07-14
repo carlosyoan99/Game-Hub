@@ -41,8 +41,8 @@ const STEP_TIME = {
 
 const TOPPINGS = ['Pepperoni', 'Champiñones', 'Pimiento', 'Cebolla', 'Aceituna', 'Jamón', 'Anchoa', 'Piña'];
 const MAX_QUEUE = 5;
-const PATIENCE_BASE = 18;
-const PATIENCE_CUSTOMER_VARIANCE = 4;
+const PATIENCE_BASE = 26; // antes 18 — clientes más pacientes
+const PATIENCE_CUSTOMER_VARIANCE = 5;
 const SPAWN_INTERVAL_BASE = 7;
 const SPAWN_INTERVAL_VARIANCE = 3;
 const MAX_ANGER = 4;
@@ -70,7 +70,6 @@ export class PapaPizzeria extends GameBase {
 
   _restart() {
     this.rng = new SeededRandom();
-    this.seedCode = SeededRandom.encode(this.rng.seed);
     // Cola de clientes. Cada cliente: { order, patience, patienceMax, step, stepTimer, served }
     this.queue = [];
     this.currentCustomerIndex = 0; // índice en la cola del cliente que se está atendiendo
@@ -118,8 +117,8 @@ export class PapaPizzeria extends GameBase {
 
   _spawnCustomer() {
     if (this.queue.length >= MAX_QUEUE) return;
-    // Clientes más exigentes con el progreso
-    const patienceMult = Math.max(0.5, 1 - this.totalServed * 0.02);
+    // Clientes ligeramente más exigentes con el progreso (decaimiento más suave)
+    const patienceMult = Math.max(0.65, 1 - this.totalServed * 0.015);
     const patience = (PATIENCE_BASE + this.rng.nextFloat(-PATIENCE_CUSTOMER_VARIANCE, PATIENCE_CUSTOMER_VARIANCE)) * patienceMult;
     const numToppings = this.rng.nextInt(1, Math.min(3 + Math.floor(this.totalServed / 3), TOPPINGS.length));
     const shuffled = this.rng.shuffle([...TOPPINGS]);

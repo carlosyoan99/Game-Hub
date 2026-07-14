@@ -1,17 +1,16 @@
 # Asteroids
 
-**Nivel 2 — Nave / Física**
+**Arcade Clásico**
 
-Asteroids expandido con **10 oleadas** progresivas. Las primeras oleadas solo tienen asteroides; desde la oleada 3 aparecen naves enemigas que persiguen y disparan. La nave del jugador tiene propulsión con fricción exponencial, giro y disparos.
+Asteroids con **10 oleadas** progresivas. Las primeras oleadas solo tienen asteroides; desde la oleada 3 aparecen naves enemigas que persiguen y disparan. La nave del jugador tiene propulsión con fricción exponencial, giro y disparos.
 
 ## Gameplay
 
-Controlas una nave triangular en un espacio sin bordes (wraparound). Destruye asteroides y enemigos esquivando sus ataques. Los asteroides grandes se dividen en medianos, y estos en pequeños. Cada 10 oleadas completadas es victoria.
+Controlas una nave triangular en un espacio sin bordes (wraparound). Destruye asteroides y enemigos esquivando sus ataques. Los asteroides grandes se dividen en medianos, y estos en pequeños. Al completar la oleada 10 es victoria, pero luego continúan oleadas infinitas mientras tengas vidas.
 
 | Aspecto | Descripción |
 |---------|-------------|
-| **Objetivo** | Sobrevivir 10 oleadas |
-| **Victoria** | Completar la oleada 10 |
+| **Objetivo** | Sobrevivir el mayor número de oleadas posible |
 | **Derrota** | Perder todas las vidas (3) |
 | **Puntuación** | Asteroide grande: 20; mediano: 50; pequeño: 100; enemigo: 50 + wave×10 |
 

@@ -41,7 +41,6 @@ export class SwordsAndSouls extends GameBase {
 
   _restart() {
     this.rng = new SeededRandom();
-    this.seedCode = SeededRandom.encode(this.rng.seed);
     this.player = {
       level: 1,
       xp: 0,

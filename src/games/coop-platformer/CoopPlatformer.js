@@ -1,4 +1,4 @@
-import { renderOverlay, setupHUDContext, clearHUDContext } from '../../engine/GameUI.js';
+import { renderOverlay, setupHUDContext } from '../../engine/GameUI.js';
 import { GameBase } from '../../engine/GameBase.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { Tilemap } from '../../engine/Tilemap.js';

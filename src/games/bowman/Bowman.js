@@ -8,7 +8,7 @@
  * según dificultad. El viento cambia cada turno.
  */
 import { GameBase } from '../../engine/GameBase.js';
-import { renderOverlay, setupHUDContext, clearHUDContext } from '../../engine/GameUI.js';
+import { renderOverlay, setupHUDContext } from '../../engine/GameUI.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { clamp } from '../../engine/CollisionUtils.js';
 import { ParticleSystem } from '../../engine/ParticleSystem.js';
@@ -16,6 +16,7 @@ import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
+import { icon } from '../../engine/IconRenderer.js';
 import { GRAVITY, WIND_MAX, ARROW_RADIUS, MAX_TURNS, COLORS } from './constants.js';
 
 export class Bowman extends GameBase {
@@ -35,7 +36,6 @@ export class Bowman extends GameBase {
 
   _restart() {
     this.rng = new SeededRandom();
-    this.seedCode = SeededRandom.encode(this.rng.seed);
     this.player1HP = 100;
     this.player2HP = 100;
     this.turn = 1; // 1 = player, 2 = enemy
@@ -52,6 +52,9 @@ export class Bowman extends GameBase {
     this.hasShield = false;
     this.hasMultiShot = false;
     this.terrainType = this.rng.nextInt(0, 2); // 0=plano, 1=colinas, 2=montañas
+    this.showTutorial = true;
+    this.tutorialTimer = 4;
+    this.tutorialAlpha = 1;
 
     // Player position (left side)
     this.player = {
@@ -104,16 +107,24 @@ export class Bowman extends GameBase {
     const dx = this.player.x - this.enemy.x;
     const dy = (this.player.y - 5) - this.enemy.y;
 
-    const bestPower = 0.4 + this.rng.next() * 0.4;
+    // El enemigo está a la derecha, necesita ángulo que apunte a la izquierda y arriba
+    // Rango correcto: entre -PI y -PI/2 (tercer cuadrante: izquierda y arriba)
+    const bestPower = 0.35 + this.rng.next() * 0.45;
     const speed = bestPower * 500;
-    const dist = Math.abs(dx);
-    const optimalAngle = -Math.atan2(dy, dx) * 0.7;
+
+    // Calcular ángulo óptimo: apuntar hacia el jugador (a la izquierda y arriba)
+    // atan2(dy, dx) donde dx < 0 y dy ≈ 0 da ~PI (180°), dy < 0 da ~PI - algo
+    const optimalAngle = Math.atan2(dy, dx);
+    // Ajustar con offset para que apunte más arriba (mejor trayectoria parabólica)
+    const adjustedAngle = optimalAngle - 0.3;
 
     const diff = Math.min(1 + Math.floor(this.turnsPlayed / 4), 5);
     const inaccuracy = (6 - diff) * 0.05 + 0.03;
-    const aiAngle = optimalAngle + (this.rng.next() - 0.5) * inaccuracy;
+    const aiAngle = adjustedAngle + (this.rng.next() - 0.5) * inaccuracy;
 
-    this.aimAngle = clamp(aiAngle, -Math.PI * 0.45, -0.05);
+    // El enemigo mira a la izquierda: necesita ángulos en [-PI*0.95, -PI*0.55]
+    // que corresponden a ~170° a ~100° (apuntando a la izquierda y arriba)
+    this.aimAngle = clamp(aiAngle, -Math.PI * 0.95, -Math.PI * 0.55);
     this.aimPower = bestPower;
     this.aiTimer = 0.5 + this.rng.next() * 0.3;
     this.status = 'ai-aiming';
@@ -124,6 +135,15 @@ export class Bowman extends GameBase {
 
     if (this.lastHitTimer > 0) this.lastHitTimer -= dt;
     this.particles.update(dt);
+
+    // Tutorial timer (usamos dt real)
+    if (this.showTutorial) {
+      this.tutorialTimer -= dt;
+      if (this.tutorialTimer <= 0) {
+        this.tutorialAlpha = Math.max(0, this.tutorialAlpha - dt * 2);
+        if (this.tutorialAlpha <= 0) this.showTutorial = false;
+      }
+    }
 
     if (this.status === 'ai-aiming') {
       this.aiTimer -= dt;
@@ -384,6 +404,32 @@ export class Bowman extends GameBase {
     this._renderArcher(ctx, this.enemy, this.player2HP, this.turn === 2);
 
     this.particles.render(ctx);
+
+    // Tutorial (el timer se actualiza en update() con dt real)
+    if (this.showTutorial && this.tutorialAlpha > 0) {
+      ctx.fillStyle = `rgba(0, 0, 0, ${0.5 * this.tutorialAlpha})`;
+      ctx.fillRect(0, 0, this.width, this.height);
+      ctx.fillStyle = `rgba(255, 255, 255, ${this.tutorialAlpha})`;
+      ctx.font = '14px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const lines = [
+        '═══ BOWMAN ═══',
+        '',
+        'Mueve el ratón para apuntar',
+        'El poder oscila automáticamente',
+        'Click o ESPACIO para disparar',
+        'El viento afecta la trayectoria',
+        '',
+        '¡Elimina al arquero enemigo!'];
+      const lineH = 22;
+      const startY = this.height / 2 - (lines.length * lineH) / 2;
+      for (let i = 0; i < lines.length; i++) {
+        ctx.fillText(lines[i], this.width / 2, startY + i * lineH);
+      }
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+    }
 
     setupHUDContext(ctx);
     ctx.fillText(t('bowman.turn', { n: this.turn === 1 ? t('bowman.turnPlayer') : t('bowman.turnBot') }), 10, 10);

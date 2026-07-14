@@ -49,9 +49,9 @@ export class ParticleSystem {
     } = options;
 
     for (let i = 0; i < count; i++) {
-      const angle = this._rng.nextFloat() * Math.PI * 2;
-      const spd = speed * (speedMin + this._rng.nextFloat() * (speedMax - speedMin));
-      const life = lifeMin + this._rng.nextFloat() * (lifeMax - lifeMin);
+      const angle = this._rng.next() * Math.PI * 2;
+      const spd = speed * (speedMin + this._rng.next() * (speedMax - speedMin));
+      const life = lifeMin + this._rng.next() * (lifeMax - lifeMin);
       this.particles.push({
         x,
         y,
@@ -59,7 +59,7 @@ export class ParticleSystem {
         vy: Math.sin(angle) * spd + vyOffset,
         life,
         maxLife: life,
-        radius: radiusMin + this._rng.nextFloat() * (radiusMax - radiusMin),
+        radius: radiusMin + this._rng.next() * (radiusMax - radiusMin),
         color,
       });
     }

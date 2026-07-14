@@ -1,6 +1,6 @@
 # Territory War
 
-**Nivel 4 — Estrategia / Defensa por Turnos**
+**Estrategia**
 
 Dos equipos de figuras stickman en un campo de batalla dividido en zonas de territorio. Por turnos, los jugadores/IA mueven sus unidades, atacan al enemigo y capturan territorio. El equipo que elimina a todas las unidades enemigas o captura todo el territorio gana.
 
@@ -23,18 +23,16 @@ El campo de batalla es una cuadrícula de 11×7 casillas. Comienzas con 3 unidad
 | Click en casilla azul | Mover unidad |
 | Click en casilla roja | Atacar enemigo |
 | Botón "Terminar turno" | Pasar turno |
-| Botón "Comprar" | Comprar infante ($100) |
+| Botones de compra | Comprar infante ($100), arquero ($150), caballería ($200) |
 | Click / Espacio | Reiniciar |
 
 ## Tipos de unidad
 
-| Unidad | HP | Daño | Alcance | Movimiento | Coste | Símbolo |
-|--------|-----|------|---------|-----------|-------|---------|
-| ⚔️ Infante | 50 | 15 | 1 | 2 | $100 | ⚔️ |
-| 🏹 Arquero | 35 | 12 | 3 | 1 | $150 | 🏹 |
-| 🐴 Caballería | 60 | 20 | 1 | 4 | $200 | 🐴 |
-| 💚 Sanador | 30 | 5 | 2 | 2 | $120 | 💚 |
-| 🛡️ Tanque | 100 | 10 | 1 | 1 | $180 | 🛡️ |
+| Unidad | HP | Daño | Alcance | Movimiento | Coste |
+|--------|-----|------|---------|-----------|-------|
+| Infante | 50 | 15 | 1 | 2 | $100 |
+| Arquero | 35 | 12 | 3 | 1 | $150 |
+| Caballería | 60 | 20 | 1 | 4 | $200 |
 
 ## Constantes de balance
 

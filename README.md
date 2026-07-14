@@ -1,166 +1,140 @@
 # GameHub Engine
 
-Punto de entrada único + motor de juego común para una colección de
-minijuegos en Canvas 2D. Sin frameworks, sin build step obligatorio:
-funciona abriendo `index.html` con un servidor estático simple
+Sistema modular para una colección de 25 minijuegos Canvas 2D con motor de juego común.
+Sin frameworks, sin build step obligatorio — abre `index.html` con un servidor estático simple
 (los `import` ES6 requieren `http://`, no `file://`).
 
-```
+```bash
 npx serve .
 # o
 python3 -m http.server 8000
 ```
 
-## Estructura
+## Estructura del proyecto
 
 ```
-index.html              punto de entrada único (hub)
-styles/main.css          tema visual del hub
+index.html                  Punto de entrada único (hub)
+styles/main.css             Tema visual del hub (retro NES, oscuro/claro)
 src/
-  main.js                 lógica del hub: menú, carga dinámica, resize
-  engine/
-    GameEngine.js          bucle de juego (rAF, delta time, clamp)
-    InputManager.js        teclado + ratón + touch mínimo
-    Vector2.js              utilidades de vector
-    CollisionUtils.js       AABB, círculo, círculo-AABB, clamp
-    AssetLoader.js           caché de imágenes/audio/JSON
+  main.js                   Hub: menú, búsqueda, carga dinámica, settings
+  engine/                   Motor de juego común (18 módulos)
+    GameEngine.js            Bucle rAF con delta-time clamp
+    GameBase.js              Clase base para todos los juegos
+    InputManager.js          Teclado + ratón + touch
+    AudioManager.js          Web Audio API: SFX + música + procedimental
+    HapticManager.js         Vibration API con patrones predefinidos
+    SettingsManager.js       Singleton: tema, idioma, volumen, háptico
     StorageManager.js        localStorage namespaced por juego
-    Tilemap.js                colisión por eje contra cuadrícula, render por viewport, arte ASCII
-    Camera.js                  cámara de scroll que sigue a un objetivo, con clamp al mundo
-    ParticleSystem.js          sistema de partículas reutilizable (emit/update/render)
-  games/
-    registry.js              lista de juegos + import() dinámico
-    breakout/
-      Breakout.js              Nivel 1: rebote con ángulo variable
-    snake/
-      Snake.js                  Nivel 1: movimiento en cuadrícula, cola, colisión propia
-    pong/
-      Pong.js                    Nivel 1: dos palas, IA simple
-    flappy-bird/
-      FlappyBird.js               Nivel 1: gravedad constante, scroll infinito
-    asteroids/
-      Asteroids.js                 Nivel 2: física de nave, wraparound, primer uso de Vector2
-    platformer/
-      Platformer.js                 Nivel 2: primer uso de Tilemap + Camera
-    fancy-pants/
-      FancyPants.js                  Nivel 2: aceleración/fricción, hang time, salto en pared
-    coop-platformer/
-      CoopPlatformer.js               Nivel 2: cooperativo local, plataforma móvil, palanca
-    trick-quiz/
-      TrickQuiz.js                     Nivel 3: preguntas trampa y zonas ocultas
-    papa-pizzeria/
-      PapaPizzeria.js                  Nivel 3: colas, temporizadores y multitarea culinaria
-    stick-rpg/
-      StickRPG.js                      Nivel 3: días, energía, diálogos y cambio de escenas
-    crush-the-castle/
-      CrushTheCastle.js                Nivel 4: proyectiles con física en estructuras
-    bowman/
-      Bowman.js                        Nivel 4: tiro parabólico con viento
-    bloons-td/
-      BloonsTD.js                      Nivel 4: waypoints + torres defensivas
-    territory-war/
-      TerritoryWar.js                  Nivel 4: IA de bots, turnos y captura de territorio
-    swords-and-souls/
-      SwordsAndSouls.js                Nivel 5: entrenamiento, combate por turnos y subida de nivel
+    CollisionUtils.js        AABB, círculo, círculo-AABB, clamp
+    Vector2.js               Utilidades vectoriales 2D
+    SeededRandom.js          PRNG Mulberry32 con códigos compartibles
+    ParticleSystem.js        Emisor de partículas reutilizable
+    Tilemap.js               Colisión tile-based por eje separado
+    Camera.js                Cámara 2D de scroll con clamp al mundo
+    GameUI.js                Overlays de game-over, pausa y HUD estándar
+    wrapText.js              Texto con word-wrap para canvas
+    i18n.js                  Sistema ES/EN con carga dinámica por juego
+    IconRenderer.js          Iconos SVG inline para canvas
+    AssetLoader.js           Carga y caché de imágenes/audio/JSON
+  games/                    Todos los juegos (cada uno es una unidad independiente)
+    registry.js              Lista maestra de juegos con import() dinámico
+    <game-id>/               Cada juego tiene: index.js, <Game>.js, i18n.js, README.md
+assets/
+  icons/                    Iconos SVG usados en el hub
+docs/                       Documentación técnica
 ```
 
-## La "Game Interface"
+## Juegos incluidos (25)
 
-Cada juego es una clase plana (sin herencia obligatoria) con estos métodos:
+### 🏓 Arcade Clásico
+
+| Juego | Mecánicas clave |
+|-------|----------------|
+| **Breakout** | 5 niveles, rebote con ángulo variable, ladrillos duros |
+| **Snake** | 5 niveles, movimiento grid, obstáculos |
+| **Pong** | 5 niveles, IA progresiva con predicción de rebotes |
+| **Flappy Bird** | 5 niveles, gravedad constante, tuberías progresivas |
+| **Space Invaders** | Oleadas infinitas, aliens que disparan, nave misteriosa |
+| **Centipede** | Oleadas infinitas, ciempiés segmentado, arañas y hongos |
+| **Missile Command** | Oleadas infinitas, defensa antimisiles con ratón |
+| **Galaga** | Oleadas infinitas, formaciones, picadas, nave gemela |
+| **Frogger** | Oleadas infinitas, 5 carriles de coches + 4 de río |
+| **Asteroids** | 10 oleadas, física wraparound, enemigos que persiguen |
+
+### 🎮 Plataformas
+
+| Juego | Mecánicas clave |
+|-------|----------------|
+| **Platformer** | 5 niveles, tilemap + cámara, coyote time, salto variable |
+| **Fancy Pants** | 5 niveles, aceleración/fricción, wall-jump, hang time |
+| **Fuego y Agua** (Coop) | 5 niveles, 2 jugadores locales, palancas, plataformas móviles |
+| **Donkey Kong** | 4 pantallas (25m/50m/75m/100m), barriles, escaleras |
+
+### 🧩 Puzzle y Gestión
+
+| Juego | Mecánicas clave |
+|-------|----------------|
+| **Trivia Trampa** | 18 preguntas con zonas ocultas y trampas |
+| **Papa's Pizzeria** | Colas, temporizadores, 7 pasos de preparación |
+| **Stick RPG** | 8 escenas, 14 días, 3 estadísticas, eventos aleatorios |
+| **Tetris** | 7-bag randomizer, ghost piece, wall kick, pausa |
+| **Pac-Man** | Laberinto 21×21, 4 IA de fantasmas distintas, power pellets |
+
+### ⚔️ Estrategia
+
+| Juego | Mecánicas clave |
+|-------|----------------|
+| **Crush the Castle** | Oleadas infinitas, proyectiles con física, 4 tipos de bloque |
+| **Bowman** | Tiro parabólico con viento, IA adaptativa, power-ups |
+| **Bloons TD** | 15 oleadas, 3 torres, 11 tipos de bloon, x2/x3 speed |
+| **Territory War** | Turnos, 5 tipos de unidad, captura de territorio, IA de bots |
+
+### 🎭 Rol y Aventura
+
+| Juego | Mecánicas clave |
+|-------|----------------|
+| **Swords and Souls** | 4 zonas, 3 minijuegos de entrenamiento, 12 enemigos, tienda |
+| **Henry Stickmin** | 40+ escenas, 29 finales, 5 caminos iniciales |
+
+## La Game Interface
+
+Cada juego es una clase que extiende `GameBase` (o implementa la interfaz plana) con estos métodos:
 
 ```js
-class MiJuego {
-  init(engine)          // setup inicial; engine da acceso a canvas/ctx
-  update(dt)             // dt en segundos
-  render(ctx)             // dibujo; el engine ya limpió el canvas
-  handleResize(w, h)      // opcional
-  destroy()                // opcional; quitar listeners propios
+class MiJuego extends GameBase {
+  init(engine)          // Setup inicial; engine da acceso a canvas/ctx/input
+  update(dt)            // Lógica por frame, dt en segundos
+  render(ctx)           // Dibujo; el engine ya limpió el canvas
+  handleResize(w, h)    // Opcional
+  destroy()             // Opcional
 }
 ```
 
-El motor no sabe nada de reglas de juego concretas: solo llama a estos
-métodos en orden. `Breakout.js` es la referencia de cómo estructurar
-input, colisiones y HUD dentro de esta interfaz.
+El motor llama a estos métodos en orden dentro del bucle rAF. No sabe nada de reglas de juego concretas.
 
 ## Añadir un juego nuevo
 
-1. `src/games/<id>/` con tu clase principal exportada.
-2. Usa `InputManager`, `CollisionUtils`, `StorageManager` del motor en
-   vez de reinventar detección de teclas o localStorage.
-3. Añade una entrada en `src/games/registry.js` con `load()` apuntando
-   a un `import()` dinámico — así el código de cada juego solo se
-   descarga cuando el jugador lo elige, y el hub no crece con cada
-   juego nuevo.
-4. No toques `main.js` ni `GameEngine.js` salvo que el juego necesite
-   una capacidad genuinamente nueva del motor (en ese caso, esa
-   capacidad debería servir a más de un juego, no ser un parche
-   específico).
+1. Crear `src/games/<id>/` con `index.js`, `<Game>.js`, `i18n.js`, `README.md`
+2. Usar los módulos del motor (`InputManager`, `CollisionUtils`, etc.) en vez de reinventar
+3. Añadir entrada en `src/games/registry.js` con `load()` apuntando a `import()` dinámico
+4. Si tiene traducciones, crear `i18n.js` con `export default { 'id.clave': { es, en } }`
+5. Añadir entradas al smoke test en `smoke_test.mjs`
 
 ## Verificación
 
-- Sintaxis: `find src -name "*.js" -exec node --check {} \;` (sin dependencias).
-- Prueba de humo: `npm test` (requiere `npm install`). Ejecuta cada juego
-  300 frames con input sintético contra un canvas simulado y falla si
-  alguno lanza una excepción.
-- Nuevos juegos: añadir entrada en `smoke_test.mjs` con clicks/teclas que
-  ejerciten al menos la carga, el render básico y el destroy.
+```bash
+# Sintaxis
+find src -name "*.js" -exec node --check {} \;
 
-## Convenciones (auditoría continua)
+# Smoke test (requiere npm install)
+npm test
+# Ejecuta cada juego 300+ frames con input sintético contra canvas simulado
+```
 
-- Un juego nuevo se construye rápido; en una pasada posterior se
-  audita: fugas de listeners en `destroy()`, límites de canvas,
-  rendimiento del bucle de colisiones (por ahora O(n) simple, migrar a
-  spatial hashing si algún juego de Nivel 4+ lo necesita).
-- `StorageManager` namespacea por juego (`gamehub:<id>:<key>`) para
-  evitar colisiones de claves cuando haya varios juegos con
-  `highscore`, `progress`, etc.
-- Cero dependencias externas en el motor. Si un juego concreto necesita
-  algo (p. ej. un pathfinding A* para Nivel 4), que viva dentro de la
-  carpeta de ese juego, no en `src/engine/`.
-- La repetición de un patrón entre juegos (partículas, wrapText, etc.)
-  es señal de que debería extraerse al motor (`src/engine/`).
+## Convenciones
 
-## Ruta de niveles
-
-1. **Nivel 1** (Breakout, Snake, Pong, Flappy Bird): bucle de juego,
-   AABB/círculo, input. Cubierto por el motor tal cual estaba desde el
-   principio. **4 juegos — completo.**
-
-2. **Nivel 2** (Asteroids, Platformer, Fancy Pants, Fuego y Agua):
-   añadió `Vector2` con un caso de uso real (empuje orientado por
-   ángulo) y `Tilemap.js`/`Camera.js` al motor — colisión tile-based
-   resuelta por eje separado, y cámara con seguimiento y clamp al mundo.
-   Los tres plataformas comparten `Tilemap`/`Camera` sin modificarlas;
-   cada uno cambia el nivel y la mecánica específica (salto en pared,
-   cooperativo con plataforma móvil y palanca). **4 juegos — completo.**
-
-3. **Nivel 3** (Trivia Trampa, Papa's Pizzeria, Stick RPG): el primer
-   juego sin física (TrickQuiz) — la interacción es pura máquina de
-   estados evaluada con `pointInRect`. Le siguen Papa's Pizzeria (colas +
-   temporizadores + multitarea) y Stick RPG (días/energía + diálogos +
-   cambio de escenas). **3 juegos — completo.**
-
-4. **Nivel 4** (Crush the Castle, Bowman, Bloons TD, Territory War):
-   proyectiles con física de gravedad, waypoints para rutas de enemigos,
-   torres defensivas con auto-ataque, IA de bots con sistema de turnos y
-   captura de territorio. El patrón de partículas (presente en los 4)
-   se extrajo a `ParticleSystem.js` en el motor. **4 juegos — completo.**
-
-5. **Nivel 5** (Swords and Souls, Henry Stickmin): el más complejo.
-   **Swords and Souls** (completo): 4 zonas (casa/entrenamiento/arena/
-   tienda), minijuegos de entrenamiento (puntería, sparring, resistencia),
-   combate por turnos con IA adaptativa, subida de nivel con asignación
-   de puntos y tienda con armas/armaduras/objetos. **Henry Stickmin**:
-   pendiente.
-
-## Estado actual
-
-| Nivel | Juegos | Estado |
-|-------|--------|--------|
-| 🟢 Nivel 1 | Breakout, Snake, Pong, Flappy Bird (4) | ✅ Completo |
-| 🟡 Nivel 2 | Asteroids, Platformer, Fancy Pants, Fuego y Agua (4) | ✅ Completo |
-| 🔵 Nivel 3 | Trick Quiz, Papa's Pizzeria, Stick RPG (3) | ✅ Completo |
-| 🔴 Nivel 4 | Crush the Castle, Bowman, Bloons TD, Territory War (4) | ✅ Completo |
-| 🟣 Nivel 5 | Swords and Souls, Henry Stickmin (2) | ⏳ 1/2 |
-
-Total: **16 juegos implementados** de 18 planeados.
+- **Zero dependencias externas** en el motor. Si un juego necesita algo específico, vive en su carpeta.
+- **StorageManager** namespacea por juego (`gamehub:<id>:<key>`).
+- **i18n** con carga dinámica: cada juego tiene su `i18n.js`, el motor lo carga al iniciar el juego.
+- **Patrones comunes** que se repiten entre juegos (partículas, HUD, wrapText) se extraen al motor.
+- **Escalado responsive**: el canvas se escala al ancho de la ventana (máx 900×540).

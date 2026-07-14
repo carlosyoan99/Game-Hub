@@ -1,6 +1,6 @@
 # Papa's Pizzeria
 
-**Nivel 3 — Gestión / Tiempo Real**
+**Puzzle y Gestión**
 
 Juego de gestión de tiempo: los clientes llegan en cola con pedidos personalizados y el jugador debe preparar cada pizza siguiendo 7 pasos secuenciales. Cada paso tiene un temporizador. Si el cliente espera demasiado, se va y aumenta la barra de enfado.
 

@@ -80,6 +80,7 @@ export class Frogger extends GameBase {
     this.moveCooldown = 0;
     this.deathTimer = 0;
     this.status = 'playing';
+    this.levelTransitionTimer = 0;
 
     this._initLanes();
   }
@@ -137,7 +138,16 @@ export class Frogger extends GameBase {
   // ── Update ─────────────────────────────────────────────────────────────
 
   update(dt) {
-    if (this.status !== 'playing') {
+    if (this.status === 'level-transition') {
+      this.levelTransitionTimer -= dt;
+      if (this.levelTransitionTimer <= 0 || this.input.mouse.clickedThisFrame || this.input.wasPressed('Space')) {
+        this._startNextLevel();
+      }
+      this.input.endFrame();
+      return;
+    }
+
+    if (this.status === 'game-over') {
       if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
         this._restart();
       }
@@ -173,6 +183,14 @@ export class Frogger extends GameBase {
     }
 
     this.input.endFrame();
+  }
+
+  _startNextLevel() {
+    this.level += 1;
+    this.homeSlots = new Array(HOME_SLOTS).fill(false);
+    this._initLanes();
+    this.status = 'playing';
+    this.levelTransitionTimer = 0;
   }
 
   _updateFrog(dt) {
@@ -299,10 +317,9 @@ export class Frogger extends GameBase {
 
           // Comprobar si todos los slots están llenos
           if (this.homeSlots.every((s) => s)) {
-            this.level += 1;
             AudioManager.sfx({ type: 'powerup', volume: 0.5 });
-            this.homeSlots = new Array(HOME_SLOTS).fill(false);
-            this._initLanes();
+            this.status = 'level-transition';
+            this.levelTransitionTimer = 5; // auto-avance en 5 segundos
           }
           return;
         }
@@ -379,7 +396,22 @@ export class Frogger extends GameBase {
     this._renderFrog(ctx);
     this.particles.render(ctx);      this.renderHUD(ctx, { extraRight: [this.timeLeft < 10 ? `⏱ ${Math.ceil(this.timeLeft)}` : `⏱ ${Math.ceil(this.timeLeft)}`] });
 
-    if (this.status !== 'playing') {
+    if (this.status === 'level-transition') {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx.fillRect(0, 0, this.width, this.height);
+      ctx.fillStyle = '#ffb454';
+      ctx.font = 'bold 24px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(t('game.levelComplete'), this.width / 2, this.height / 2 - 20);
+      ctx.fillStyle = '#e7edf3';
+      ctx.font = '14px monospace';
+      ctx.fillText(t('game.continue') + ` (${Math.ceil(this.levelTransitionTimer)}s)`, this.width / 2, this.height / 2 + 15);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+    }
+
+    if (this.status === 'game-over') {
       renderOverlay(ctx, { width: this.width, height: this.height, score: this.score });
     }
   }

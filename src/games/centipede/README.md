@@ -1,8 +1,8 @@
 # Centipede
 
-**Nivel 1 — Disparos / Arcade**
+**Arcade Clásico**
 
-El clásico juego de arcade donde un ciempiés serpentea por la pantalla atravesando hongos. El jugador debe disparar al ciempiés mientras esquiva arañas y otros peligros.
+El clásico juego de arcade donde un ciempiés serpentea por la pantalla atravesando hongos. El jugador debe disparar al ciempiés mientras esquiva arañas y otros peligros. Oleadas infinitas con transición automática a los 5 segundos si no se hace click.
 
 ## Gameplay
 
@@ -24,11 +24,12 @@ El ciempiés se mueve horizontalmente por la pantalla. Cuando encuentra un hongo
 
 ## Mecánicas
 
-- **Ciempiés segmentado:** 12+ segmentos que siguen a la cabeza
-- **Hongos:** Aparecen aleatoriamente y al destruir segmentos; tienen 3 HP
-- **Arañas:** Aparecen periódicamente y destruyen hongos; tienen 2+ HP
-- **Oleadas progresivas:** Más segmentos, mayor velocidad
-- **3 vidas:** Al perder una vida, la nave reaparece tras 1.5 segundos
+- **Ciempiés segmentado**: 12+ segmentos que siguen a la cabeza
+- **Hongos**: aparecen aleatoriamente y al destruir segmentos; tienen 3 HP
+- **Arañas**: aparecen periódicamente y destruyen hongos; tienen 2+ HP
+- **Oleadas infinitas**: progresión continua mientras tengas vidas
+- **Transición automática**: 5 segundos entre oleadas si no se hace click
+- **3 vidas**: al perder una vida, la nave reaparece tras 1.5 segundos
 
 ## Dependencias del engine
 

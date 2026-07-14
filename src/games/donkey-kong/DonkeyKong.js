@@ -50,6 +50,9 @@ export class DonkeyKong extends GameBase {
     this.status = 'playing';
     this.screen = 0; // 0=25m, 1=50m, 2=75m, 3=100m
     this.screens = [this._buildScreen25m, this._buildScreen50m, this._buildScreen75m, this._buildScreen100m];
+    this.showTutorial = true;
+    this.tutorialAlpha = 1;
+    this.tutorialTimer = 4;
 
     this._initLevel();
   }
@@ -192,6 +195,15 @@ export class DonkeyKong extends GameBase {
       }
       this.input.endFrame();
       return;
+    }
+
+    // Tutorial timer (usamos dt real)
+    if (this.showTutorial) {
+      this.tutorialTimer -= dt;
+      if (this.tutorialTimer <= 0) {
+        this.tutorialAlpha = Math.max(0, this.tutorialAlpha - dt * 2);
+        if (this.tutorialAlpha <= 0) this.showTutorial = false;
+      }
     }
 
     this._updatePlayer(dt);
@@ -389,11 +401,7 @@ export class DonkeyKong extends GameBase {
         this.screen++;
         AudioManager.sfx({ type: 'coin', volume: 0.4 });
         this.score += 100;
-        this.player.x = 60;
-        this.player.y = 400;
-        this.player.vy = 0;
-        this.barrels = [];
-        this._initLevel();
+        this._initLevel(); // crea un nuevo player y reinicia barriles
       } else {
         this.level++;
         this.score += 500;
@@ -443,8 +451,38 @@ export class DonkeyKong extends GameBase {
     this._renderDK(ctx);
     this._renderPauline(ctx);
     this._renderPlayer(ctx);
-    this.particles.render(ctx);      const screenNames = ['25m', '50m', '75m', '100m'];
-      this.renderHUD(ctx, { extraCenter: [screenNames[this.screen]] });
+    this.particles.render(ctx);
+
+    // Tutorial (el timer se actualiza en update() con dt real)
+    if (this.showTutorial && this.tutorialAlpha > 0) {
+      ctx.fillStyle = `rgba(0, 0, 0, ${0.55 * this.tutorialAlpha})`;
+      ctx.fillRect(0, 0, this.width, this.height);
+      ctx.fillStyle = `rgba(255, 255, 255, ${this.tutorialAlpha})`;
+      ctx.font = '15px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const lines = [
+        '🦍 DONKEY KONG',
+        '',
+        '← → Mover a Mario',
+        '↑ / W / ESPACIO  Saltar',
+        'Escaleras: ↑ / ↓ para subir/bajar',
+        '',
+        '¡Evita los barriles y llega hasta Pauline!',
+        '',
+        'Hay 4 pantallas diferentes (25m, 50m, 75m, 100m)',
+      ];
+      const lineH = 24;
+      const startY = this.height / 2 - (lines.length * lineH) / 2;
+      for (let i = 0; i < lines.length; i++) {
+        ctx.fillText(lines[i], this.width / 2, startY + i * lineH);
+      }
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+    }
+
+    const screenNames = ['25m', '50m', '75m', '100m'];
+    this.renderHUD(ctx, { extraCenter: [screenNames[this.screen]] });
 
     if (this.status !== 'playing') {
       renderOverlay(ctx, { width: this.width, height: this.height, score: this.score });

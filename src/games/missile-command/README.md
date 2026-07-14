@@ -1,8 +1,8 @@
 # Missile Command
 
-**Nivel 1 — Defensa / Arcade**
+**Arcade Clásico**
 
-Defiende 6 ciudades de misiles entrantes lanzando interceptores antimisiles. Apunta con el ratón y haz clic para lanzar.
+Defiende 6 ciudades de misiles entrantes lanzando interceptores antimisiles. Apunta con el ratón y haz clic para lanzar. Oleadas infinitas con transición automática.
 
 ## Gameplay
 
@@ -24,11 +24,16 @@ Los misiles enemigos caen desde la parte superior de la pantalla hacia las ciuda
 
 ## Mecánicas
 
-- **6 ciudades:** Cada una tiene 1 HP — una vez destruida, se pierde para siempre
-- **3 bases:** Cada base tiene munición limitada que se recarga entre oleadas
-- **Oleadas progresivas:** 6+ misiles por oleada, más rápidos cuanto más avanzas
-- **Explosiones:** Los interceptores explotan con radio 48px, destruyendo misiles cercanos
-- **Sin vidas:** El juego termina cuando todas las ciudades son destruidas
+- **6 ciudades**: cada una tiene 1 HP — una vez destruida, se pierde para siempre
+- **3 bases**: cada base tiene munición limitada que se recarga entre oleadas
+- **Oleadas progresivas**: 6+ misiles por oleada, más rápidos cuanto más avanzas
+- **Explosiones**: los interceptores explotan con radio 48px, destruyendo misiles cercanos
+- **Sin vidas**: el juego termina cuando todas las ciudades son destruidas
+- **Oleadas infinitas**: mientras queden ciudades, continúan las oleadas
+
+## Estructura del código
+
+- **`MissileCommand.js`**: Clase principal
 
 ## Dependencias del engine
 

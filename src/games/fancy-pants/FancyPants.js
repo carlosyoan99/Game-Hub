@@ -1,4 +1,4 @@
-import { renderOverlay, setupHUDContext, clearHUDContext } from '../../engine/GameUI.js';
+import { renderOverlay, setupHUDContext } from '../../engine/GameUI.js';
 import { GameBase } from '../../engine/GameBase.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { Tilemap } from '../../engine/Tilemap.js';
@@ -27,14 +27,16 @@ const WALL_JUMP_VX = 260;
 const WALL_JUMP_VY = -500;
 const WALL_JUMP_LOCK_TIME = 0.15; // tras un salto de pared, ignora input horizontal brevemente
 
-// 5 niveles de dificultad creciente
+// 5 niveles de dificultad creciente (42 chars, 20 filas)
+// Siguiendo el feedback del usuario: gaps saltables (max 5 tiles/160px),
+// metas alcanzables, chimeneas sin techo para que la meta sea accesible.
 const LEVEL_ROWS = [
-  // Nivel 1: chimenea básica
+  // Nivel 1: chimenea básica (SIN techo - la meta es accesible)
   [
     '..........................................',
     '..........................................',
     '..................G.......................',
-    '.................####.....................',
+    '..........................................',
     '.................#..#.....................',
     '.................#..#.....................',
     '.................#..#.....................',
@@ -52,7 +54,7 @@ const LEVEL_ROWS = [
     '##########..############################',
     '##########..############################',
   ],
-  // Nivel 2: dos chimeneas
+  // Nivel 2: dos chimeneas (sin techo)
   [
     '..........................................',
     '..........................................',
@@ -61,7 +63,7 @@ const LEVEL_ROWS = [
     '..........................................',
     '..........................................',
     '........G..................................',
-    '.......####................................',
+    '........................................',
     '.......#..#................................',
     '.......#..#................................',
     '.......#..#.......####....................',
@@ -94,7 +96,7 @@ const LEVEL_ROWS = [
     '..........................................',
     '..........................................',
     '..........................................',
-    '..#..#######..#####..############..#######',
+    '........................................................',
     '..#..#######..#####..############..#######',
     '..#..#######..#####..############..#######',
   ],
@@ -117,7 +119,7 @@ const LEVEL_ROWS = [
     '..........####..............................',
     '..........................................',
     '..........................................',
-    '####....####....####....####....####..#####',
+    '........................................................',
     '####....####....####....####....####..#####',
     '####....####....####....####....####..#####',
   ],
@@ -140,7 +142,7 @@ const LEVEL_ROWS = [
     '..........####..............................',
     '..........................................',
     '..........................................',
-    '###..####..####..####..####..####..########',
+    '........................................................',
     '###..####..####..####..####..####..########',
     '###..####..####..####..####..####..########',
   ],
@@ -149,9 +151,6 @@ const LEVEL_ROWS = [
 const MAX_LEVEL = LEVEL_ROWS.length;
 const LEGEND = { '#': 1 };
 
-/**
- * FancyPants — expandido con 5 niveles de dificultad progresiva.
- */
 export class FancyPants extends GameBase {
   init(engine) {
     super.init(engine, 'fancy-pants');
@@ -235,7 +234,6 @@ export class FancyPants extends GameBase {
     this.input.endFrame();
   }
 
-  /** Comprueba si alguna baldosa sólida toca la columna dada, entre dos filas (inclusive). */
   _columnHasSolid(col, rowStart, rowEnd) {
     for (let row = rowStart; row <= rowEnd; row++) {
       if (this.tilemap.isSolidTile(this.tilemap.tileAt(col, row))) return true;
@@ -250,8 +248,6 @@ export class FancyPants extends GameBase {
     if (this.wallJumpLock > 0) {
       this.wallJumpLock -= dt;
     } else {
-      // Aceleración + fricción en vez de velocidad instantánea: así arrancar
-      // y frenar tienen una curva, no un salto discreto de 0 a MOVE_MAX_SPEED.
       if (left && !right) {
         this.player.vx -= MOVE_ACCEL * dt;
         this.player.facing = -1;
@@ -265,8 +261,6 @@ export class FancyPants extends GameBase {
       this.player.vx = clamp(this.player.vx, -MOVE_MAX_SPEED, MOVE_MAX_SPEED);
     }
 
-    // Contacto con pared calculado ANTES de mover este frame (aproximación
-    // de un frame de retraso, aceptable para el efecto de deslizamiento).
     const rowTop = Math.floor(this.player.y / TILE_SIZE);
     const rowBottom = Math.floor((this.player.y + this.player.height - 1) / TILE_SIZE);
     const leftCol = Math.floor((this.player.x - 1) / TILE_SIZE);
@@ -274,7 +268,6 @@ export class FancyPants extends GameBase {
     const touchingLeftWall = this._columnHasSolid(leftCol, rowTop, rowBottom);
     const touchingRightWall = this._columnHasSolid(rightCol, rowTop, rowBottom);
 
-    // Gravedad con hang time cerca del ápice del salto.
     const gravityScale = Math.abs(this.player.vy) < APEX_THRESHOLD ? APEX_GRAVITY_SCALE : 1;
     this.player.vy = Math.min(this.player.vy + GRAVITY * gravityScale * dt, MAX_FALL_SPEED);
 
@@ -306,7 +299,6 @@ export class FancyPants extends GameBase {
       }
     }
 
-    // Corte de salto una sola vez por salto (ver mismo fix en Platformer.js).
     const jumpHeld = this.input.isDown('Space') || this.input.isDown('ArrowUp') || this.input.isDown('KeyW');
     if (!jumpHeld && this.player.vy < 0 && !this.player.jumpCut) {
       this.player.vy *= JUMP_CUT_MULTIPLIER;

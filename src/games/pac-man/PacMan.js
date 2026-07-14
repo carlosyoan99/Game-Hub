@@ -82,12 +82,11 @@ export class PacMan extends GameBase {
     this.dotsTotal = 0;
     this.dotsEaten = 0;
 
-    // Maze
+    // Maze — spawn en (10, 18): limpiamos el punto de la posición inicial
     this.maze = MAZE_DATA.map((row) => [...row]);
+    this.maze[18][10] = 0;
     this.dotsTotal = this.maze.flat().filter((v) => v === 1 || v === 2).length;
-
-    // Player
-    this.player = { x: 10 * TILE + TILE / 2, y: 16 * TILE + TILE / 2, dir: 0, nextDir: 0, mouth: 0, speed: PLAYER_SPEED };
+    this.player = { x: 10 * TILE + TILE / 2, y: 18 * TILE + TILE / 2, dir: 0, nextDir: 0, mouth: 0, speed: PLAYER_SPEED };
     // 0=right, 1=down, 2=left, 3=up
     this.dirVectors = [{ x: 1, y: 0 }, { x: 0, y: 1 }, { x: -1, y: 0 }, { x: 0, y: -1 }];
 
@@ -230,7 +229,7 @@ export class PacMan extends GameBase {
         if (g.houseTimer <= 0) {
           g.inHouse = false;
           g.x = this._centerX(10);
-          g.y = this._centerY(9);
+          g.y = this._centerY(10); // fila 10: celda vacía (0), no pared
         }
         continue;
       }
@@ -425,8 +424,11 @@ export class PacMan extends GameBase {
   }
 
   _resetPositions() {
+    // Limpiar el punto en la posición de spawn (evita comerlo automáticamente)
+    this.maze[18][10] = 0;
+    this.dotsTotal = this.maze.flat().filter((v) => v === 1 || v === 2).length;
     this.player.x = this._centerX(10);
-    this.player.y = this._centerY(16);
+    this.player.y = this._centerY(18);
     this.player.dir = 0;
     this.player.nextDir = 0;
     for (const g of this.ghosts) {

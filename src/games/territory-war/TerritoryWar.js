@@ -16,6 +16,7 @@ import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
+import { icon } from '../../engine/IconRenderer.js';
 import { COLORS, TERRAIN_COLS, TERRAIN_ROWS, UNIT_TYPES } from './constants.js';
 
 export class TerritoryWar extends GameBase {
@@ -44,7 +45,6 @@ export class TerritoryWar extends GameBase {
 
   _restart() {
     this.rng = new SeededRandom();
-    this.seedCode = SeededRandom.encode(this.rng.seed);
     this.turn = 1; // 1 = player, 2 = enemy
     this.phase = 'action'; // 'action' | 'moving' | 'attacking' | 'ai-thinking' | 'won' | 'lost'
     this.turnNumber = 0;
@@ -353,6 +353,11 @@ export class TerritoryWar extends GameBase {
             this._endTurn();
           } else {
             this.phase = 'action';
+            // Si es turno de la IA, volver a 'ai-thinking' para que continúe
+            if (this.turn === 2) {
+              this.phase = 'ai-thinking';
+              this.aiTimer = 0.3 + (this.rng ? this.rng.next() : Math.random()) * 0.3;
+            }
           }
         }
         this.animUnit = null;
@@ -380,10 +385,12 @@ export class TerritoryWar extends GameBase {
       return;
     }
 
-    const buyRect = this._getBuyButtonRect();
-    if (pointInRect(mx, my, buyRect)) {
-      this._playerBuyUnit();
-      return;
+    const buyButtons = this._getBuyButtons();
+    for (let i = 0; i < buyButtons.length; i++) {
+      if (pointInRect(mx, my, buyButtons[i].rect)) {
+        this._playerBuyUnit(buyButtons[i].type);
+        return;
+      }
     }
 
     const tile = this._pixelToTile(mx, my);
@@ -433,23 +440,29 @@ export class TerritoryWar extends GameBase {
     this.validTargets = [];
   }
 
-  _playerBuyUnit() {
+  _getBuyableUnits() {
+    return ['infantry', 'archer', 'cavalry'];
+  }
+
+  _playerBuyUnit(type) {
+    const template = UNIT_TYPES[type];
+    if (!template) return;
+
     const spawnPoints = this._getSpawnPoints(1);
     if (spawnPoints.length === 0) {
-      this.message = 'No hay punto de aparición libre';
+      this.message = t('territory.noSpawn');
       this.messageTimer = 1.5;
       return;
     }
 
-    const template = UNIT_TYPES['infantry'];
     if (this.playerResources >= template.cost) {
       const sp = spawnPoints[0];
-      this._addUnit('infantry', 1, sp.col, sp.row);
+      this._addUnit(type, 1, sp.col, sp.row);
       this.playerResources -= template.cost;
-      this.message = '¡Unidad comprada!';
+      this.message = t('territory.unitBought');
       this.messageTimer = 1;
     } else {
-      this.message = 'No tienes suficientes recursos';
+      this.message = t('territory.noResources');
       this.messageTimer = 1.5;
     }
   }
@@ -497,8 +510,22 @@ export class TerritoryWar extends GameBase {
     return { x: this.width - 120, y: 8, width: 110, height: 30 };
   }
 
-  _getBuyButtonRect() {
-    return { x: 10, y: this.height - 60, width: 160, height: 30 };
+  _getBuyButtons() {
+    const unitTypes = this._getBuyableUnits();
+    const btnW = 140;
+    const btnH = 30;
+    const gap = 8;
+    const startX = 10;
+    const y = this.height - 60;
+    return unitTypes.map((type, i) => ({
+      type,
+      rect: {
+        x: startX + i * (btnW + gap),
+        y,
+        width: btnW,
+        height: btnH,
+      },
+    }));
   }
 
   render(ctx) {
@@ -570,11 +597,16 @@ export class TerritoryWar extends GameBase {
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      ctx.fillStyle = color;
-      ctx.font = '18px serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(unit.symbol, pos.x, pos.y);
+      const iconName = unit.symbol === '⚔' ? 'swords' : unit.symbol === '🏹' ? 'arrow' : unit.symbol === '🐴' ? 'target' : unit.symbol === '💚' ? 'heartgreen' : unit.symbol === '🛡' ? 'shield' : null;
+      if (iconName) {
+        icon(ctx, iconName, pos.x, pos.y, 20, color);
+      } else {
+        ctx.fillStyle = color;
+        ctx.font = '18px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(unit.symbol, pos.x, pos.y);
+      }
 
       const barW = 30;
       const barH = 4;
@@ -675,16 +707,27 @@ export class TerritoryWar extends GameBase {
     ctx.fillText(t('territory.endTurn'), endRect.x + endRect.width / 2, endRect.y + endRect.height / 2);
     ctx.textAlign = 'left';
 
-    const buyRect = this._getBuyButtonRect();
-    ctx.fillStyle = COLORS.panel;
-    ctx.fillRect(buyRect.x, buyRect.y, buyRect.width, buyRect.height);
-    ctx.strokeStyle = COLORS.line;
-    ctx.strokeRect(buyRect.x, buyRect.y, buyRect.width, buyRect.height);
-    ctx.fillStyle = COLORS.playerColor;
-    ctx.font = '12px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(t('territory.buyInfantry'), buyRect.x + buyRect.width / 2, buyRect.y + buyRect.height / 2);
+    const buyButtons = this._getBuyButtons();
+    for (const btn of buyButtons) {
+      const r = btn.rect;
+      const template = UNIT_TYPES[btn.type];
+      const canAfford = this.playerResources >= template.cost;
+
+      ctx.fillStyle = canAfford ? COLORS.panel : '#1a1a2a';
+      ctx.fillRect(r.x, r.y, r.width, r.height);
+      ctx.strokeStyle = canAfford ? COLORS.line : '#333';
+      ctx.strokeRect(r.x, r.y, r.width, r.height);
+
+      const buyIconName = template.symbol === '⚔' ? 'swords' : template.symbol === '🏹' ? 'arrow' : template.symbol === '🐴' ? 'target' : template.symbol === '💚' ? 'heartgreen' : template.symbol === '🛡' ? 'shield' : null;
+      if (buyIconName) {
+        icon(ctx, buyIconName, r.x + 14, r.y + r.height / 2, 14, canAfford ? COLORS.playerColor : COLORS.inkDim);
+      }
+      ctx.fillStyle = canAfford ? COLORS.playerColor : COLORS.inkDim;
+      ctx.font = '11px monospace';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${t(template.nameKey)} $${template.cost}`, r.x + 26, r.y + r.height / 2);
+    }
     ctx.textAlign = 'left';
 
     if (this.messageTimer > 0 && this.message) {

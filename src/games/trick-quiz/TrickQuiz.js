@@ -1,10 +1,12 @@
 import { GameBase } from '../../engine/GameBase.js';
 import { renderOverlay } from '../../engine/GameUI.js';
 import { StorageManager } from '../../engine/StorageManager.js';
+import { icon } from '../../engine/IconRenderer.js';
 import { pointInRect } from '../../engine/CollisionUtils.js';
 import { wrapText } from '../../engine/wrapText.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
+import { SeededRandom } from '../../engine/SeededRandom.js';
 import { t } from '../../engine/i18n.js';
 
 const START_LIVES = 3;
@@ -22,27 +24,35 @@ const FEEDBACK_DURATION = 0.7; // segundos que se muestra "¡Correcto!"/"¡Incor
  *   (`hiddenZone`, en fracción 0..1 del canvas) que no se anuncia como
  *   botón — apenas insinuada con un tinte sutil, no invisible del todo.
  */
-const QUESTIONS = [
-  { type: 'choice', prompt: '¿Cuánto es 2 + 2?', options: ['3', '4', '22', 'Pescado'], correct: 1 },
-  { type: 'choice', prompt: '¿De qué color es el caballo blanco de Napoleón?', options: ['Negro', 'Marrón', 'Blanco', 'Depende del caballo'], correct: 2 },
-  { type: 'hidden', prompt: 'Encuentra la respuesta correcta. No es ninguna de estas cuatro.', options: ['Aquí', 'No es esta', 'Tampoco', 'Ni de broma'], hiddenZone: { xRatio: 0.04, yRatio: 0.08, wRatio: 0.06, hRatio: 0.06 } },
-  { type: 'choice', prompt: "¿Cuántas veces aparece la letra 'A' en ABRACADABRA?", options: ['4', '5', '6', '11'], correct: 1 },
-  { type: 'choice', prompt: '¿Cuál de estas cuatro opciones es la correcta?', options: ['Ninguna de estas', 'Ninguna de estas', 'Ninguna de estas', 'Esta'], correct: 3 },
-  { type: 'choice', prompt: "Elige la respuesta INCORRECTA: '¿Cuánto es 1 + 1?'", options: ['2', 'Dos', 'II', 'Tres'], correct: 3 },
-  { type: 'hidden', prompt: 'La salida está escondida...', options: ['Salir', 'Cerrar', 'Continuar', 'Terminar'], hiddenZone: { xRatio: 0.9, yRatio: 0.88, wRatio: 0.06, hRatio: 0.06 } },
-  { type: 'choice', prompt: '¿Listo para terminar?', options: ['No', 'Todavía no', 'Espera', 'Sí'], correct: 3 },
+// Preguntas organizadas por categorías temáticas
+const QUESTION_POOL = [
+  // 🧮 Matemáticas
+  { category: 'math', type: 'choice', prompt: '¿Cuánto es 2 + 2?', options: ['3', '4', '22', 'Pescado'], correct: 1 },
+  { category: 'math', type: 'choice', prompt: '¿Cuál es el número que falta? 1, 1, 2, 3, 5, 8, ?', options: ['10', '12', '13', '21'], correct: 2 },
+  { category: 'math', type: 'choice', prompt: '¿Cuántas veces puedes restar 5 de 25?', options: ['5', '4', 'Una', 'Infinitas'], correct: 2 },
+  { category: 'math', type: 'choice', prompt: "¿Cuántas veces aparece la letra 'A' en ABRACADABRA?", options: ['4', '5', '6', '11'], correct: 1 },
+  { category: 'math', type: 'choice', prompt: '¿Cuántos meses tienen 28 días?', options: ['1', '2', '6', 'Todos'], correct: 3 },
+  { category: 'math', type: 'choice', prompt: '¿Qué pesa más: 1kg de plomo o 1kg de plumas?', options: ['Plomo', 'Plumas', 'Igual', 'Depende'], correct: 2 },
+  { category: 'math', type: 'choice', prompt: '¿Qué número es mayor: 0.5 o 0.25?', options: ['0.5', '0.25', 'Son iguales', 'Depende del contexto'], correct: 0 },
+  { category: 'math', type: 'choice', prompt: 'Si un tren sale de Madrid a 120km/h, ¿qué hora es?', options: ['Las 3', 'Las 5', 'No se puede saber', 'Hora de cenar'], correct: 2 },
 
-  // Nuevas preguntas (expansión)
-  { type: 'choice', prompt: '¿Cuántos meses tienen 28 días?', options: ['1', '2', '6', 'Todos'], correct: 3 },
-  { type: 'choice', prompt: '¿Qué pesa más: 1kg de plomo o 1kg de plumas?', options: ['Plomo', 'Plumas', 'Igual', 'Depende'], correct: 2 },
-  { type: 'hidden', prompt: 'La respuesta no está en los botones. Busca en la pantalla...', options: ['Opción A', 'Opción B', 'Opción C', 'Opción D'], hiddenZone: { xRatio: 0.5, yRatio: 0.04, wRatio: 0.06, hRatio: 0.04 } },
-  { type: 'choice', prompt: '¿Cuál es el número que falta? 1, 1, 2, 3, 5, 8, ?', options: ['10', '12', '13', '21'], correct: 2 },
-  { type: 'choice', prompt: '¿Cuál de estas palabras no es un color?', options: ['Rojo', 'Azul', 'Silla', 'Verde'], correct: 2 },
-  { type: 'choice', prompt: '¿Qué pescado tiene más huesos?', options: ['Sardina', 'Merluza', 'Bacalao', 'El que pesa más'], correct: 3 },
-  { type: 'hidden', prompt: 'Has llegado lejos. Un último acertijo visual...', options: ['Salida', 'Puerta', 'Ventana', 'Trampilla'], hiddenZone: { xRatio: 0.7, yRatio: 0.82, wRatio: 0.06, hRatio: 0.06 } },
-  { type: 'choice', prompt: '¿Cuál es la respuesta a la pregunta definitiva?', options: ['42', 'Sí', 'No', 'Naranja'], correct: 0 },
-  { type: 'choice', prompt: '¿Qué viene después? O, T, T, F, F, S, S, ?', options: ['O', 'E', 'N', 'T'], correct: 1 },
-  { type: 'choice', prompt: '¿Cuántas veces puedes restar 5 de 25?', options: ['5', '4', 'Una', 'Infinitas'], correct: 2 },
+  // 🌍 Lógica y trampas
+  { category: 'logic', type: 'choice', prompt: '¿De qué color es el caballo blanco de Napoleón?', options: ['Negro', 'Marrón', 'Blanco', 'Depende del caballo'], correct: 2 },
+  { category: 'logic', type: 'choice', prompt: '¿Cuál de estas cuatro opciones es la correcta?', options: ['Ninguna de estas', 'Ninguna de estas', 'Ninguna de estas', 'Esta'], correct: 3 },
+  { category: 'logic', type: 'choice', prompt: "Elige la respuesta INCORRECTA: '¿Cuánto es 1 + 1?'", options: ['2', 'Dos', 'II', 'Tres'], correct: 3 },
+  { category: 'logic', type: 'choice', prompt: '¿Cuál de estas palabras no es un color?', options: ['Rojo', 'Azul', 'Silla', 'Verde'], correct: 2 },
+  { category: 'logic', type: 'choice', prompt: '¿Qué pescado tiene más huesos?', options: ['Sardina', 'Merluza', 'Bacalao', 'El que pesa más'], correct: 3 },
+  { category: 'logic', type: 'choice', prompt: '¿Cuántos animales de cada especie metió Moisés en el arca?', options: ['2', '1', 'Ninguno (Noé fue)', 'Depende'], correct: 2 },
+  { category: 'logic', type: 'choice', prompt: '¿Qué viene después? O, T, T, F, F, S, S, ?', options: ['O', 'E', 'N', 'T'], correct: 1 },
+  { category: 'logic', type: 'choice', prompt: '¿Cuál es la respuesta a la pregunta definitiva?', options: ['42', 'Sí', 'No', 'Naranja'], correct: 0 },
+
+  // 🤪 Acertijos visuales / ocultos
+  { category: 'hidden', type: 'hidden', prompt: 'Encuentra la respuesta correcta. No es ninguna de estas cuatro.', options: ['Aquí', 'No es esta', 'Tampoco', 'Ni de broma'], hiddenZone: { xRatio: 0.04, yRatio: 0.08, wRatio: 0.06, hRatio: 0.06 } },
+  { category: 'hidden', type: 'hidden', prompt: 'La salida está escondida...', options: ['Salir', 'Cerrar', 'Continuar', 'Terminar'], hiddenZone: { xRatio: 0.9, yRatio: 0.88, wRatio: 0.06, hRatio: 0.06 } },
+  { category: 'hidden', type: 'hidden', prompt: 'La respuesta no está en los botones. Busca en la pantalla...', options: ['Opción A', 'Opción B', 'Opción C', 'Opción D'], hiddenZone: { xRatio: 0.5, yRatio: 0.04, wRatio: 0.06, hRatio: 0.04 } },
+  { category: 'hidden', type: 'hidden', prompt: 'Has llegado lejos. Un último acertijo visual...', options: ['Salida', 'Puerta', 'Ventana', 'Trampilla'], hiddenZone: { xRatio: 0.7, yRatio: 0.82, wRatio: 0.06, hRatio: 0.06 } },
+  { category: 'hidden', type: 'hidden', prompt: 'Busca con atención, la respuesta está fuera de lo común.', options: ['Centro', 'Abajo', 'Arriba', 'Lados'], hiddenZone: { xRatio: 0.48, yRatio: 0.5, wRatio: 0.04, hRatio: 0.04 } },
+  { category: 'hidden', type: 'hidden', prompt: 'El camino correcto no siempre es el más visible.', options: ['Puerta azul', 'Puerta roja', 'Puerta verde', 'Ventana'], hiddenZone: { xRatio: 0.15, yRatio: 0.15, wRatio: 0.04, hRatio: 0.04 } },
 ];
 
 /**
@@ -67,10 +77,19 @@ export class TrickQuiz extends GameBase {
   }
 
   get currentQuestion() {
-    return QUESTIONS[this.questionIndex];
+    return this.questions[this.questionIndex];
   }
 
   _restart() {
+    this.rng = new SeededRandom();
+    // Barajar preguntas y seleccionar un subconjunto variado (mezcla de categorías)
+    this.questions = this.rng.shuffle([...QUESTION_POOL]);
+    // Seleccionar hasta 12 preguntas variadas (al menos 2 de cada categoría si es posible)
+    const categoryCounts = {};
+    this.questions = this.questions.filter(q => {
+      categoryCounts[q.category] = (categoryCounts[q.category] || 0) + 1;
+      return categoryCounts[q.category] <= 4;
+    });
     this.questionIndex = 0;
     this.lives = START_LIVES;
     this.status = 'question'; // 'question' | 'feedback' | 'lost' | 'won'
@@ -183,7 +202,7 @@ export class TrickQuiz extends GameBase {
       this.bestQuestion = this.questionIndex;
       this.storage.set('bestQuestion', this.bestQuestion);
     }
-    if (this.questionIndex >= QUESTIONS.length) {
+    if (this.questionIndex >= this.questions.length) {
       this.status = 'won';
       AudioManager.sfx({ type: 'powerup', volume: 0.5 });
       HapticManager.vibrate('powerup');
@@ -207,9 +226,16 @@ export class TrickQuiz extends GameBase {
     ctx.fillStyle = '#9aa7b2';
     ctx.font = '14px monospace';
     ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillText(`Pregunta ${this.questionIndex + 1}/${QUESTIONS.length}`, 10, 10);
-    ctx.fillText(`Vidas: ${'*'.repeat(Math.max(0, this.lives))}`, this.width - 90, 10);
+    ctx.textBaseline = 'top';      const cat = this.currentQuestion.category || '';
+      // Dibujar icono de categoría antes del texto
+      const catIcon = cat === 'math' ? 'bolt' : cat === 'logic' ? 'brain' : cat === 'hidden' ? 'target' : null;
+      if (catIcon) icon(ctx, catIcon, 16, 17, 14, '#ffb454');
+      ctx.fillText(`Pregunta ${this.questionIndex + 1}/${this.questions.length}`, 10, 10);
+    ctx.fillText(`Vidas: `, this.width - 90, 10);
+    const lifeX = this.width - 90 + ctx.measureText('Vidas: ').width;
+    for (let i = 0; i < this.lives; i++) {
+      icon(ctx, 'heart', lifeX + i * 18, 17, 14, '#e74c3c');
+    }
 
     ctx.fillStyle = '#e7edf3';
     ctx.font = 'bold 18px monospace';
@@ -250,7 +276,7 @@ export class TrickQuiz extends GameBase {
 
   _renderEndScreen(ctx) {
     const message = this.status === 'won' ? '¡COMPLETASTE EL CUESTIONARIO!' : 'GAME OVER';
-    const subtitle = `Pregunta ${this.questionIndex + 1}/${QUESTIONS.length} | Mejor: ${this.bestQuestion + 1}`;
+    const subtitle = `Pregunta ${this.questionIndex + 1}/${this.questions.length} | Mejor: ${this.bestQuestion + 1}`;
     renderOverlay(ctx, {
       width: this.width, height: this.height,
       title: message,

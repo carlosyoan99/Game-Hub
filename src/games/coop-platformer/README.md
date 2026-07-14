@@ -1,6 +1,6 @@
 # Coop Platformer (Fuego y Agua)
 
-**Nivel 2 — Plataformas Cooperativo**
+**Plataformas**
 
 Platformer cooperativo local para **2 jugadores** con **5 niveles**. Un jugador controla al personaje rojo (WASD) y el otro al azul (flechas). Deben cooperar usando palancas y plataformas móviles para llegar cada uno a su meta respectiva.
 

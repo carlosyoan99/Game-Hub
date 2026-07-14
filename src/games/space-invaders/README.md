@@ -1,8 +1,8 @@
 # Space Invaders
 
-**Nivel 1 — Disparos / Arcade**
+**Arcade Clásico**
 
-El clásico juego de disparos verticales.控制as una nave que se mueve lateralmente en la parte inferior de la pantalla y debes eliminar oleadas de aliens que descienden progresivamente.
+El clásico juego de disparos verticales. Controlas una nave que se mueve lateralmente en la parte inferior de la pantalla y debes eliminar oleadas de aliens que descienden progresivamente.
 
 ## Gameplay
 
@@ -24,19 +24,19 @@ Los aliens se mueven en formación de izquierda a derecha, descendiendo una fila
 
 ## Mecánicas
 
-- **Oleadas progresivas:** Cada oleada aumenta la velocidad de los aliens y añade más aliens que disparan
-- **Escudos:** 4 escudos destructibles en la parte inferior que protegen al jugador (se reparan parcialmente entre oleadas)
-- **Nave misteriosa:** Aparece aleatoriamente en la parte superior, otorga puntuación variable
-- **3 vidas:** Al perder una vida, la nave reaparece tras 1.5 segundos
+- **Oleadas progresivas**: cada oleada aumenta la velocidad de los aliens y añade más aliens que disparan
+- **Escudos**: 4 escudos destructibles en la parte inferior que protegen al jugador
+- **Nave misteriosa**: aparece aleatoriamente en la parte superior, otorga puntuación variable
+- **3 vidas**: al perder una vida, la nave reaparece tras 1.5 segundos
 
 ## Estructura del código
 
 - **`SpaceInvaders.js`**: Clase principal con toda la lógica
-  - `_spawnWave()` — genera aliens en formación de 5×11
-  - `_updateAliens()` — movimiento lateral, descenso, disparos
-  - `_checkCollisions()` — balas vs aliens, escudos, jugador
-  - `_updateMysteryShip()` — aparición y movimiento de nave misteriosa
-  - `_initShields()` — genera escudos con bloque hueco en el centro
+  - `_spawnWave()` → genera aliens en formación de 5×11
+  - `_updateAliens()` → movimiento lateral, descenso, disparos
+  - `_checkCollisions()` → balas vs aliens, escudos, jugador
+  - `_updateMysteryShip()` → aparición y movimiento de nave misteriosa
+  - `_initShields()` → genera escudos con bloque hueco en el centro
 - **`i18n.js`**: Traducciones específicas (space.*)
 
 ## Dependencias del engine

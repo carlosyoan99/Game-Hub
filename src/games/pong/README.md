@@ -1,19 +1,19 @@
 # Pong
 
-**Nivel 1 — Arcade Clásico**
+**Arcade Clásico**
 
-Pong con sistema de **5 niveles** de dificultad progresiva. Enfréntate a una IA que mejora con cada nivel: más rápida, más precisa y con predicción de rebotes. Necesitas ganar por puntos en cada nivel para avanzar.
+Pong con selector de **dificultad** (Fácil, Normal, Difícil) al iniciar la partida. Enfréntate a una IA que mejora con cada dificultad: más rápida, más precisa y con predicción de rebotes. La victoria se alcanza a los 5 puntos.
 
 ## Gameplay
 
-Dos paletas (jugador a la izquierda, IA a la derecha) y una bola que rebota. El primero en alcanzar la puntuación objetivo gana el nivel. La IA mejora su velocidad, precisión y capacidad de predicción en cada nivel.
+Dos paletas (jugador a la izquierda, IA a la derecha) y una bola que rebota. El primero en alcanzar 5 puntos gana la partida. La IA mejora su velocidad, precisión y capacidad de predicción según la dificultad seleccionada.
 
 | Aspecto | Descripción |
 |---------|-------------|
-| **Objetivo** | Completar los 5 niveles ganando cada uno por puntos |
-| **Victoria** | Ganar el nivel 5 |
-| **Derrota** | La IA alcanza la puntuación objetivo antes que tú |
-| **Récord** | Mejor nivel alcanzado (bestStreak) |
+| **Objetivo** | Ganar la partida alcanzando 5 puntos |
+| **Victoria** | Alcanzar 5 puntos antes que la IA |
+| **Derrota** | La IA alcanza 5 puntos primero |
+| **Récord** | Mejor racha de victorias (bestStreak) |
 
 ## Controles
 
@@ -21,32 +21,32 @@ Dos paletas (jugador a la izquierda, IA a la derecha) y una bola que rebota. El 
 |-------|--------|
 | ↑↓ / W S | Mover paleta |
 | Ratón | Mover paleta (seguimiento vertical) |
-| Click / Espacio | Avanzar / Reiniciar |
+| Click / Espacio | Seleccionar dificultad / Reiniciar |
 
-## Constantes de balance
+## Selector de dificultad
 
-| Nivel | Velocidad IA | Velocidad bola | Puntos para ganar | Dificultad |
-|-------|-------------|---------------|-------------------|------------|
-| 1 | 260 px/s | 320 px/s | 5 | Fácil |
-| 2 | 300 px/s | 340 px/s | 5 | Medio |
-| 3 | 340 px/s | 360 px/s | 6 | Difícil |
-| 4 | 380 px/s | 380 px/s | 6 | Experto |
-| 5 | 430 px/s | 410 px/s | 7 | Imposible |
+Al iniciar la partida, se presenta un selector con 3 niveles:
+
+| Dificultad | Velocidad IA | Velocidad bola | Predicción | Puntos para ganar |
+|------------|-------------|---------------|------------|-------------------|
+| Fácil | 260 px/s | 320 px/s | No | 5 |
+| Normal | 340 px/s | 360 px/s | Sí (30 frames) | 5 |
+| Difícil | 430 px/s | 410 px/s | Sí (60 frames) | 5 |
 
 - **Paleta**: 12×80 px, margen 24 px del borde
 - **Bola**: radio 7 px, velocidad aumenta 2% por rebote
-- **IA**: desde nivel 3 predice rebotes con simulación de hasta 60 frames
+- **IA Difícil**: predice rebotes simulando trayectoria hasta 60 frames
 - **Ángulo de rebote**: ±60° según punto de impacto en la paleta
 
 ## Estructura del código
 
 - **`Pong.js`**: Clase principal
-  - `_getLevelConfig()` → configuración del nivel actual
+  - `_showDifficultySelector()` → pantalla de selección de dificultad
   - `_movePlayer()` / `_moveAI()` → movimiento de paletas
   - `_moveBall()` → física de la bola con rebotes
   - `_predictAim()` → IA predictiva (simula trayectoria)
   - `_serve()` / `_afterPoint()` → gestión de puntos
-  - `_nextLevel()` / `_restart()` → gestión de estado
+  - `_restart()` → gestión de estado
 - **`i18n.js`**: Traducciones específicas (pong.*)
 
 ## Dependencias del engine
