@@ -4,6 +4,7 @@ import { clamp } from '../../engine/CollisionUtils.js';
 import { ParticleSystem } from '../../engine/ParticleSystem.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
+import { ScreenShake } from '../../engine/ScreenShake.js';
 import { t } from '../../engine/i18n.js';
 import { renderOverlay } from '../../engine/GameUI.js';
 
@@ -48,7 +49,15 @@ export class MissileCommand extends GameBase {
 
     this.particles = new ParticleSystem(40);
 
+    this.shake = new ScreenShake();
     this._restart();
+  }
+
+  _defaultBindings() {
+    return {
+      fire: ['Space', 'GamepadA', 'GamepadR2'],
+      restart: ['Space', 'GamepadStart', 'GamepadA'],
+    };
   }
 
   _restart() {
@@ -135,21 +144,22 @@ export class MissileCommand extends GameBase {
     }
 
     if (this.status !== 'playing') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
+      if (this.input.wasActionPressed('restart') || this.input.mouse.clickedThisFrame) {
         this._restart();
       }
-      this.input.endFrame();
+
       return;
     }
 
+    this.shake.update(dt);
     this._updateIncomingMissiles(dt);
     this._updateInterceptors(dt);
     this._updateExplosions(dt);
     this._checkCollisions();
     this.particles.update(dt);
 
-    // Disparar interceptor al hacer click
-    if (this.input.mouse.clickedThisFrame) {
+    // Disparar interceptor: click o gamepad (action mapping)
+    if (this.input.mouse.clickedThisFrame || this.input.wasActionPressed('fire')) {
       this._fireInterceptor();
     }
 
@@ -237,6 +247,7 @@ export class MissileCommand extends GameBase {
             city.alive = false;
             AudioManager.sfx({ type: 'missile_explosion', volume: 0.4 });
             HapticManager.vibrate('explosion');
+            this.shake.trigger(6, 0.25);
             this.particles.burst(city.x, city.y, COLORS.city, 15, 100);
             break;
           }
@@ -300,6 +311,7 @@ export class MissileCommand extends GameBase {
           m.alive = false;
           this.score += 25;
           AudioManager.sfx({ type: 'hit', volume: 0.15 });
+          this.shake.trigger(3, 0.1);
           this.particles.burst(m.x, m.y, COLORS.missile, 5, 50);
         }
       }
@@ -319,6 +331,9 @@ export class MissileCommand extends GameBase {
   // ── Render ─────────────────────────────────────────────────────────────
 
   render(ctx) {
+    ctx.save();
+    this.shake.apply(ctx);
+
     ctx.fillStyle = COLORS.bg;
     ctx.fillRect(0, 0, this.width, this.height);
 
@@ -338,6 +353,8 @@ export class MissileCommand extends GameBase {
     if (this.status !== 'playing') {
       renderOverlay(ctx, { width: this.width, height: this.height, score: this.score });
     }
+
+    ctx.restore();
   }
 
   _renderCities(ctx) {

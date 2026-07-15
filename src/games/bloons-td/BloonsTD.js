@@ -193,7 +193,6 @@ export class BloonsTD extends GameBase {
       }
     }
 
-    this.input.endFrame();
   }
 
   _updateBloons(dt) {

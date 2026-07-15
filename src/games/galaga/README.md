@@ -22,6 +22,8 @@ Los enemigos están organizados en una formación de 5x8. Periódicamente, algun
 | Espacio / Click | Disparar |
 | Click / Espacio | Reiniciar tras Game Over |
 
+**🎮 Gamepad**: Stick izq. L/R → mover nave · A → disparar
+
 ## Mecánicas
 
 - **Formación oscilante**: los enemigos se mueven suavemente en formación

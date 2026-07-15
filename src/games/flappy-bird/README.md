@@ -21,6 +21,8 @@ El pájaro cae constantemente por gravedad. Cada click/espacio le da un impulso 
 | Espacio / Click / ↑ | Aleteo (impulso hacia arriba) |
 | Click / Espacio | Reiniciar |
 
+**🎮 Gamepad**: A / D-pad ↑ → aleteo
+
 ## Constantes de balance
 
 | Tramo | Velocidad tuberías | Ratio hueco | Intervalo spawn |

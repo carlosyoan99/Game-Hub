@@ -143,7 +143,7 @@ export class TrickQuiz extends GameBase {
         if (this.feedbackKind === 'correct') this._advanceQuestion();
         else this.status = 'question'; // reintenta la misma pregunta
       }
-      this.input.endFrame();
+
       return;
     }
 

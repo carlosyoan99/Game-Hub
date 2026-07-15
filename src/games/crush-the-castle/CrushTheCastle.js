@@ -132,10 +132,10 @@ export class CrushTheCastle extends GameBase {
   update(dt) {
     if (this.handleRestartInput()) return;
     if (this.status === 'level-complete') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
+      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadStart')) {
         this._nextWave();
       }
-      this.input.endFrame();
+
       return;
     }
 
@@ -144,7 +144,7 @@ export class CrushTheCastle extends GameBase {
       if (this.particles.isEmpty) {
         this.status = 'aiming';
       }
-      this.input.endFrame();
+
       return;
     }
 
@@ -164,13 +164,14 @@ export class CrushTheCastle extends GameBase {
         this.aimPower = clamp(dist / 400, 0.2, 1.0);
       }
 
-      if (this.input.isDown('ArrowUp')) this.aimAngle -= 1.5 * dt;
-      if (this.input.isDown('ArrowDown')) this.aimAngle += 1.5 * dt;
+      // Gamepad: D-pad + stick continuo (isDown), igual que las flechas del teclado
+      if (this.input.isDown('ArrowUp') || this.input.isDown('GamepadUp') || this.input.isDown('GamepadLStickUp')) this.aimAngle -= 1.5 * dt;
+      if (this.input.isDown('ArrowDown') || this.input.isDown('GamepadDown') || this.input.isDown('GamepadLStickDown')) this.aimAngle += 1.5 * dt;
       this.aimAngle = clamp(this.aimAngle, -Math.PI * 0.45, -0.05);
-      if (this.input.isDown('ArrowLeft')) this.aimPower = clamp(this.aimPower - 0.5 * dt, 0.2, 1.0);
-      if (this.input.isDown('ArrowRight')) this.aimPower = clamp(this.aimPower + 0.5 * dt, 0.2, 1.0);
+      if (this.input.isDown('ArrowLeft') || this.input.isDown('GamepadLeft') || this.input.isDown('GamepadLStickLeft')) this.aimPower = clamp(this.aimPower - 0.5 * dt, 0.2, 1.0);
+      if (this.input.isDown('ArrowRight') || this.input.isDown('GamepadRight') || this.input.isDown('GamepadLStickRight')) this.aimPower = clamp(this.aimPower + 0.5 * dt, 0.2, 1.0);
 
-      if (this.input.mouse.clickedThisFrame || this.input.wasPressed('Space')) {
+      if (this.input.mouse.clickedThisFrame || this.input.wasPressed('Space') || this.input.wasPressed('GamepadA')) {
         this._fire();
       }
     }
@@ -188,7 +189,6 @@ export class CrushTheCastle extends GameBase {
       }
     }
 
-    this.input.endFrame();
   }
 
   _fire() {

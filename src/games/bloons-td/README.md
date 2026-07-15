@@ -27,6 +27,8 @@ Los bloons entran por el lado izquierdo y siguen un camino serpenteante hasta la
 | Espacio / Click | Iniciar oleada |
 | Click / Espacio | Reiniciar |
 
+**🎮 Gamepad**: D-pad L/R → seleccionar torre · A → colocar · Start → iniciar oleada
+
 ## Tipos de torre
 
 | Torre | Coste | Daño | Alcance | Velocidad | Especial |

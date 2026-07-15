@@ -97,20 +97,20 @@ export class Breakout extends GameBase {
 
   update(dt) {
     if (this.status === 'level-complete') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
+      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadStart')) {
         this._nextLevel();
       }
-      this.input.endFrame();
+
       return;
     }
 
     if (this.handleRestartInput()) return;
 
     // Paleta
-    if (this.input.isDown('ArrowLeft') || this.input.isDown('KeyA')) {
+    if (this.input.isDown('ArrowLeft') || this.input.isDown('KeyA') || this.input.isDown('GamepadLeft') || this.input.isDown('GamepadLStickLeft')) {
       this.paddle.x -= 360 * dt;
     }
-    if (this.input.isDown('ArrowRight') || this.input.isDown('KeyD')) {
+    if (this.input.isDown('ArrowRight') || this.input.isDown('KeyD') || this.input.isDown('GamepadRight') || this.input.isDown('GamepadLStickRight')) {
       this.paddle.x += 360 * dt;
     }
     if (this.input.mouse.x >= 0) {

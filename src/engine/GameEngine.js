@@ -1,4 +1,6 @@
 import { InputManager } from './InputManager.js';
+import { renderGamepadIndicator, createToastManager } from './GameUI.js';
+import { t } from './i18n.js';
 
 /**
  * GameEngine
@@ -29,8 +31,31 @@ export class GameEngine {
     this.input = new InputManager();
     this.input.attach(this.canvas);
 
+    // ── Toast notifications ────────────────────────────────────────
+    this._toasts = createToastManager();
+
+    // Mostrar toast al conectar/desconectar gamepad
+    this._onToastGamepadConnected = (e) => {
+      const name = e.gamepad.id.replace(/\s*\d+$/, '').trim() || t('gamepad.tooltip');
+      this._toasts.addToast(t('gamepad.connected', { name }));
+    };
+    this._onToastGamepadDisconnected = () => {
+      this._toasts.addToast(t('gamepad.disconnected'));
+    };
+    window.addEventListener('gamepadconnected', this._onToastGamepadConnected);
+    window.addEventListener('gamepaddisconnected', this._onToastGamepadDisconnected);
+
     this._rafId = null;
     this._loop = this._loop.bind(this);
+  }
+
+  /** Libera recursos: remueve listeners de toast y detiene el loop. */
+  destroy() {
+    this.unloadGame();
+    window.removeEventListener('gamepadconnected', this._onToastGamepadConnected);
+    window.removeEventListener('gamepaddisconnected', this._onToastGamepadDisconnected);
+    this._onToastGamepadConnected = null;
+    this._onToastGamepadDisconnected = null;
   }
 
   /** Carga un juego que implemente la Game Interface y arranca el loop. */
@@ -78,9 +103,29 @@ export class GameEngine {
     this.lastTime = timestamp;
 
     if (this.currentGame) {
+      // Refrescar estado del gamepad (navigator.getGamepads()) antes de update().
+      this.input.poll();
+
       this.currentGame.update(dt);
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
       this.currentGame.render(this.ctx);
+
+      // Actualizar toasts (deben actualizarse con dt real para
+      // que el fade-out sea suave incluso si el juego pausa su dt).
+      this._toasts.updateToasts(dt);
+
+      // Indicador visual de gamepad conectado (esquina superior derecha).
+      // Se renderiza sobre el HUD del juego automáticamente.
+      // Pasa la posición del ratón para el tooltip hover.
+      renderGamepadIndicator(this.ctx, this.input, this.canvas.width,
+        this.input.mouse.x, this.input.mouse.y);
+
+      // Toast notifications sobre el HUD
+      this._toasts.renderToasts(this.ctx, this.canvas.width, this.canvas.height);
+
+      // Limpiar estado transitorio del frame (clickedThisFrame, keysJustPressed).
+      // Los juegos ya no deben llamar endFrame() manualmente.
+      this.input.endFrame();
     }
 
     this._rafId = requestAnimationFrame(this._loop);

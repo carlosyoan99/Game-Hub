@@ -72,6 +72,83 @@ const TRANSLATIONS = {
   'game.lives':              { es: 'Vidas: {n}',                       en: 'Lives: {n}' },
   'game.paused':             { es: 'PAUSA',                            en: 'PAUSED' },
 
+  // ── Gamepad ───────────────────────────────────────────────────────────
+
+  'gamepad.connected':       { es: '🎮 Gamepad conectado: {name}',     en: '🎮 Gamepad connected: {name}' },
+  'gamepad.disconnected':    { es: '🎮 Gamepad desconectado',           en: '🎮 Gamepad disconnected' },
+  'gamepad.tooltip':         { es: 'Gamepad conectado',                en: 'Gamepad connected' },
+
+  // ── Progresión ───────────────────────────────────────────────────────
+
+  'progression.profile':         { es: 'PERFIL',                          en: 'PROFILE' },
+  'progression.level':           { es: 'Nivel {n}',                       en: 'Level {n}' },
+  'progression.xp':              { es: 'XP: {n}/{m}',                     en: 'XP: {n}/{m}' },
+  'progression.stats':           { es: 'ESTADÍSTICAS',                    en: 'STATISTICS' },
+  'progression.achievements':    { es: 'LOGROS',                          en: 'ACHIEVEMENTS' },
+  'progression.unlockables':     { es: 'DESBLOQUEABLES',                  en: 'UNLOCKABLES' },
+  'progression.totalPlayed':     { es: 'Partidas: {n}',                   en: 'Games played: {n}' },
+  'progression.totalTime':       { es: 'Tiempo: {n}s',                    en: 'Time: {n}s' },
+  'progression.totalAch':        { es: 'Logros: {n}/{m}',                 en: 'Achievements: {n}/{m}' },
+  'progression.bestScore':       { es: 'Mejor: {n}',                      en: 'Best: {n}' },
+  'progression.wins':            { es: 'Victorias: {n}',                  en: 'Wins: {n}' },
+  'progression.plays':           { es: 'Jugado: {n} veces',               en: 'Played: {n} times' },
+  'progression.locked':          { es: '🔒 Bloqueado',                    en: '🔒 Locked' },
+  'progression.reset':           { es: 'Resetear progreso',               en: 'Reset progress' },
+  'progression.resetConfirm':    { es: '¿Resetear todo el progreso?',     en: 'Reset all progress?' },
+  'progression.newAchievement':  { es: '🏆 ¡Logro: {name}!',              en: '🏆 Achievement: {name}!' },
+  'progression.dailyBonus':      { es: '🔥 Bonus diario: +30 XP',         en: '🔥 Daily bonus: +30 XP' },
+
+  // Niveles
+  'progression.level1':  { es: 'Novato',           en: 'Novice' },
+  'progression.level2':  { es: 'Aprendiz',         en: 'Learner' },
+  'progression.level3':  { es: 'Jugador',          en: 'Player' },
+  'progression.level4':  { es: 'Veterano',         en: 'Veteran' },
+  'progression.level5':  { es: 'Experto',          en: 'Expert' },
+  'progression.level6':  { es: 'Maestro',          en: 'Master' },
+  'progression.level7':  { es: 'Leyenda',          en: 'Legend' },
+  'progression.level8':  { es: 'Leyenda II',       en: 'Legend II' },
+  'progression.level9':  { es: 'Leyenda III',      en: 'Legend III' },
+  'progression.level10': { es: '⭐ Leyenda Suprema', en: '⭐ Supreme Legend' },
+
+  // ── Logros por juego ─────────────────────────────────────────────────
+
+  'prog.breakout.firstStep':        { es: 'Primer paso',                  en: 'First step' },
+  'prog.breakout.firstStep.desc':   { es: 'Completa el nivel 1',          en: 'Complete level 1' },
+  'prog.breakout.brickBreaker':     { es: 'Rompe-ladrillos',              en: 'Brick breaker' },
+  'prog.breakout.brickBreaker.desc':{ es: 'Completa los 5 niveles',       en: 'Complete all 5 levels' },
+  'prog.breakout.impossible':       { es: 'Imposible',                    en: 'Impossible' },
+  'prog.breakout.impossible.desc':  { es: 'Completa el nivel 5',          en: 'Complete level 5' },
+  'prog.breakout.flawless':         { es: 'Imparable',                    en: 'Flawless' },
+  'prog.breakout.flawless.desc':    { es: 'Completa un nivel sin perder vida', en: 'Complete a level without dying' },
+
+  'prog.snake.small':               { es: 'Serpiente pequeña',            en: 'Small snake' },
+  'prog.snake.small.desc':          { es: 'Alcanza 10 puntos',           en: 'Reach 10 points' },
+  'prog.snake.big':                 { es: 'Serpiente grande',             en: 'Big snake' },
+  'prog.snake.big.desc':            { es: 'Alcanza 50 puntos',           en: 'Reach 50 points' },
+  'prog.snake.immortal':            { es: 'Inmortal',                     en: 'Immortal' },
+  'prog.snake.immortal.desc':       { es: 'Alcanza 100 puntos',          en: 'Reach 100 points' },
+
+  'prog.pong.firstPoint':           { es: 'Primer punto',                 en: 'First point' },
+  'prog.pong.firstPoint.desc':      { es: 'Gana tu primer punto',         en: 'Win your first point' },
+  'prog.pong.streak3':              { es: 'Racha de 3',                   en: 'Streak of 3' },
+  'prog.pong.streak3.desc':         { es: 'Gana 3 partidas seguidas',     en: 'Win 3 games in a row' },
+  'prog.pong.unbeatable':           { es: 'Imbatible',                    en: 'Unbeatable' },
+  'prog.pong.unbeatable.desc':      { es: 'Gana en dificultad Difícil',   en: 'Win on Hard difficulty' },
+
+  'prog.flappy.firstFlight':        { es: 'Primer vuelo',                 en: 'First flight' },
+  'prog.flappy.firstFlight.desc':   { es: 'Supera 1 tubería',            en: 'Pass 1 pipe' },
+  'prog.flappy.pipeMaster':         { es: 'Maestro de tuberías',          en: 'Pipe master' },
+  'prog.flappy.pipeMaster.desc':    { es: 'Supera 20 tuberías',          en: 'Pass 20 pipes' },
+  'prog.flappy.legend':             { es: 'Leyenda alada',                en: 'Winged legend' },
+  'prog.flappy.legend.desc':        { es: 'Supera 50 tuberías',          en: 'Pass 50 pipes' },
+
+  'prog.asteroids.firstBlast':      { es: 'Primera explosión',            en: 'First blast' },
+  'prog.asteroids.firstBlast.desc': { es: 'Destruye tu primer asteroide', en: 'Destroy your first asteroid' },
+  'prog.asteroids.wave5':           { es: 'Superviviente',                en: 'Survivor' },
+  'prog.asteroids.wave5.desc':      { es: 'Alcanza la oleada 5',          en: 'Reach wave 5' },
+  'prog.asteroids.wave10':          { es: 'Leyenda espacial',             en: 'Space legend' },
+  'prog.asteroids.wave10.desc':     { es: 'Alcanza la oleada 10',         en: 'Reach wave 10' },
+
   'registry.breakout.title':  { es: 'Breakout',                       en: 'Breakout' },
   'registry.breakout.tagline':{ es: 'Rebotes y destrucción de ladrillos', en: 'Bouncing and brick destruction' },
   'registry.snake.title':     { es: 'Snake',                          en: 'Snake' },

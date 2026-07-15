@@ -18,6 +18,7 @@
  *   }
  */
 import { StorageManager } from './StorageManager.js';
+import { SettingsManager } from './SettingsManager.js';
 import { renderDefaultHUD, renderPauseOverlay } from './GameUI.js';
 
 export class GameBase {
@@ -36,6 +37,12 @@ export class GameBase {
 
     if (storageKey) {
       this.storage = new StorageManager(storageKey);
+    }
+
+    // Aplicar bindings personalizados desde SettingsManager si el juego
+    // define un mapa por defecto via this._defaultBindings.
+    if (this._defaultBindings && storageKey) {
+      SettingsManager.applyBindings(this.input, storageKey, this._defaultBindings());
     }
   }
 
@@ -95,6 +102,9 @@ export class GameBase {
    * Patrón común: si el status es 'won' o 'lost', espera Space o click
    * para llamar a this._restart().
    *
+   * NOTA: endFrame() lo llama el engine automáticamente después de
+   * render(), no debe llamarse aquí.
+   *
    * @param {string[]} [endStatuses]  - Statuses considerados "finales".
    *   Por defecto ['won', 'lost'].
    * @returns {boolean}  true si se manejó (y se consumió el frame).
@@ -104,7 +114,6 @@ export class GameBase {
       if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
         this._restart();
       }
-      this.input.endFrame();
       return true;
     }
     return false;

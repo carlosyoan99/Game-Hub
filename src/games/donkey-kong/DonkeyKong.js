@@ -190,10 +190,10 @@ export class DonkeyKong extends GameBase {
 
   update(dt) {
     if (this.status !== 'playing') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
+      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadStart')) {
         this._restart();
       }
-      this.input.endFrame();
+
       return;
     }
 
@@ -237,11 +237,11 @@ export class DonkeyKong extends GameBase {
 
     // Input horizontal
     p.vx = 0;
-    if (this.input.isDown('ArrowLeft') || this.input.isDown('KeyA')) {
+    if (this.input.isDown('ArrowLeft') || this.input.isDown('KeyA') || this.input.isDown('GamepadLeft') || this.input.isDown('GamepadLStickLeft')) {
       p.vx = -PLAYER_SPEED;
       p.facing = -1;
     }
-    if (this.input.isDown('ArrowRight') || this.input.isDown('KeyD')) {
+    if (this.input.isDown('ArrowRight') || this.input.isDown('KeyD') || this.input.isDown('GamepadRight') || this.input.isDown('GamepadLStickRight')) {
       p.vx = PLAYER_SPEED;
       p.facing = 1;
     }
@@ -253,10 +253,10 @@ export class DonkeyKong extends GameBase {
       const ly = ladder.y;
       if (p.x + p.w / 2 > lx - 10 && p.x - p.w / 2 < lx + 10 && p.y + p.h > ly && p.y < ly + ladder.h) {
         onLadder = true;
-        if (this.input.isDown('ArrowUp') || this.input.isDown('KeyW')) {
+        if (this.input.isDown('ArrowUp') || this.input.isDown('KeyW') || this.input.isDown('GamepadUp') || this.input.isDown('GamepadLStickUp')) {
           p.vy = -LADDER_SPEED;
           p.onGround = false;
-        } else if (this.input.isDown('ArrowDown') || this.input.isDown('KeyS')) {
+        } else if (this.input.isDown('ArrowDown') || this.input.isDown('KeyS') || this.input.isDown('GamepadDown') || this.input.isDown('GamepadLStickDown')) {
           p.vy = LADDER_SPEED;
           p.onGround = false;
         } else {
@@ -268,7 +268,7 @@ export class DonkeyKong extends GameBase {
 
     if (!onLadder) {
       // Salto
-      if (p.onGround && (this.input.wasPressed('Space') || this.input.wasPressed('ArrowUp') || this.input.wasPressed('KeyW'))) {
+      if (p.onGround && (this.input.wasPressed('Space') || this.input.wasPressed('ArrowUp') || this.input.wasPressed('KeyW') || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadUp') || this.input.wasPressed('GamepadLStickUp'))) {
         p.vy = JUMP_VELOCITY;
         p.onGround = false;
         AudioManager.sfx({ type: 'dk_jump', volume: 0.3 });

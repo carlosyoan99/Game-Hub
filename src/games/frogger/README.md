@@ -24,6 +24,8 @@ La rana se mueve en cuadrícula por la pantalla. Debes cruzar 5 carriles de carr
 | → / D | Saltar derecha |
 | Click / Espacio | Reiniciar tras Game Over |
 
+**🎮 Gamepad**: D-pad + Stick izq. → movimiento direccional (arriba/abajo/izquierda/derecha)
+
 ## Mecánicas
 
 - **Movimiento en cuadrícula**: 30px por salto, con cooldown

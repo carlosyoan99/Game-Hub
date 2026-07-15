@@ -140,18 +140,18 @@ export class Frogger extends GameBase {
   update(dt) {
     if (this.status === 'level-transition') {
       this.levelTransitionTimer -= dt;
-      if (this.levelTransitionTimer <= 0 || this.input.mouse.clickedThisFrame || this.input.wasPressed('Space')) {
+      if (this.levelTransitionTimer <= 0 || this.input.mouse.clickedThisFrame || this.input.wasPressed('Space') || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadStart')) {
         this._startNextLevel();
       }
-      this.input.endFrame();
+
       return;
     }
 
     if (this.status === 'game-over') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
+      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadStart')) {
         this._restart();
       }
-      this.input.endFrame();
+
       return;
     }
 
@@ -199,21 +199,21 @@ export class Frogger extends GameBase {
     // Movimiento en cuadrícula con cooldown
     if (this.moveCooldown <= 0) {
       let moved = false;
-      if (this.input.wasPressed('ArrowUp') || this.input.wasPressed('KeyW')) {
+      if (this.input.wasPressed('ArrowUp') || this.input.wasPressed('KeyW') || this.input.wasPressed('GamepadUp') || this.input.wasPressed('GamepadLStickUp')) {
         this.frog.y = Math.max(HOME_Y + 20, this.frog.y - GRID_SIZE);
         this.frog.onLog = null;
         moved = true;
       }
-      if (this.input.wasPressed('ArrowDown') || this.input.wasPressed('KeyS')) {
+      if (this.input.wasPressed('ArrowDown') || this.input.wasPressed('KeyS') || this.input.wasPressed('GamepadDown') || this.input.wasPressed('GamepadLStickDown')) {
         this.frog.y = Math.min(this.height - 20, this.frog.y + GRID_SIZE);
         this.frog.onLog = null;
         moved = true;
       }
-      if (this.input.wasPressed('ArrowLeft') || this.input.wasPressed('KeyA')) {
+      if (this.input.wasPressed('ArrowLeft') || this.input.wasPressed('KeyA') || this.input.wasPressed('GamepadLeft') || this.input.wasPressed('GamepadLStickLeft')) {
         this.frog.x = Math.max(20, this.frog.x - GRID_SIZE);
         moved = true;
       }
-      if (this.input.wasPressed('ArrowRight') || this.input.wasPressed('KeyD')) {
+      if (this.input.wasPressed('ArrowRight') || this.input.wasPressed('KeyD') || this.input.wasPressed('GamepadRight') || this.input.wasPressed('GamepadLStickRight')) {
         this.frog.x = Math.min(this.width - 20, this.frog.x + GRID_SIZE);
         moved = true;
       }

@@ -23,6 +23,8 @@ Dos jugadores deben alcanzar sus metas simultáneamente. El nivel incluye una pa
 | Salto | W | ↑ |
 | Avanzar | Click o Espacio | — |
 
+**🎮 Gamepad**: P1 (Stick izq. + A) · P2 (Stick der. + B)
+
 ## Constantes de balance
 
 | Parámetro | Valor |

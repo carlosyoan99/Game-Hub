@@ -70,11 +70,11 @@ export class FlappyBird extends GameBase {
 
   update(dt) {
     const flapPressed =
-      this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame || this.input.wasPressed('ArrowUp');
+      this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame || this.input.wasPressed('ArrowUp') || this.input.wasPressed('KeyW') || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadB') || this.input.wasPressed('GamepadUp') || this.input.wasPressed('GamepadStart');
 
     if (this.status === 'lost') {
       if (flapPressed) this._restart();
-      this.input.endFrame();
+
       return;
     }
 

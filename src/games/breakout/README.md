@@ -23,6 +23,8 @@ El jugador controla una paleta en la parte inferior de la pantalla. La bola rebo
 | Ratón | Mover la paleta (seguimiento) |
 | Click / Espacio | Avanzar al siguiente nivel / Reiniciar |
 
+**🎮 Gamepad**: Stick izq. L/R + D-pad L/R → mover paleta · A → saque / avanzar
+
 ## Constantes de balance
 
 | Nivel | Filas | Columnas | Velocidad bola | Dificultad |

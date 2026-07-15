@@ -24,6 +24,8 @@ Por turnos, tú y la IA os disparáis flechas. El viento cambia cada turno y afe
 | ↑↓ | Ajustar ángulo fino |
 | Click / Espacio | Reiniciar |
 
+**🎮 Gamepad**: D-pad ↑/↓ + Stick izq. ↑/↓ → ajustar ángulo · A → disparar
+
 ## Constantes de balance
 
 | Parámetro | Valor |

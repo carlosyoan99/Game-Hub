@@ -272,10 +272,69 @@ export class SeededRandom {
 ### 9.3. SettingsManager (nuevo)
 
 - Nuevo módulo `src/engine/SettingsManager.js`
-- Singleton que gestiona: tema, reducedMotion, idioma.
-- Lee/escribe `gamehub:settings:*` en localStorage.
+- Singleton que gestiona: tema, reducedMotion, idioma, volumen, vibración
+  y **key bindings** (rebinding de controles por juego).
+- Lee/escribe bajo `gamehub:settings:*` en localStorage.
 - Expone eventos/callbacks para que el hub y los juegos reaccionen a
   cambios en caliente (ej. cambiar tema sin recargar).
+
+#### Key Bindings API
+
+Las bindings personalizadas se almacenan en localStorage bajo `gamehub:binds:<gameKey>`
+como JSON `{ "action": ["KeyA", "GamepadLeft"], ... }`.
+
+```js
+// Consultar bindings
+SettingsManager.getBinding(gameKey, action)        // → string[] | null
+SettingsManager.getEffectiveKeys(gameKey, action, defaults) // → string[]
+SettingsManager.getAllBindings(gameKey, defaultMap)  // → merged para UI
+
+// Guardar / resetear
+SettingsManager.setBinding(gameKey, action, keys)   // null para reset
+SettingsManager.resetBinding(gameKey, action)
+SettingsManager.resetAllBindings(gameKey)
+
+// Aplicar al InputManager activo
+SettingsManager.applyBindings(input, gameKey, defaultMap)
+//   → input.clearActions() + input.bind(action, ...keys) para cada acción
+
+// Listener de cambios
+SettingsManager.onBindingChange(gameKey, action, fn)
+
+// Modo escucha (para capturar la siguiente tecla/gamepad presionado)
+SettingsManager.listenForBind(input, onBind)
+//   → intercepta keydown + gamepad polling (100ms, transiciones false→true)
+//   → retorna función cancel()
+//   → soporta teclado y gamepad (D-pad, botones de cara, hombros, gatillos)
+```
+
+#### Integración con GameBase
+
+La clase base `GameBase.init()` aplica las bindings automáticamente si
+el juego define `this._defaultBindings()`:
+
+```js
+class MiJuego extends GameBase {
+  init(engine) {
+    super.init(engine, 'mi-juego');
+    // _defaultBindings se llama automáticamente desde GameBase.init()
+    // → SettingsManager.applyBindings(this.input, storageKey, defaults)
+  }
+
+  _defaultBindings() {
+    return {
+      moveLeft:  ['ArrowLeft', 'KeyA', 'GamepadLStickLeft', 'GamepadLeft'],
+      moveRight: ['ArrowRight', 'KeyD', 'GamepadLStickRight', 'GamepadRight'],
+      jump:      ['Space', 'KeyW', 'GamepadA'],
+      shoot:     ['Space', 'GamepadR1', 'GamepadX'],
+    };
+  }
+}
+```
+
+Los juegos que usan `isActionDown()`/`wasActionPressed()` obtienen el
+rebinding gratis — el jugador puede reasignar teclas y se aplican en
+caliente al iniciar la partida.
 
 ---
 
@@ -292,16 +351,16 @@ export class SeededRandom {
 
 ## 11. Checklist de implementación
 
-- [ ] **SettingsManager.js** — Singleton con tema, reducedMotion, idioma
-- [ ] **i18n.js** — Archivo de traducciones ES/EN + función `t()`
-- [ ] **SeededRandom.js** — PRNG con semilla
-- [ ] **main.js** — Añadir buscador en vivo, icono settings, modal
-- [ ] **index.html** — Añadir elementos HTML para search + settings
-- [ ] **main.css** — Refactorizar a estética retro 8-bit NES + tema claro
+- [x] **SettingsManager.js** — Singleton con tema, reducedMotion, idioma, key bindings
+- [x] **i18n.js** — Archivo de traducciones ES/EN + función `t()`
+- [x] **SeededRandom.js** — PRNG con semilla (Mulberry32)
+- [x] **main.js** — Añadir buscador en vivo, icono settings, modal
+- [x] **index.html** — Añadir elementos HTML para search + settings
+- [x] **main.css** — Refactorizar a estética retro 8-bit NES + tema claro
 - [ ] **Juegos Nivel 1** — Breakout, Snake, Pong, Flappy: sistema de niveles
 - [ ] **Juegos Nivel 2** — Asteroids, Platformers: nuevos mapas/oleadas
 - [ ] **Juegos Nivel 3** — TrickQuiz, Papa's, Stick RPG: más contenido
 - [ ] **Juegos Nivel 4** — Crush, Bowman, Bloons, Territory: expandir
 - [ ] **Juegos Nivel 5** — Swords, Henry: más contenido + traducciones
-- [ ] **Smoke test** — Actualizar `smoke_test.mjs` con nuevos casos
-- [ ] **README.md** — Actualizar documentación
+- [x] **Smoke test** — Actualizar `smoke_test.mjs` con nuevos casos
+- [x] **README.md** — Actualizar documentación

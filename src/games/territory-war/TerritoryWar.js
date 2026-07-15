@@ -319,7 +319,7 @@ export class TerritoryWar extends GameBase {
       if (this.aiTimer <= 0) {
         this._aiDoAction();
       }
-      this.input.endFrame();
+
       return;
     }
 
@@ -363,7 +363,7 @@ export class TerritoryWar extends GameBase {
         this.animUnit = null;
         this.animTarget = null;
       }
-      this.input.endFrame();
+
       return;
     }
 

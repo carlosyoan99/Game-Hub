@@ -94,7 +94,7 @@ export class Pong extends GameBase {
           }
         }
       }
-      this.input.endFrame();
+
       return;
     }
 
@@ -109,10 +109,10 @@ export class Pong extends GameBase {
   }
 
   _movePlayer(dt) {
-    if (this.input.isDown('ArrowUp') || this.input.isDown('KeyW')) {
+    if (this.input.isDown('ArrowUp') || this.input.isDown('KeyW') || this.input.isDown('GamepadUp') || this.input.isDown('GamepadLStickUp')) {
       this.player.y -= 360 * dt;
     }
-    if (this.input.isDown('ArrowDown') || this.input.isDown('KeyS')) {
+    if (this.input.isDown('ArrowDown') || this.input.isDown('KeyS') || this.input.isDown('GamepadDown') || this.input.isDown('GamepadLStickDown')) {
       this.player.y += 360 * dt;
     }
     if (this.input.mouse.y >= 0) {

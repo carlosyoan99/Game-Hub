@@ -23,6 +23,8 @@ Dos paletas (jugador a la izquierda, IA a la derecha) y una bola que rebota. El 
 | Ratón | Mover paleta (seguimiento vertical) |
 | Click / Espacio | Seleccionar dificultad / Reiniciar |
 
+**🎮 Gamepad**: Stick izq. ↑/↓ + D-pad ↑/↓ → mover paleta
+
 ## Selector de dificultad
 
 Al iniciar la partida, se presenta un selector con 3 niveles:

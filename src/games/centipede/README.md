@@ -22,6 +22,8 @@ El ciempiés se mueve horizontalmente por la pantalla. Cuando encuentra un hongo
 | Espacio / Click | Disparar |
 | Click / Espacio | Reiniciar tras Game Over |
 
+**🎮 Gamepad**: Stick izq. → mover nave · A → disparar
+
 ## Mecánicas
 
 - **Ciempiés segmentado**: 12+ segmentos que siguen a la cabeza

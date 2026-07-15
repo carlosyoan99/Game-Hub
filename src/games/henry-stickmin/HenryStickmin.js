@@ -97,7 +97,7 @@ export class HenryStickmin extends GameBase {
       if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
         this._restart();
       }
-      this.input.endFrame();
+
       return;
     }
 
@@ -130,7 +130,7 @@ export class HenryStickmin extends GameBase {
         }
       }
 
-      this.input.endFrame();
+
       return;
     }
 
@@ -155,7 +155,7 @@ export class HenryStickmin extends GameBase {
         }
       }
 
-      this.input.endFrame();
+
       return;
     }
 
@@ -165,7 +165,7 @@ export class HenryStickmin extends GameBase {
         HapticManager.vibrate(this.endingDisplay?.type === 'success' ? 'powerup' : 'hit');
         this.phase = 'end_screen';
       }
-      this.input.endFrame();
+
       return;
     }
 

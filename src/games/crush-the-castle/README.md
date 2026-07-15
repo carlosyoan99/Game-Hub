@@ -25,6 +25,8 @@ Apunta con el ratón (ángulo y potencia) y dispara proyectiles desde una catapu
 | Flechas ←→ | Ajustar potencia |
 | Click / Espacio | Siguiente oleada / Reiniciar |
 
+**🎮 Gamepad**: D-pad ↑/↓ + Stick izq. ↑/↓ → ajustar ángulo · D-pad ←/→ + Stick izq. ←/→ → ajustar potencia · A → disparar · A / Start → siguiente oleada
+
 ## Constantes de balance
 
 | Parámetro | Valor |

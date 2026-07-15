@@ -176,10 +176,10 @@ export class SpaceInvaders extends GameBase {
 
   update(dt) {
     if (this.status !== 'playing') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
+      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadStart')) {
         this._restart();
       }
-      this.input.endFrame();
+
       return;
     }
 
@@ -205,16 +205,16 @@ export class SpaceInvaders extends GameBase {
       return;
     }
 
-    if (this.input.isDown('ArrowLeft') || this.input.isDown('KeyA')) {
+    if (this.input.isDown('ArrowLeft') || this.input.isDown('KeyA') || this.input.isDown('GamepadLeft') || this.input.isDown('GamepadLStickLeft')) {
       this.player.x -= PLAYER_SPEED * dt;
     }
-    if (this.input.isDown('ArrowRight') || this.input.isDown('KeyD')) {
+    if (this.input.isDown('ArrowRight') || this.input.isDown('KeyD') || this.input.isDown('GamepadRight') || this.input.isDown('GamepadLStickRight')) {
       this.player.x += PLAYER_SPEED * dt;
     }
     this.player.x = Math.max(SHIP_RADIUS, Math.min(this.width - SHIP_RADIUS, this.player.x));
 
     this.fireCooldown -= dt;
-    if ((this.input.isDown('Space') || this.input.mouse.down) && this.fireCooldown <= 0 && this.player.alive) {
+    if ((this.input.isDown('Space') || this.input.mouse.down || this.input.isDown('GamepadA')) && this.fireCooldown <= 0 && this.player.alive) {
       this._fireBullet();
       this.fireCooldown = FIRE_COOLDOWN;
     }

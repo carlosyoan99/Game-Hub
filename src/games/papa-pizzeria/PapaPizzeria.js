@@ -137,7 +137,7 @@ export class PapaPizzeria extends GameBase {
   update(dt) {
     if (this.status !== 'playing') {
       if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) this._restart();
-      this.input.endFrame();
+
       return;
     }
 

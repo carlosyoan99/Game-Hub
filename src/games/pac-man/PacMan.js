@@ -147,10 +147,10 @@ export class PacMan extends GameBase {
 
   update(dt) {
     if (this.status !== 'playing') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
+      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadStart')) {
         this._restart();
       }
-      this.input.endFrame();
+
       return;
     }
 
@@ -191,10 +191,10 @@ export class PacMan extends GameBase {
     const p = this.player;
 
     // Input
-    if (this.input.isDown('ArrowRight') || this.input.isDown('KeyD')) p.nextDir = 0;
-    else if (this.input.isDown('ArrowDown') || this.input.isDown('KeyS')) p.nextDir = 1;
-    else if (this.input.isDown('ArrowLeft') || this.input.isDown('KeyA')) p.nextDir = 2;
-    else if (this.input.isDown('ArrowUp') || this.input.isDown('KeyW')) p.nextDir = 3;
+    if (this.input.isDown('ArrowRight') || this.input.isDown('KeyD') || this.input.isDown('GamepadRight') || this.input.isDown('GamepadLStickRight')) p.nextDir = 0;
+    else if (this.input.isDown('ArrowDown') || this.input.isDown('KeyS') || this.input.isDown('GamepadDown') || this.input.isDown('GamepadLStickDown')) p.nextDir = 1;
+    else if (this.input.isDown('ArrowLeft') || this.input.isDown('KeyA') || this.input.isDown('GamepadLeft') || this.input.isDown('GamepadLStickLeft')) p.nextDir = 2;
+    else if (this.input.isDown('ArrowUp') || this.input.isDown('KeyW') || this.input.isDown('GamepadUp') || this.input.isDown('GamepadLStickUp')) p.nextDir = 3;
 
     // Intentar cambiar dirección
     const nd = this.dirVectors[p.nextDir];

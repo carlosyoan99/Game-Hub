@@ -125,18 +125,18 @@ export class Centipede extends GameBase {
     if (this.status === 'wave-transition') {
       this.waveTransitionTimer -= dt;
       this.particles.update(dt);
-      if (this.waveTransitionTimer <= 0 || this.input.mouse.clickedThisFrame || this.input.wasPressed('Space')) {
+      if (this.waveTransitionTimer <= 0 || this.input.mouse.clickedThisFrame || this.input.wasPressed('Space') || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadStart')) {
         this._startNextWave();
       }
-      this.input.endFrame();
+
       return;
     }
 
     if (this.status === 'game-over') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
+      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadStart')) {
         this._restart();
       }
-      this.input.endFrame();
+
       return;
     }
 
@@ -161,16 +161,16 @@ export class Centipede extends GameBase {
       return;
     }
 
-    if (this.input.isDown('ArrowLeft') || this.input.isDown('KeyA')) {
+    if (this.input.isDown('ArrowLeft') || this.input.isDown('KeyA') || this.input.isDown('GamepadLeft') || this.input.isDown('GamepadLStickLeft')) {
       this.player.x -= PLAYER_SPEED * dt;
     }
-    if (this.input.isDown('ArrowRight') || this.input.isDown('KeyD')) {
+    if (this.input.isDown('ArrowRight') || this.input.isDown('KeyD') || this.input.isDown('GamepadRight') || this.input.isDown('GamepadLStickRight')) {
       this.player.x += PLAYER_SPEED * dt;
     }
     this.player.x = Math.max(PLAYER_SIZE, Math.min(this.width - PLAYER_SIZE, this.player.x));
 
     this.fireCooldown -= dt;
-    if ((this.input.isDown('Space') || this.input.mouse.down) && this.fireCooldown <= 0) {
+    if ((this.input.isDown('Space') || this.input.mouse.down || this.input.isDown('GamepadA')) && this.fireCooldown <= 0) {
       this._fireBullet();
       this.fireCooldown = FIRE_COOLDOWN;
     }

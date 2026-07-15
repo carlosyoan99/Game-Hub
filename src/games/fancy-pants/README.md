@@ -23,6 +23,8 @@ Corre y salta a través de niveles con mecánicas más avanzadas. Puedes desliza
 | Espacio / ↑ / W | Saltar (normal o desde pared) |
 | Click / Espacio | Avanzar / Reiniciar |
 
+**🎮 Gamepad**: Stick izq. L/R → mover · A → saltar (normal o desde pared) · wall-jump incluido
+
 ## Constantes de balance
 
 | Parámetro | Valor |

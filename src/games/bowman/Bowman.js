@@ -150,7 +150,7 @@ export class Bowman extends GameBase {
       if (this.aiTimer <= 0) {
         this._fire();
       }
-      this.input.endFrame();
+
       return;
     }
 
@@ -159,13 +159,13 @@ export class Bowman extends GameBase {
       if (this.hitTimer <= 0) {
         this._nextTurn();
       }
-      this.input.endFrame();
+
       return;
     }
 
     if (this.status === 'flying') {
       this._updateArrow(dt);
-      this.input.endFrame();
+
       return;
     }
 
@@ -181,15 +181,14 @@ export class Bowman extends GameBase {
       }
 
       if (this.turn === 1) {
-        if (this.input.wasPressed('ArrowUp')) this.aimAngle = clamp(this.aimAngle + 0.1, -Math.PI * 0.45, -0.05);
-        if (this.input.wasPressed('ArrowDown')) this.aimAngle = clamp(this.aimAngle - 0.1, -Math.PI * 0.45, -0.05);
-        if (this.input.mouse.clickedThisFrame || this.input.wasPressed('Space')) {
+        if (this.input.wasPressed('ArrowUp') || this.input.wasPressed('GamepadUp') || this.input.isDown('GamepadLStickUp')) this.aimAngle = clamp(this.aimAngle + 0.1, -Math.PI * 0.45, -0.05);
+        if (this.input.wasPressed('ArrowDown') || this.input.wasPressed('GamepadDown') || this.input.isDown('GamepadLStickDown')) this.aimAngle = clamp(this.aimAngle - 0.1, -Math.PI * 0.45, -0.05);
+        if (this.input.mouse.clickedThisFrame || this.input.wasPressed('Space') || this.input.wasPressed('GamepadA')) {
           this._fire();
         }
       }
     }
 
-    this.input.endFrame();
   }
 
   _fire() {

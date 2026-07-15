@@ -23,6 +23,8 @@ Controlas una nave triangular en un espacio sin bordes (wraparound). Destruye as
 | Espacio / Click sostenido | Disparar |
 | Click / Espacio | Reiniciar |
 
+**🎮 Gamepad**: Stick izquierdo L/R → rotar nave · A → propulsión · X → disparar · B → hiperespacio
+
 ## Constantes de balance
 
 | Oleada | Asteroides | Enemigos | Velocidad enemigos | HP enemigos |

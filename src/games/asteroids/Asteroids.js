@@ -115,18 +115,17 @@ export class Asteroids extends GameBase {
     this._updateEnemies(dt);
     this._checkCollisions();
 
-    this.input.endFrame();
   }
 
   _updateShip(dt) {
-    if (this.input.isDown('ArrowLeft') || this.input.isDown('KeyA')) {
+    if (this.input.isDown('ArrowLeft') || this.input.isDown('KeyA') || this.input.isDown('GamepadLeft') || this.input.isDown('GamepadLStickLeft')) {
       this.ship.angle -= SHIP_TURN_SPEED * dt;
     }
-    if (this.input.isDown('ArrowRight') || this.input.isDown('KeyD')) {
+    if (this.input.isDown('ArrowRight') || this.input.isDown('KeyD') || this.input.isDown('GamepadRight') || this.input.isDown('GamepadLStickRight')) {
       this.ship.angle += SHIP_TURN_SPEED * dt;
     }
 
-    this.ship.thrusting = this.input.isDown('ArrowUp') || this.input.isDown('KeyW');
+    this.ship.thrusting = this.input.isDown('ArrowUp') || this.input.isDown('KeyW') || this.input.isDown('GamepadUp') || this.input.isDown('GamepadRStickUp');
     if (this.ship.thrusting) {
       const thrust = Vector2.fromAngle(this.ship.angle, SHIP_THRUST * dt);
       this.ship.vx += thrust.x;
@@ -150,7 +149,7 @@ export class Asteroids extends GameBase {
 
     if (this.ship.invulnerable > 0) this.ship.invulnerable -= dt;
     this.fireCooldown -= dt;
-    if ((this.input.isDown('Space') || this.input.mouse.down) && this.fireCooldown <= 0) {
+    if ((this.input.isDown('Space') || this.input.mouse.down || this.input.isDown('GamepadA')) && this.fireCooldown <= 0) {
       this._fireBullet();
       this.fireCooldown = FIRE_COOLDOWN;
     }

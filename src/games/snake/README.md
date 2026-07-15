@@ -22,6 +22,8 @@ La serpiente se mueve continuamente por una cuadrícula. Debes dirigirla hacia l
 | ↑↓←→ / WASD | Cambiar dirección |
 | Click / Espacio | Reiniciar |
 
+**🎮 Gamepad**: D-pad + Stick izq. → cambio de dirección
+
 ## Constantes de balance
 
 | Tramo | Intervalo movimiento | Obstáculos | Dificultad |

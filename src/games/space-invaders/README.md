@@ -22,6 +22,8 @@ Los aliens se mueven en formación de izquierda a derecha, descendiendo una fila
 | Espacio / Click | Disparar |
 | Click / Espacio | Reiniciar tras Game Over |
 
+**🎮 Gamepad**: Stick izq. L/R + D-pad L/R → mover nave · A → disparar
+
 ## Mecánicas
 
 - **Oleadas progresivas**: cada oleada aumenta la velocidad de los aliens y añade más aliens que disparan

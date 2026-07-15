@@ -111,18 +111,118 @@ All samples must be preloaded via `AudioManager` before gameplay starts. If a de
 
 ### 2.7 Input Handling
 
-Games use the engine's `InputManager` for all input. This module is already set up by `GameEngine` and provides keyboard and mouse events.
+Games use the engine's `InputManager` (`this.input`) for all input. El engine lo crea, lo attacha al canvas y gestiona su ciclo de vida. Los juegos **nunca** deben subscribirse directamente a eventos del DOM.
 
 ```js
-// Keyboard: via InputManager (already available through this.engine)
-// Mouse: via InputManager (mouse position, click events)
-const mouseX = this.engine.input.mouse.x;
-const mouseY = this.engine.input.mouse.y;
+const mx = this.input.mouse.x;
+const my = this.input.mouse.y;
 ```
 
-- **Keyboard games** (Space Invaders, Galaga, Frogger, Tetris, Pac-Man, Donkey Kong): Use arrow keys + Space/Enter via InputManager.
-- **Mouse games** (Missile Command, Centipede): Use cursor position + click via InputManager.
-- Games should NOT subscribe directly to canvas DOM events unless a truly unique mechanic requires it.
+#### Dispositivos soportados
+
+| Dispositivo | API | Detalles |
+|-------------|-----|----------|
+| **Teclado** | `isDown(code)` / `wasPressed(code)` | Usa `e.code` (código físico, no varía con layout). Filtr `e.repeat` para evitar auto-repeat en `wasPressed()`. |
+| **Ratón** | `mouse.x`, `mouse.y`, `mouse.down`, `mouse.clickedThisFrame`, `mouse.button` (0=izq,1=medio,2=der), `mouse.wheel` (acumulador ±1 por tick) | Coordenadas escaladas automáticamente al tamaño lógico del canvas. `wheel` se resetea cada frame. |
+| **Gamepad** | `isDown('GamepadA')` + 24 teclas virtuales; `bind()` + `isActionDown()` para action mapping | Polling vía `navigator.getGamepads()` cada frame. Deadzone radial 0.15 en sticks. |
+| **Touch** | Mapea el primer toque a `mouse.x/y` y `mouse.clickedThisFrame` | `touch-action: none` en CSS. Sin multitouch. |
+
+#### Ciclo de vida del input (por frame)
+
+El engine llama estos métodos automáticamente en `_loop()`:
+
+```
+input.poll()              → Refresca gamepad (navigator.getGamepads())
+game.update(dt)           → El juego lee input vía isDown/wasPressed
+ctx.clearRect()
+game.render(ctx)          → El juego dibuja (puede leer mouse.x/y)
+toasts.updateToasts(dt)   → Anima las notificaciones temporales
+renderGamepadIndicator()  → Icono gamepad + tooltip hover
+toasts.renderToasts()     → Notificaciones en pantalla
+input.endFrame()          → Limpia keysJustPressed, mouse.clickedThisFrame, mouse.wheel
+```
+
+Los juegos **no deben** llamar `endFrame()` manualmente.
+
+### Indicador visual de gamepad conectado
+
+El engine renderiza automáticamente un icono de gamepad en la esquina superior derecha
+del canvas cuando hay un control conectado (`input.gamepad.connected === true`).
+
+- **Función**: `renderGamepadIndicator(ctx, input, canvasWidth, mouseX, mouseY)` (GameUI.js)
+- **Tooltip hover**: si el ratón está sobre el icono (radio 22px), se muestra el nombre del
+  control extraído del `gamepad.id` (p.ej. "Xbox 360 Controller" en vez del ID completo).
+- **Nombre legible**: la función interna `_formatGamepadName()` limpia el raw ID eliminando
+  paréntesis y sufijos de vendor ("STANDARD GAMEPAD", "Vendor:", "Product:").
+- **Traducción**: si el ID está vacío, usa la clave i18n `gamepad.tooltip`.
+
+### Toast notifications (eventos de gamepad)
+
+El engine integra `createToastManager()` (GameUI.js) que muestra notificaciones
+temporales con animación slide-in:
+
+- **Disparo**: al conectar/desconectar un gamepad, el engine muestra automáticamente
+  un toast con `gamepad.connected` o `gamepad.disconnected` de i18n.
+- **Animación**: slide-in de 40px desde abajo en 0.3s con easeOutCubic (frenado suave).
+- **Fade-out**: en los últimos 0.5s de vida.
+- **Duración**: 3 segundos.
+- **Máx. simultáneos**: 3 (los más antiguos se descartan).
+- **Renderizado**: centrado en la parte inferior del canvas, con fondo oscuro,
+  borde sutil y sombra ligera.
+
+```js
+// Uso manual (si se necesita en un juego):
+const toasts = createToastManager();
+toasts.addToast('🎮 Gamepad conectado');
+toasts.updateToasts(dt);
+toasts.renderToasts(ctx, canvasWidth, canvasHeight);
+```
+
+#### Gamepad: teclas virtuales
+
+El gamepad se refleja en teclas virtuales con prefijo `Gamepad*`, compatibles con `isDown()` y `wasPressed()`:
+
+```
+GamepadA, GamepadB, GamepadX, GamepadY       // Botones de cara
+GamepadL1, GamepadR1, GamepadL2, GamepadR2   // Hombros/gatillos
+GamepadSelect, GamepadStart, GamepadHome      // Botones de sistema
+GamepadUp, GamepadDown, GamepadLeft, GamepadRight  // D-pad
+GamepadL3, GamepadR3                          // Click sticks
+GamepadLStickLeft, LStickRight, LStickUp, LStickDown  // Stick izq (digital)
+GamepadRStickLeft, RStickRight, RStickUp, RStickDown  // Stick der (digital)
+```
+
+Valores analógicos con deadzone via `this.input.gamepad.leftStick` / `rightStick`.
+
+#### Action mapping
+
+```js
+// En init() del juego:
+this.input.bind('moveLeft',  'ArrowLeft', 'KeyA', 'GamepadLeft', 'GamepadLStickLeft');
+this.input.bind('jump',      'Space',     'KeyW', 'GamepadA');
+
+// En update():
+if (this.input.isActionDown('moveLeft'))  player.x -= SPEED * dt;
+if (this.input.wasActionPressed('jump'))  player.vy = -JUMP_FORCE;
+```
+
+#### Eventos gestionados por InputManager
+
+| Evento | Listener | Acción |
+|--------|----------|--------|
+| `keydown` | `window` | Añade a `keys` y `keysJustPressed` (filtra `e.repeat`) |
+| `keyup` | `window` | Elimina de `keys` |
+| `mousemove` | `canvas` | Actualiza `mouse.x/y` escalados |
+| `mousedown` | `canvas` | `mouse.down=true`, `mouse.button=e.button`, `clickedThisFrame=true` |
+| `mouseup` | `window` | `mouse.down=false`, `mouse.button=0` |
+| `wheel` | `canvas` | Acumula `Math.sign(e.deltaY)` en `mouse.wheel`, `preventDefault()` |
+| `touchstart` | `canvas` | Primer toque → mouse move + down |
+| `touchmove` | `canvas` | Primer toque → mouse move |
+| `touchend` | `canvas` | `mouse.down=false` |
+| `blur` | `window` | Limpia teclas, mouse, wheel y estado de gamepad |
+| `contextmenu` | `canvas` | `preventDefault()` (evita menú contextual) |
+| `gamepadconnected` | `window` | Activa detección de gamepad |
+| `gamepaddisconnected` | `window` | Limpia estado del gamepad |
 
 ### 2.8 Game States
 
@@ -347,6 +447,8 @@ Reuse these engine i18n keys across games:
 
 ### 4.2 New shared keys to add to `src/engine/i18n.js`
 
+*(Added in a previous implementation phase — already present in the engine)*
+
 ```
 'game.lives':   { es: 'Vidas: {n}',   en: 'Lives: {n}' },
 'game.paused':  { es: 'PAUSA',        en: 'PAUSED' },
@@ -474,6 +576,5 @@ assets/
 - Online leaderboard
 - Achievement system
 - Speedrun timer
-- Customizable controls per game
-- Touch/mobile controls
+- Multitouch gestures (pinch-zoom, swipe)
 - Canvas camera/scroll system (would simplify Donkey Kong)

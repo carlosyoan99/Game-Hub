@@ -229,7 +229,7 @@ export class Tetris extends GameBase {
       if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
         this._restart();
       }
-      this.input.endFrame();
+
       return;
     }
 
@@ -240,19 +240,19 @@ export class Tetris extends GameBase {
     }
 
     if (this.paused) {
-      this.input.endFrame();
+
       return;
     }
 
     // Input horizontal
-    if (this.input.wasPressed('ArrowLeft') || this.input.wasPressed('KeyA')) {
+    if (this.input.wasPressed('ArrowLeft') || this.input.wasPressed('KeyA') || this.input.wasPressed('GamepadLeft') || this.input.wasPressed('GamepadLStickLeft')) {
       if (!this._collides(this.piece.x - 1, this.piece.y, this._getShape())) {
         this.piece.x--;
         this._updateGhost();
         AudioManager.sfx({ type: 'select', volume: 0.1 });
       }
     }
-    if (this.input.wasPressed('ArrowRight') || this.input.wasPressed('KeyD')) {
+    if (this.input.wasPressed('ArrowRight') || this.input.wasPressed('KeyD') || this.input.wasPressed('GamepadRight') || this.input.wasPressed('GamepadLStickRight')) {
       if (!this._collides(this.piece.x + 1, this.piece.y, this._getShape())) {
         this.piece.x++;
         this._updateGhost();
@@ -261,7 +261,7 @@ export class Tetris extends GameBase {
     }
 
     // Rotación
-    if (this.input.wasPressed('ArrowUp') || this.input.wasPressed('KeyW')) {
+    if (this.input.wasPressed('ArrowUp') || this.input.wasPressed('KeyW') || this.input.wasPressed('GamepadUp') || this.input.wasPressed('GamepadRStickUp')) {
       const newShape = (this.piece.shape + 1) % 4;
       if (!this._collides(this.piece.x, this.piece.y, SHAPES[this.piece.name][newShape])) {
         this.piece.shape = newShape;
@@ -282,16 +282,16 @@ export class Tetris extends GameBase {
     }
 
     // Hard drop
-    if (this.input.wasPressed('Space')) {
+    if (this.input.wasPressed('Space') || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadB')) {
       this.score += (this.ghostY - this.piece.y) * 2;
       this.piece.y = this.ghostY;
       this._lockPiece();
-      this.input.endFrame();
+
       return;
     }
 
     // Soft drop
-    this.softDropping = this.input.isDown('ArrowDown') || this.input.isDown('KeyS');
+    this.softDropping = this.input.isDown('ArrowDown') || this.input.isDown('KeyS') || this.input.isDown('GamepadDown') || this.input.isDown('GamepadLStickDown');
 
     // Caída
     const interval = this.softDropping ? this.fallInterval * 0.05 : this.fallInterval;

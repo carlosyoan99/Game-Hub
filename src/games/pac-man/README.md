@@ -24,6 +24,8 @@ Controlas a Pac-Man en un laberinto lleno de puntos. Debes comer todos los punto
 | → / D | Mover derecha |
 | Click / Espacio | Reiniciar tras Game Over |
 
+**🎮 Gamepad**: D-pad + Stick izq. → movimiento direccional · A → acción
+
 ## IA de Fantasmas
 
 | Fantasma | Color | Comportamiento |

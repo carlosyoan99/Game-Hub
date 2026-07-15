@@ -24,6 +24,8 @@ Controlas a Jumpman mientras sube por estructuras evitando barriles que Donkey K
 | ↓ / S | Bajar escalera |
 | Click / Espacio | Reiniciar tras Game Over |
 
+**🎮 Gamepad**: Stick izq. L/R + D-pad L/R → mover · A → saltar · D-pad ↑/↓ → subir/bajar escaleras
+
 ## Pantallas
 
 | Pantalla | Mecánica |
