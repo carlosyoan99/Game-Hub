@@ -14,6 +14,7 @@ import { ParticleSystem } from '../../engine/ParticleSystem.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
+import { ProgressionManager } from '../../engine/ProgressionManager.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
 import { icon } from '../../engine/IconRenderer.js';
 import { COLORS, RELATIVE_WAYPOINTS, MAX_WAVE, TOWER_TYPES, TOWER_KEYS, BLOON_TYPES, BLOON_ORDER } from './constants.js';
@@ -32,6 +33,7 @@ export class BloonsTD extends GameBase {
   }
 
   _restart() {
+    this.startTime = Date.now();
     this.rng = new SeededRandom();
     this.lives = 20;
     this.money = 300;
@@ -154,6 +156,7 @@ export class BloonsTD extends GameBase {
 
       if (this.wave >= MAX_WAVE) {
         this.status = 'won';
+        this._recordProgressionPlay(true);
         if (this.score > this.highscore) {
           this.highscore = this.score;
           this.storage.set('highscore', this.highscore);
@@ -208,6 +211,7 @@ export class BloonsTD extends GameBase {
         if (this.lives <= 0) {
           this.lives = 0;
           this.status = 'lost';
+          this._recordProgressionPlay(false);
           if (this.score > this.highscore) {
             this.highscore = this.score;
             this.storage.set('highscore', this.highscore);
@@ -362,6 +366,14 @@ export class BloonsTD extends GameBase {
     this.money -= type.cost;
     AudioManager.sfx({ type: 'bloons_place', volume: 0.25 });
     return true;
+  }
+
+  _recordProgressionPlay(won) {
+    const duration = (Date.now() - this.startTime) / 1000;
+    ProgressionManager.recordGamePlay('bloons-td', this.score, won, duration);
+    if (this.score > 0) ProgressionManager.checkAchievement('bloons-td', 'first-bloon');
+    if (this.wave >= 10) ProgressionManager.checkAchievement('bloons-td', 'bloon-slayer');
+    if (this.wave >= 20) ProgressionManager.checkAchievement('bloons-td', 'td-master');
   }
 
   render(ctx) {

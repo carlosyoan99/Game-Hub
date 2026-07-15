@@ -142,7 +142,7 @@ export class ComboDetector {
 
   /**
    * Procesa una lista de teclas presionadas este frame.
-   * 
+   *
    * El llamador debe pasar las teclas que se presionaron este frame:
    * ```js
    * const pressed = this.keysPressedThisFrame; // trackeado manualmente

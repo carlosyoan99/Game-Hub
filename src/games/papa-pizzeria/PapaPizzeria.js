@@ -6,6 +6,7 @@ import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
 import { t } from '../../engine/i18n.js';
+import { ProgressionManager } from '../../engine/ProgressionManager.js';
 
 /**
  * Papa's Pizzeria
@@ -63,12 +64,24 @@ export class PapaPizzeria extends GameBase {
     this._restart();
   }
 
+  _defaultBindings() {
+    return {
+      prevCustomer: ['ArrowLeft', 'KeyA', 'GamepadLeft', 'GamepadLStickLeft', 'GamepadL1'],
+      nextCustomer: ['ArrowRight', 'KeyD', 'GamepadRight', 'GamepadLStickRight', 'GamepadR1'],
+      navigateUp:   ['ArrowUp', 'KeyW', 'GamepadUp', 'GamepadLStickUp'],
+      navigateDown: ['ArrowDown', 'KeyS', 'GamepadDown', 'GamepadLStickDown'],
+      select:       ['Space', 'Enter', 'GamepadA'],
+      restart:      ['Space', 'GamepadStart', 'GamepadA'],
+    };
+  }
+
   handleResize(width, height) {
     super.handleResize(width, height);
     this._layoutStations();
   }
 
   _restart() {
+    this.startTime = Date.now();
     this.rng = new SeededRandom();
     // Cola de clientes. Cada cliente: { order, patience, patienceMax, step, stepTimer, served }
     this.queue = [];
@@ -83,6 +96,7 @@ export class PapaPizzeria extends GameBase {
     this.status = 'playing';
     this.messageText = null;
     this.messageTimer = 0;
+    this.selectedStation = 0; // índice de estación seleccionada (gamepad)
 
     this.spawnTimer = this.rng.nextFloat(1, 3);
     this._spawnCustomer();
@@ -136,7 +150,7 @@ export class PapaPizzeria extends GameBase {
 
   update(dt) {
     if (this.status !== 'playing') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) this._restart();
+      if (this.input.wasPressed('Space') || this.input.wasActionPressed('restart') || this.input.mouse.clickedThisFrame) this._restart();
 
       return;
     }
@@ -180,6 +194,23 @@ export class PapaPizzeria extends GameBase {
       }
     }
 
+    // ── Input: gamepad / teclado ──
+    if (this.input.wasActionPressed('prevCustomer') && this.queue.length > 0) {
+      this.currentCustomerIndex = (this.currentCustomerIndex - 1 + this.queue.length) % this.queue.length;
+    }
+    if (this.input.wasActionPressed('nextCustomer') && this.queue.length > 0) {
+      this.currentCustomerIndex = (this.currentCustomerIndex + 1) % this.queue.length;
+    }
+    if (this.input.wasActionPressed('navigateUp') && this.selectedStation >= 4) this.selectedStation -= 4;
+    if (this.input.wasActionPressed('navigateDown') && this.selectedStation < 4) this.selectedStation += 4;
+    if (this.input.wasActionPressed('navigateLeft') && this.selectedStation % 4 > 0) this.selectedStation -= 1;
+    if (this.input.wasActionPressed('navigateRight') && this.selectedStation % 4 < 3) this.selectedStation += 1;
+
+    if (this.input.wasActionPressed('select') && this.queue.length > 0) {
+      const station = this.stations[this.selectedStation];
+      if (station) this._activateStation(station);
+    }
+
     // Input: click en estaciones
     if (this.input.mouse.clickedThisFrame) {
       this._handleClick(this.input.mouse.x, this.input.mouse.y);
@@ -210,14 +241,20 @@ export class PapaPizzeria extends GameBase {
 
     for (const station of this.stations) {
       if (pointInRect(x, y, station)) {
-        const stepIdx = STEPS.indexOf(station.step);
-        if (stepIdx === c.step && c.stepTimer <= 0) {
-          // Iniciar el temporizador del paso
-          c.stepTimer = STEP_TIME[station.step];
-          AudioManager.sfx({ type: 'select', volume: 0.25 });
-        }
+        this._activateStation(station);
         return;
       }
+    }
+  }
+
+  _activateStation(station) {
+    const c = this.queue[this.currentCustomerIndex];
+    if (!c || c.step >= STEPS.length || c.patience <= 0) return;
+
+    const stepIdx = STEPS.indexOf(station.step);
+    if (stepIdx === c.step && c.stepTimer <= 0) {
+      c.stepTimer = STEP_TIME[station.step];
+      AudioManager.sfx({ type: 'select', volume: 0.25 });
     }
   }
 
@@ -255,6 +292,7 @@ export class PapaPizzeria extends GameBase {
     // Victoria: servir suficiente pizzas
     if (this.totalServed >= SERVE_TARGET) {
       this.status = 'won';
+      this._recordProgressionPlay(true);
       AudioManager.sfx({ type: 'powerup', volume: 0.6 });
       HapticManager.vibrate('powerup');
       if (this.score > this.bestScore) {
@@ -281,6 +319,7 @@ export class PapaPizzeria extends GameBase {
 
     if (this.anger >= MAX_ANGER) {
       this.status = 'lost';
+      this._recordProgressionPlay(false);
       AudioManager.sfx({ type: 'explosion', volume: 0.4 });
       if (this.score > this.bestScore) {
         this.bestScore = this.score;
@@ -305,6 +344,14 @@ export class PapaPizzeria extends GameBase {
   }
 
   // ─── Render ──────────────────────────────────────────────────────────
+
+  _recordProgressionPlay(won) {
+    const duration = (Date.now() - this.startTime) / 1000;
+    ProgressionManager.recordGamePlay('papa-pizzeria', this.score, won, duration);
+    if (this.totalServed >= 1) ProgressionManager.checkAchievement('papa-pizzeria', 'first-pizza');
+    if (this.totalServed >= 10) ProgressionManager.checkAchievement('papa-pizzeria', 'pizza-chef');
+    if (this.score >= 500) ProgressionManager.checkAchievement('papa-pizzeria', 'pizza-legend');
+  }
 
   render(ctx) {
     ctx.fillStyle = '#0b0f14';

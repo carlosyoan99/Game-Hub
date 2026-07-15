@@ -8,6 +8,9 @@ import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
 import { t } from '../../engine/i18n.js';
+import { ProgressionManager } from '../../engine/ProgressionManager.js';
+import { ScreenShake } from '../../engine/ScreenShake.js';
+import { HitStop, createScorePop } from '../../engine/VisualEffects.js';
 import { MAX_WAVE, SHIP_RADIUS, SHIP_TURN_SPEED, SHIP_THRUST, SHIP_FRICTION, SHIP_MAX_SPEED, RESPAWN_INVULNERABILITY, BULLET_SPEED, BULLET_LIFETIME, FIRE_COOLDOWN, ASTEROID_SPECS, generateAsteroidShape } from './constants.js';
 
 /**
@@ -21,7 +24,21 @@ export class Asteroids extends GameBase {
     super.init(engine, 'asteroids');
     this.highscore = this.storage.get('highscore', 0);
 
+    this.shake = new ScreenShake();
+    this.hitStop = new HitStop();
+    this.scorePops = [];
+
     this._restart();
+  }
+
+  _defaultBindings() {
+    return {
+      turnLeft:  ['ArrowLeft', 'KeyA', 'GamepadLeft', 'GamepadLStickLeft'],
+      turnRight: ['ArrowRight', 'KeyD', 'GamepadRight', 'GamepadLStickRight'],
+      thrust:    ['ArrowUp', 'KeyW', 'GamepadUp', 'GamepadRStickUp'],
+      fire:      ['Space', 'GamepadA'],
+      restart:   ['Space', 'GamepadStart', 'GamepadA'],
+    };
   }
 
   _restart() {
@@ -46,6 +63,7 @@ export class Asteroids extends GameBase {
     this.fireCooldown = 0;
     this.particles = new ParticleSystem(80);
     this.status = 'playing';
+    this.startTime = Date.now();
     this._spawnWave();
   }
 
@@ -109,23 +127,28 @@ export class Asteroids extends GameBase {
   update(dt) {
     if (this.handleRestartInput()) return;
 
+    this.hitStop.update(dt);
+    if (this.hitStop.active) return;
+
+    this.shake.update(dt);
+    this.scorePops = this.scorePops.filter(p => { p.update(dt); return !p.done; });
+
     this._updateShip(dt);
     this._updateBullets(dt);
     this._updateAsteroids(dt);
     this._updateEnemies(dt);
     this._checkCollisions();
-
   }
 
   _updateShip(dt) {
-    if (this.input.isDown('ArrowLeft') || this.input.isDown('KeyA') || this.input.isDown('GamepadLeft') || this.input.isDown('GamepadLStickLeft')) {
+    if (this.input.isActionDown('turnLeft')) {
       this.ship.angle -= SHIP_TURN_SPEED * dt;
     }
-    if (this.input.isDown('ArrowRight') || this.input.isDown('KeyD') || this.input.isDown('GamepadRight') || this.input.isDown('GamepadLStickRight')) {
+    if (this.input.isActionDown('turnRight')) {
       this.ship.angle += SHIP_TURN_SPEED * dt;
     }
 
-    this.ship.thrusting = this.input.isDown('ArrowUp') || this.input.isDown('KeyW') || this.input.isDown('GamepadUp') || this.input.isDown('GamepadRStickUp');
+    this.ship.thrusting = this.input.isActionDown('thrust');
     if (this.ship.thrusting) {
       const thrust = Vector2.fromAngle(this.ship.angle, SHIP_THRUST * dt);
       this.ship.vx += thrust.x;
@@ -149,7 +172,7 @@ export class Asteroids extends GameBase {
 
     if (this.ship.invulnerable > 0) this.ship.invulnerable -= dt;
     this.fireCooldown -= dt;
-    if ((this.input.isDown('Space') || this.input.mouse.down || this.input.isDown('GamepadA')) && this.fireCooldown <= 0) {
+    if ((this.input.isActionDown('fire') || this.input.mouse.down) && this.fireCooldown <= 0) {
       this._fireBullet();
       this.fireCooldown = FIRE_COOLDOWN;
     }
@@ -302,6 +325,7 @@ export class Asteroids extends GameBase {
     }
 
     if (this.asteroids.length === 0 && this.enemies.filter((e) => e.alive).length === 0 && this.status === 'playing') {
+      this.shake.trigger(8, 5);
       this.wave += 1;
       if (this.wave > MAX_WAVE) {
         this.status = 'won';
@@ -318,6 +342,8 @@ export class Asteroids extends GameBase {
   }
 
   _splitAsteroid(asteroid) {
+    this.hitStop.trigger(3);
+    this.scorePops.push(createScorePop(asteroid.x, asteroid.y, `+${ASTEROID_SPECS[asteroid.size].score}`, '#ffb454'));
     const spec = ASTEROID_SPECS[asteroid.size];
     if (!spec.splitsInto) return;
     for (let i = 0; i < spec.splitCount; i++) {
@@ -327,6 +353,7 @@ export class Asteroids extends GameBase {
 
   _loseLife() {
     this.lives -= 1;
+    this.shake.trigger(6, 3);
     AudioManager.sfx({ type: 'explosion', volume: 0.5 });
     HapticManager.vibrate('explosion');
     if (this.lives <= 0) {
@@ -346,6 +373,12 @@ export class Asteroids extends GameBase {
       this.highscore = this.score;
       this.storage.set('highscore', this.highscore);
     }
+    // ── Progression ──
+    const duration = (Date.now() - this.startTime) / 1000;
+    ProgressionManager.recordGamePlay('asteroids', this.score, false, duration);
+    if (this.score > 0) ProgressionManager.checkAchievement('asteroids', 'first-blast');
+    if (this.wave >= 5) ProgressionManager.checkAchievement('asteroids', 'wave-5');
+    if (this.wave >= 10) ProgressionManager.checkAchievement('asteroids', 'wave-10');
   }
 
   render(ctx) {

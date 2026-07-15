@@ -7,6 +7,7 @@ import { HapticManager } from '../../engine/HapticManager.js';
 import { ScreenShake } from '../../engine/ScreenShake.js';
 import { t } from '../../engine/i18n.js';
 import { renderOverlay } from '../../engine/GameUI.js';
+import { ProgressionManager } from '../../engine/ProgressionManager.js';
 
 // ── Constantes ──────────────────────────────────────────────────────────
 
@@ -48,6 +49,7 @@ export class MissileCommand extends GameBase {
     this.highscore = this.storage.get('highscore', 0);
 
     this.particles = new ParticleSystem(40);
+    this.startTime = Date.now();
 
     this.shake = new ScreenShake();
     this._restart();
@@ -326,6 +328,11 @@ export class MissileCommand extends GameBase {
       this.highscore = this.score;
       this.storage.set('highscore', this.highscore);
     }
+    const duration = (Date.now() - this.startTime) / 1000;
+    ProgressionManager.recordGamePlay('missile-command', this.score, false, duration);
+    if (this.score > 0) ProgressionManager.checkAchievement('missile-command', 'first-save');
+    if (this.wave >= 10) ProgressionManager.checkAchievement('missile-command', 'missile-master');
+    if (this.wave >= 20) ProgressionManager.checkAchievement('missile-command', 'last-defense');
   }
 
   // ── Render ─────────────────────────────────────────────────────────────

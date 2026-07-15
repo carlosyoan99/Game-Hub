@@ -18,6 +18,7 @@ import { pointInRect } from '../../engine/CollisionUtils.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
+import { ProgressionManager } from '../../engine/ProgressionManager.js';
 import { TYPE_SPEED, SCENES, SCENE_IDS } from './constants.js';
 
 export class HenryStickmin extends GameBase {
@@ -28,7 +29,17 @@ export class HenryStickmin extends GameBase {
     this._restart();
   }
 
+  _defaultBindings() {
+    return {
+      navigateLeft:  ['ArrowLeft', 'KeyA', 'GamepadLeft', 'GamepadLStickLeft'],
+      navigateRight: ['ArrowRight', 'KeyD', 'GamepadRight', 'GamepadLStickRight'],
+      select:        ['Space', 'Enter', 'GamepadA'],
+      restart:       ['Space', 'GamepadStart', 'GamepadA'],
+    };
+  }
+
   _restart() {
+    this.startTime = Date.now();
     this.sceneId = 'intro';
     this.phase = 'text';
     this.typeChars = 0;
@@ -39,6 +50,7 @@ export class HenryStickmin extends GameBase {
     this.totalEndingsFound = this.storage.get('endings', 0) || 0;
     this.endingDisplay = null;
     this.timeToSkip = 0;
+    this.selectedChoice = 0;
 
     this._loadScene('intro');
   }
@@ -94,7 +106,7 @@ export class HenryStickmin extends GameBase {
 
   update(dt) {
     if (this.phase === 'end_screen') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
+      if (this.input.wasPressed('Space') || this.input.wasActionPressed('select') || this.input.mouse.clickedThisFrame) {
         this._restart();
       }
 
@@ -107,9 +119,9 @@ export class HenryStickmin extends GameBase {
 
       const rawText = this.textLines.join('\n');
 
-      // Click / espacio: si el texto aún se está revelando, lo completa;
+      // Click / espacio / gamepad: si el texto aún se está revelando, lo completa;
       // si ya está completo, avanza a opciones inmediatamente.
-      if (this.input.mouse.clickedThisFrame || this.input.wasPressed('Space')) {
+      if (this.input.mouse.clickedThisFrame || this.input.wasPressed('Space') || this.input.wasActionPressed('select')) {
         if (this.typeChars < rawText.length) {
           this.typeChars = rawText.length;
           this.typeTimer = rawText.length * TYPE_SPEED;
@@ -130,13 +142,31 @@ export class HenryStickmin extends GameBase {
         }
       }
 
-
       return;
     }
 
     if (this.phase === 'choices') {
+      // ── Gamepad / teclado ──
+      const buttons = this._layoutButtons();
+      if (buttons.length > 0) {
+        if (this.input.wasActionPressed('navigateLeft') && this.selectedChoice > 0) this.selectedChoice--;
+        if (this.input.wasActionPressed('navigateRight') && this.selectedChoice < buttons.length - 1) this.selectedChoice++;
+
+        if (this.input.wasActionPressed('select')) {
+          const btn = buttons[this.selectedChoice];
+          AudioManager.sfx({ type: 'henry_choose', volume: 0.3 });
+          HapticManager.vibrate('select');
+          if (btn.choice.next) {
+            this._loadScene(btn.choice.next);
+            this.selectedChoice = 0;
+          } else if (btn.choice.ending) {
+            this.phase = 'ending';
+            this.endingDisplay = btn.choice.ending;
+          }
+        }
+      }
+
       if (this.input.mouse.clickedThisFrame) {
-        const buttons = this._layoutButtons();
         const mx = this.input.mouse.x;
         const my = this.input.mouse.y;
 
@@ -155,14 +185,14 @@ export class HenryStickmin extends GameBase {
         }
       }
 
-
       return;
     }
 
     if (this.phase === 'ending') {
-      if (this.input.mouse.clickedThisFrame || this.input.wasPressed('Space')) {
+      if (this.input.mouse.clickedThisFrame || this.input.wasPressed('Space') || this.input.wasActionPressed('select')) {
         AudioManager.sfx({ type: this.endingDisplay?.type === 'success' ? 'henry_success' : 'henry_fail', volume: 0.4 });
         HapticManager.vibrate(this.endingDisplay?.type === 'success' ? 'powerup' : 'hit');
+        this._recordProgressionPlay();
         this.phase = 'end_screen';
       }
 
@@ -511,7 +541,7 @@ export class HenryStickmin extends GameBase {
   _drawWrappedText(ctx, text, cx, cy, maxWidth) {
     const words = text.split(' ');
     let line = '';
-    let lines = [];
+    const lines = [];
     for (const word of words) {
       const testLine = line ? `${line} ${word}` : word;
       if (ctx.measureText(testLine).width > maxWidth && line) {
@@ -528,6 +558,14 @@ export class HenryStickmin extends GameBase {
     for (let i = 0; i < lines.length; i++) {
       ctx.fillText(lines[i], cx, startY + i * lineH);
     }
+  }
+
+  _recordProgressionPlay() {
+    const duration = (Date.now() - this.startTime) / 1000;
+    ProgressionManager.recordGamePlay('henry-stickmin', this.totalEndingsFound, true, duration);
+    if (this.totalEndingsFound >= 1) ProgressionManager.checkAchievement('henry-stickmin', 'first-ending');
+    if (this.totalEndingsFound >= 5) ProgressionManager.checkAchievement('henry-stickmin', 'ending-collector');
+    if (this.totalEndingsFound >= 10) ProgressionManager.checkAchievement('henry-stickmin', 'henry-completionist');
   }
 
   _renderEndScreen(ctx) {

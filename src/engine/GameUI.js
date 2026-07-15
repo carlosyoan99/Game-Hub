@@ -252,7 +252,7 @@ export function renderGamepadIndicator(ctx, input, canvasWidth, mouseX = -999, m
 
     // Posicionar tooltip a la izquierda del icono
     let tx = x - tw - 6;
-    let ty = y - th / 2;
+    const ty = y - th / 2;
 
     // No salirse del borde izquierdo
     if (tx < 4) tx = 4;

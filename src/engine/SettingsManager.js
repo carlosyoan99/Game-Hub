@@ -56,6 +56,8 @@ const DEFAULTS = {
   theme: 'dark',
   reducedMotion: false,
   language: 'es',
+  aspectRatio: '5:3',
+  crtEffect: true,
 };
 
 class SettingsManagerImpl {

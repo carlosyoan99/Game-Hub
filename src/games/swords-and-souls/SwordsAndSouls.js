@@ -20,6 +20,7 @@ import { ParticleSystem } from '../../engine/ParticleSystem.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
+import { ProgressionManager } from '../../engine/ProgressionManager.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
 import { BASE_HP, HP_PER_LEVEL, SCENES, SCENE_NAME_KEYS, SCENE_SUBTITLE_KEYS, EQUIPMENT, ENEMIES } from './constants.js';
 
@@ -34,12 +35,25 @@ export class SwordsAndSouls extends GameBase {
     this._restart();
   }
 
+  _defaultBindings() {
+    return {
+      navigateUp:    ['ArrowUp', 'KeyW', 'GamepadUp', 'GamepadLStickUp'],
+      navigateDown:  ['ArrowDown', 'KeyS', 'GamepadDown', 'GamepadLStickDown'],
+      navigateLeft:  ['ArrowLeft', 'KeyA', 'GamepadLeft', 'GamepadLStickLeft'],
+      navigateRight: ['ArrowRight', 'KeyD', 'GamepadRight', 'GamepadLStickRight'],
+      select:        ['Space', 'Enter', 'GamepadA'],
+      back:          ['Escape', 'GamepadB'],
+      restart:       ['Space', 'GamepadStart', 'GamepadA'],
+    };
+  }
+
   handleResize(width, height) {
     super.handleResize(width, height);
     this._layoutScene();
   }
 
   _restart() {
+    this.startTime = Date.now();
     this.rng = new SeededRandom();
     this.player = {
       level: 1,
@@ -62,13 +76,14 @@ export class SwordsAndSouls extends GameBase {
     };
 
     this.currentScene = 'home';
-    this.subScene = null; // 'train-archery' | 'train-spar' | 'train-endurance' | 'combat' | null
+    this.subScene = null; // 'train-archery' | 'train-spar' | 'train-endurance' | 'combat' | 'shop' | null
     this.message = '';
     this.messageTimer = 0;
     this.status = 'playing'; // 'playing' | 'won' | 'lost'
     this.wave = 0;
     this.winStreak = 0;
     this.particles = new ParticleSystem(120);
+    this.focusIndex = 0;
 
     // Estado de entrenamiento
     this.trainTarget = null;
@@ -153,7 +168,7 @@ export class SwordsAndSouls extends GameBase {
 
   update(dt) {
     if (this.status !== 'playing') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) this._restart();
+      if (this.input.wasPressed('Space') || this.input.wasActionPressed('restart') || this.input.mouse.clickedThisFrame) this._restart();
 
       return;
     }
@@ -167,11 +182,18 @@ export class SwordsAndSouls extends GameBase {
 
     // Sub-escenas con su propia lógica
     if (this.subScene === 'train-archery' || this.subScene === 'train-spar' || this.subScene === 'train-endurance') {
+      this._handleGamepadTraining();
       this._updateTraining(dt);
     } else if (this.subScene === 'combat') {
+      this._handleGamepadCombat();
       this._updateCombat(dt);
+    } else if (this.subScene === 'shop') {
+      this._handleGamepadShop();
+      if (this.input.mouse.clickedThisFrame) {
+        this._handleShopClick(this.input.mouse.x, this.input.mouse.y);
+      }
     } else {
-      // Hub principal: manejar clicks en botones
+      this._handleGamepadHub();
       if (this.input.mouse.clickedThisFrame) {
         this._handleHubClick(this.input.mouse.x, this.input.mouse.y);
       }
@@ -261,13 +283,144 @@ export class SwordsAndSouls extends GameBase {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════════════
+  //  Gamepad Input
+  // ═══════════════════════════════════════════════════════════════════
+
+  _handleGamepadHub() {
+    if (this.input.wasActionPressed('back') && this.subScene) {
+      if (this.subScene === 'combat') this._fleeCombat();
+      else this.subScene = null;
+      return;
+    }
+
+    // Scene navigation buttons at bottom
+    const sceneCount = SCENES.length;
+    const sceneKeys = SCENES;
+
+    if (this.input.wasActionPressed('navigateLeft') || this.input.wasActionPressed('navigateRight')) {
+      const dir = this.input.wasActionPressed('navigateRight') ? 1 : -1;
+      const curIdx = sceneKeys.indexOf(this.currentScene);
+      const nextIdx = (curIdx + dir + sceneCount) % sceneCount;
+      this._goToScene(sceneKeys[nextIdx]);
+      return;
+    }
+
+    if (this.input.wasActionPressed('navigateUp')) {
+      this.focusIndex = Math.max(0, this.focusIndex - 1);
+    }
+    if (this.input.wasActionPressed('navigateDown')) {
+      this.focusIndex++;
+    }
+
+    if (this.input.wasActionPressed('select')) {
+      if (this.currentScene === 'home') {
+        if (this.player.statPoints > 0) {
+          const stats = ['str', 'agi', 'end', 'arch'];
+          const idx = this.focusIndex % 4;
+          this._assignStat(stats[idx]);
+        } else if (this.player.hp < this.player.maxHp && this.focusIndex % 2 === 1) {
+          this._rest();
+        }
+      } else if (this.currentScene === 'training') {
+        const trainingTypes = ['train-archery', 'train-spar', 'train-endurance'];
+        const idx = this.focusIndex % 3;
+        this._startTraining(trainingTypes[idx]);
+      } else if (this.currentScene === 'arena' && this.player.hp > 0) {
+        this._startCombat();
+      }
+    }
+  }
+
+  _handleGamepadTraining() {
+    if (this.input.wasActionPressed('back')) {
+      this.trainPhase = 'done';
+      this.subScene = null;
+      this._showMessage('Entrenamiento cancelado');
+    }
+
+    // En entrenamientos que requieren clicks rítmicos, A/GamepadA hace de click
+    if (this.input.wasActionPressed('select')) {
+      if (this.subScene === 'train-spar' && this.trainPhase === 'active') {
+        this.trainClicks++;
+        AudioManager.sfx({ type: 'swords_hit', volume: 0.2 });
+        this.particles.emit(this.width / 2, this.height / 2, '#e7edf3', 4, 60, { vyOffset: -15 });
+        if (this.trainClicks >= this.trainMax) this._finishTraining();
+      } else if (this.subScene === 'train-endurance') {
+        this.trainClicks++;
+        if (this.trainClicks >= this.trainMax) this._finishTraining();
+        else this.trainTimer = Math.min(this.trainTimer + 0.3, 2.5);
+      } else if (this.subScene === 'train-archery' && this.trainTarget && this.trainPhase === 'active') {
+        // En arquería con gamepad, dar un acierto automático cada vez que se presiona A
+        this.trainClicks++;
+        this.particles.emit(this.trainTarget.x, this.trainTarget.y, '#ffb454', 8, 80, { vyOffset: -20 });
+        AudioManager.sfx({ type: 'swords_attack', volume: 0.25 });
+        HapticManager.vibrate('shoot');
+        this._spawnArcheryTarget();
+        if (this.trainClicks >= this.trainMax) this._finishTraining();
+      }
+    }
+  }
+
+  _handleGamepadCombat() {
+    if (this.input.wasActionPressed('back')) {
+      this._fleeCombat();
+      return;
+    }
+
+    if (this.combatPhase === 'player-choice') {
+      if (this.input.wasActionPressed('navigateLeft') && this.focusIndex > 0) this.focusIndex--;
+      if (this.input.wasActionPressed('navigateRight') && this.focusIndex < 3) this.focusIndex++;
+
+      if (this.input.wasActionPressed('select')) {
+        const actions = ['attack', 'archery', 'defend', 'heal'];
+        this._doPlayerAction(actions[this.focusIndex]);
+      }
+    }
+  }
+
+  _handleGamepadShop() {
+    if (this.input.wasActionPressed('back')) {
+      if (this.shopCategory) {
+        this.shopCategory = null;
+      } else {
+        this.subScene = null;
+      }
+      return;
+    }
+
+    if (!this.shopCategory) {
+      // Categorías: navegar con Up/Down, seleccionar con A
+      if (this.input.wasActionPressed('navigateUp') && this.focusIndex > 0) this.focusIndex--;
+      if (this.input.wasActionPressed('navigateDown') && this.focusIndex < 2) this.focusIndex++;
+
+      if (this.input.wasActionPressed('select')) {
+        const categories = ['weapons', 'armor', 'items'];
+        this.shopCategory = categories[this.focusIndex];
+        this.focusIndex = 0;
+      }
+    } else {
+      // Items: navegar con Up/Down, seleccionar con A
+      const items = EQUIPMENT[this.shopCategory];
+      if (!items) return;
+      const maxIdx = items.length - 1;
+
+      if (this.input.wasActionPressed('navigateUp') && this.focusIndex > 0) this.focusIndex--;
+      if (this.input.wasActionPressed('navigateDown') && this.focusIndex < maxIdx) this.focusIndex++;
+
+      if (this.input.wasActionPressed('select')) {
+        this._buyItem(this.shopCategory, this.focusIndex);
+      }
+    }
+  }
+
   _goToScene(sceneKey) {
     this.currentScene = sceneKey;
+    this.focusIndex = 0;
     this._showMessage(`→ ${t(SCENE_NAME_KEYS[sceneKey])}`);
 
     switch (sceneKey) {
       case 'training':
-        // Mostrar opciones de entrenamiento
         break;
       case 'arena':
         if (this.player.hp <= 0) {
@@ -276,6 +429,7 @@ export class SwordsAndSouls extends GameBase {
         break;
       case 'shop':
         this.subScene = 'shop';
+        this.focusIndex = 0;
         break;
     }
   }
@@ -428,7 +582,7 @@ export class SwordsAndSouls extends GameBase {
 
     let stat = 'str';
     let statLabel = 'Fuerza';
-    let xpGain = 5 + this.trainClicks;
+    const xpGain = 5 + this.trainClicks;
 
     switch (this.subScene) {
       case 'train-archery':
@@ -693,7 +847,16 @@ export class SwordsAndSouls extends GameBase {
     this.combatPhase = 'player-choice';
   }
 
+  _recordProgressionPlay() {
+    const duration = (Date.now() - this.startTime) / 1000;
+    ProgressionManager.recordGamePlay('swords-and-souls', this.wave, false, duration);
+    if (this.wave >= 1) ProgressionManager.checkAchievement('swords-and-souls', 'first-wave');
+    if (this.wave >= 10) ProgressionManager.checkAchievement('swords-and-souls', 'swords-wave-10');
+    if (this.wave >= 20) ProgressionManager.checkAchievement('swords-and-souls', 'swords-legend');
+  }
+
   _winCombat() {
+    this._recordProgressionPlay();
     const enemy = this.enemy;
     AudioManager.sfx({ type: 'powerup', volume: 0.5 });
     HapticManager.vibrate('powerup');
@@ -821,12 +984,12 @@ export class SwordsAndSouls extends GameBase {
           p.atkBonus += 2;
           AudioManager.sfx({ type: 'powerup', volume: 0.4 });
           HapticManager.vibrate('powerup');
-          this._showMessage(`⚔️ ¡Ataque permanente +2!`);
+          this._showMessage('⚔️ ¡Ataque permanente +2!');
         } else if (item.id === 'tome') {
           p.allStatsBonus++;
           AudioManager.sfx({ type: 'powerup', volume: 0.4 });
           HapticManager.vibrate('powerup');
-          this._showMessage(`📖 ¡Todas las stats +1!`);
+          this._showMessage('📖 ¡Todas las stats +1!');
         }
         break;
     }

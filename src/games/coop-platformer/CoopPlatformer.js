@@ -7,6 +7,7 @@ import { aabbIntersects, clamp } from '../../engine/CollisionUtils.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
+import { ProgressionManager } from '../../engine/ProgressionManager.js';
 
 const TILE_SIZE = 32;
 const GRAVITY = 1400;
@@ -187,6 +188,7 @@ export class CoopPlatformer extends GameBase {
   }
 
   _restart() {
+    this.startTime = Date.now();
     this.player1 = this._makeCharacter(this.spawn1);
     this.player2 = this._makeCharacter(this.spawn2);
     this.gateOpen = false;
@@ -324,6 +326,14 @@ export class CoopPlatformer extends GameBase {
     }
   }
 
+  _recordProgressionPlay(won) {
+    const duration = (Date.now() - this.startTime) / 1000;
+    ProgressionManager.recordGamePlay('coop-platformer', Math.floor(this.elapsed), won, duration);
+    if (this.currentLevel >= 1) ProgressionManager.checkAchievement('coop-platformer', 'coop-first');
+    if (this.currentLevel >= 5) ProgressionManager.checkAchievement('coop-platformer', 'coop-pro');
+    if (this.status === 'won' || won) ProgressionManager.checkAchievement('coop-platformer', 'fire-water');
+  }
+
   _checkWin() {
     if (this.player1.fell || this.player2.fell) {
       AudioManager.sfx({ type: 'hit', volume: 0.3 });
@@ -336,10 +346,12 @@ export class CoopPlatformer extends GameBase {
     if (p1Home && p2Home) {
       if (this.currentLevel >= MAX_LEVEL) {
         this.status = 'won';
+        this._recordProgressionPlay(true);
         AudioManager.sfx({ type: 'powerup', volume: 0.6 });
         HapticManager.vibrate('powerup');
       } else {
         this.status = 'level-complete';
+        this._recordProgressionPlay(false);
         AudioManager.sfx({ type: 'powerup', volume: 0.5 });
         HapticManager.vibrate('powerup');
       }

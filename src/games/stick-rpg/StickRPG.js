@@ -7,6 +7,7 @@ import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
 import { t } from '../../engine/i18n.js';
+import { ProgressionManager } from '../../engine/ProgressionManager.js';
 import { icon } from '../../engine/IconRenderer.js';
 
 /**
@@ -166,12 +167,25 @@ export class StickRPG extends GameBase {
     this._restart();
   }
 
+  _defaultBindings() {
+    return {
+      navigateUp:    ['ArrowUp', 'KeyW', 'GamepadUp', 'GamepadLStickUp'],
+      navigateDown:  ['ArrowDown', 'KeyS', 'GamepadDown', 'GamepadLStickDown'],
+      navigateLeft:  ['ArrowLeft', 'KeyA', 'GamepadLeft', 'GamepadLStickLeft'],
+      navigateRight: ['ArrowRight', 'KeyD', 'GamepadRight', 'GamepadLStickRight'],
+      select:        ['Space', 'Enter', 'GamepadA'],
+      back:          ['Escape', 'GamepadB'],
+      restart:       ['Space', 'GamepadStart', 'GamepadA'],
+    };
+  }
+
   handleResize(width, height) {
     super.handleResize(width, height);
     this._updateSceneActions();
   }
 
   _restart() {
+    this.startTime = Date.now();
     this.rng = new SeededRandom();
     this.player = {
       energy: MAX_ENERGY,
@@ -187,6 +201,8 @@ export class StickRPG extends GameBase {
     this.dialogueTimer = 0;
     this.status = 'playing'; // 'playing' | 'won' | 'lost'
     this.gameOverReason = null;
+    this.focusMode = 'actions'; // 'actions' | 'navigation'
+    this.focusIndex = 0;
 
     this._updateSceneActions();
   }
@@ -230,9 +246,17 @@ export class StickRPG extends GameBase {
 
   // ─── Update ──────────────────────────────────────────────────────────
 
+  _recordProgressionPlay(won) {
+    const duration = (Date.now() - this.startTime) / 1000;
+    ProgressionManager.recordGamePlay('stick-rpg', this.player?.day || 0, won, duration);
+    if (this.player?.day >= 1) ProgressionManager.checkAchievement('stick-rpg', 'first-day');
+    if (this.player?.money >= 10000) ProgressionManager.checkAchievement('stick-rpg', 'stick-rich');
+    if (this.player?.day >= 30) ProgressionManager.checkAchievement('stick-rpg', 'rpg-legend');
+  }
+
   update(dt) {
     if (this.status !== 'playing') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) this._restart();
+      if (this.input.wasPressed('Space') || this.input.wasActionPressed('restart') || this.input.mouse.clickedThisFrame) this._restart();
 
       return;
     }
@@ -243,11 +267,62 @@ export class StickRPG extends GameBase {
       if (this.dialogueTimer <= 0) this.dialogueText = null;
     }
 
+    // ── Input: gamepad / teclado ──
+    if (this.input.wasActionPressed('navigateUp')) {
+      if (this.focusMode === 'actions' && this.focusIndex > 0) this.focusIndex--;
+    }
+    if (this.input.wasActionPressed('navigateDown')) {
+      if (this.focusMode === 'actions' && this.focusIndex < this.actionButtons.length - 1) this.focusIndex++;
+    }
+    if (this.input.wasActionPressed('navigateLeft') || this.input.wasActionPressed('navigateRight')) {
+      if (this.navButtons.length > 0) {
+        if (this.focusMode === 'navigation') {
+          if (this.input.wasActionPressed('navigateLeft') && this.focusIndex > 0) this.focusIndex--;
+          else if (this.input.wasActionPressed('navigateRight') && this.focusIndex < this.navButtons.length - 1) this.focusIndex++;
+        } else {
+          this.focusMode = 'navigation';
+          this.focusIndex = 0;
+        }
+      }
+    }
+    if (this.input.wasActionPressed('back') && this.focusMode === 'navigation') {
+      this.focusMode = 'actions';
+      this.focusIndex = 0;
+    }
+
+    if (this.input.wasActionPressed('select')) {
+      if (this.focusMode === 'actions' && this.actionButtons[this.focusIndex]) {
+        this._performAction(this.actionButtons[this.focusIndex].action);
+      } else if (this.focusMode === 'navigation' && this.navButtons[this.focusIndex]) {
+        this._goToScene(this.navButtons[this.focusIndex].sceneKey);
+      }
+    }
+
     if (this.input.mouse.clickedThisFrame) {
       this._handleClick(this.input.mouse.x, this.input.mouse.y);
+      // Al hacer click con el ratón, sincronizar el foco
+      this._syncFocusFromMouse(this.input.mouse.x, this.input.mouse.y);
     }
 
     this.input.endFrame();
+  }
+
+  _syncFocusFromMouse(x, y) {
+    // Sincroniza el foco gamepad según la posición del ratón
+    for (let i = 0; i < this.actionButtons.length; i++) {
+      if (pointInRect(x, y, this.actionButtons[i])) {
+        this.focusMode = 'actions';
+        this.focusIndex = i;
+        return;
+      }
+    }
+    for (let i = 0; i < this.navButtons.length; i++) {
+      if (pointInRect(x, y, this.navButtons[i])) {
+        this.focusMode = 'navigation';
+        this.focusIndex = i;
+        return;
+      }
+    }
   }
 
   _handleClick(x, y) {
@@ -425,6 +500,7 @@ export class StickRPG extends GameBase {
     const statsTotal = this.player.strength + this.player.intelligence + this.player.charisma;
     if (this.player.day >= MAX_DAYS || statsTotal >= 40) {
       this.status = 'won';
+      this._recordProgressionPlay(true);
       AudioManager.sfx({ type: 'powerup', volume: 0.6 });
       HapticManager.vibrate('powerup');
       if (this.player.day > this.bestDay) {
@@ -439,6 +515,7 @@ export class StickRPG extends GameBase {
     // Pero si el dinero es negativo (no debería pasar, pero por si acaso)
     if (this.player.money < 0) {
       this.status = 'lost';
+      this._recordProgressionPlay(false);
       this.gameOverReason = t('stick.dialogue.bankrupt');
       AudioManager.sfx({ type: 'stick_fight', volume: 0.5 });
     }

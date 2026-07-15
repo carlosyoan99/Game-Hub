@@ -1,5 +1,6 @@
 import { GameBase } from '../../engine/GameBase.js';
 import { renderOverlay } from '../../engine/GameUI.js';
+import { ProgressionManager } from '../../engine/ProgressionManager.js';
 import { StorageManager } from '../../engine/StorageManager.js';
 import { icon } from '../../engine/IconRenderer.js';
 import { pointInRect } from '../../engine/CollisionUtils.js';
@@ -71,6 +72,17 @@ export class TrickQuiz extends GameBase {
     this._restart();
   }
 
+  _defaultBindings() {
+    return {
+      navigateUp:    ['ArrowUp', 'KeyW', 'GamepadUp', 'GamepadLStickUp'],
+      navigateDown:  ['ArrowDown', 'KeyS', 'GamepadDown', 'GamepadLStickDown'],
+      navigateLeft:  ['ArrowLeft', 'KeyA', 'GamepadLeft', 'GamepadLStickLeft'],
+      navigateRight: ['ArrowRight', 'KeyD', 'GamepadRight', 'GamepadLStickRight'],
+      select:        ['Space', 'Enter', 'GamepadA'],
+      restart:       ['Space', 'GamepadStart', 'GamepadA'],
+    };
+  }
+
   handleResize(width, height) {
     super.handleResize(width, height);
     this._layoutCurrentQuestion();
@@ -81,6 +93,7 @@ export class TrickQuiz extends GameBase {
   }
 
   _restart() {
+    this.startTime = Date.now();
     this.rng = new SeededRandom();
     // Barajar preguntas y seleccionar un subconjunto variado (mezcla de categorías)
     this.questions = this.rng.shuffle([...QUESTION_POOL]);
@@ -95,6 +108,7 @@ export class TrickQuiz extends GameBase {
     this.status = 'question'; // 'question' | 'feedback' | 'lost' | 'won'
     this.feedbackTimer = 0;
     this.feedbackKind = null; // 'correct' | 'wrong'
+    this.selectedButton = 0; // índice del botón seleccionado (0-3) para gamepad/teclado
     this._layoutCurrentQuestion();
   }
 
@@ -135,16 +149,34 @@ export class TrickQuiz extends GameBase {
   }
 
   update(dt) {
+    // ── Gamepad restart en pantallas finales ──
+    if ((this.status === 'won' || this.status === 'lost') && this.input.wasActionPressed('restart')) {
+      this._restart();
+      return;
+    }
     if (this.handleRestartInput()) return;
 
     if (this.status === 'feedback') {
       this.feedbackTimer -= dt;
       if (this.feedbackTimer <= 0) {
         if (this.feedbackKind === 'correct') this._advanceQuestion();
-        else this.status = 'question'; // reintenta la misma pregunta
+        else {
+          this.status = 'question';
+          this.selectedButton = 0;
+        }
       }
 
       return;
+    }
+
+    // ── Input: gamepad / teclado ──
+    if (this.input.wasActionPressed('navigateUp') && this.selectedButton >= 2) this.selectedButton -= 2;
+    if (this.input.wasActionPressed('navigateDown') && this.selectedButton < 2) this.selectedButton += 2;
+    if (this.input.wasActionPressed('navigateLeft') && this.selectedButton % 2 === 1) this.selectedButton -= 1;
+    if (this.input.wasActionPressed('navigateRight') && this.selectedButton % 2 === 0) this.selectedButton += 1;
+
+    if (this.input.wasActionPressed('select')) {
+      this._handleButtonSelect(this.selectedButton);
     }
 
     if (this.input.mouse.clickedThisFrame) {
@@ -174,6 +206,17 @@ export class TrickQuiz extends GameBase {
     // toques accidentales en el margen de la pantalla.
   }
 
+  _handleButtonSelect(index) {
+    const q = this.currentQuestion;
+
+    // Hidden zone: no se puede seleccionar con gamepad (requiere click directo)
+    if (q.type === 'hidden') return;
+
+    const isCorrect = index === q.correct;
+    if (isCorrect) this._onCorrect();
+    else this._onWrong();
+  }
+
   _onCorrect() {
     this.status = 'feedback';
     this.feedbackKind = 'correct';
@@ -188,6 +231,7 @@ export class TrickQuiz extends GameBase {
     HapticManager.vibrate('hit');
     if (this.lives <= 0) {
       this.status = 'lost';
+      this._recordProgressionPlay(false);
       AudioManager.sfx({ type: 'explosion', volume: 0.4 });
       return;
     }
@@ -204,12 +248,22 @@ export class TrickQuiz extends GameBase {
     }
     if (this.questionIndex >= this.questions.length) {
       this.status = 'won';
+      this._recordProgressionPlay(true);
       AudioManager.sfx({ type: 'powerup', volume: 0.5 });
       HapticManager.vibrate('powerup');
       return;
     }
     this.status = 'question';
     this._layoutCurrentQuestion();
+  }
+
+  _recordProgressionPlay(won) {
+    const duration = (Date.now() - this.startTime) / 1000;
+    const score = this.currentQuestion || 0;
+    ProgressionManager.recordGamePlay('trick-quiz', score, won, duration);
+    if (won) ProgressionManager.checkAchievement('trick-quiz', 'first-win');
+    if (this.winStreak > 3) ProgressionManager.checkAchievement('trick-quiz', 'trickster');
+    if (this.correct > 10) ProgressionManager.checkAchievement('trick-quiz', 'quiz-master');
   }
 
   render(ctx) {
@@ -231,7 +285,7 @@ export class TrickQuiz extends GameBase {
       const catIcon = cat === 'math' ? 'bolt' : cat === 'logic' ? 'brain' : cat === 'hidden' ? 'target' : null;
       if (catIcon) icon(ctx, catIcon, 16, 17, 14, '#ffb454');
       ctx.fillText(`Pregunta ${this.questionIndex + 1}/${this.questions.length}`, 10, 10);
-    ctx.fillText(`Vidas: `, this.width - 90, 10);
+    ctx.fillText('Vidas: ', this.width - 90, 10);
     const lifeX = this.width - 90 + ctx.measureText('Vidas: ').width;
     for (let i = 0; i < this.lives; i++) {
       icon(ctx, 'heart', lifeX + i * 18, 17, 14, '#e74c3c');

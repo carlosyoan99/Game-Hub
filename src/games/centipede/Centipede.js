@@ -6,6 +6,7 @@ import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
 import { renderOverlay } from '../../engine/GameUI.js';
+import { ProgressionManager } from '../../engine/ProgressionManager.js';
 
 // ── Constantes ──────────────────────────────────────────────────────────
 
@@ -20,6 +21,11 @@ const FIRE_COOLDOWN = 0.2;
 
 const INITIAL_SEGMENTS = 12;
 const SPIDER_SIZE = 14;
+const BOSS_WAVE_INTERVAL = 5; // Jefe cada 5 oleadas
+const BOSS_QUEEN_RADIUS = 22;
+const BOSS_QUEEN_HP = 12;
+const BOSS_BULLET_SPEED = 180;
+const BOSS_FIRE_COOLDOWN = 1.8;
 
 const COLORS = {
   bg: '#0b0f14',
@@ -37,9 +43,18 @@ export class Centipede extends GameBase {
     super.init(engine, 'centipede');
     this.highscore = this.storage.get('highscore', 0);
 
-    this.particles = new ParticleSystem(60);
+    this.particles = new ParticleSystem(80);
 
     this._restart();
+  }
+
+  _defaultBindings() {
+    return {
+      moveLeft:  ['ArrowLeft', 'KeyA', 'GamepadLeft', 'GamepadLStickLeft'],
+      moveRight: ['ArrowRight', 'KeyD', 'GamepadRight', 'GamepadLStickRight'],
+      fire:      ['Space', 'GamepadA'],
+      restart:   ['Space', 'GamepadStart', 'GamepadA'],
+    };
   }
 
   _restart() {
@@ -54,6 +69,8 @@ export class Centipede extends GameBase {
     this.mushrooms = [];
     this.centipede = [];
     this.spiders = [];
+    this.boss = null;
+    this.bossBullets = [];
     this.score = 0;
     this.lives = 3;
     this.wave = 1;
@@ -107,7 +124,109 @@ export class Centipede extends GameBase {
     this.moveInterval = Math.max(0.06, 0.15 - this.wave * 0.01);
   }
 
+  // ── Boss Queen Centipede ──────────────────────────────────────────────
+
+  _spawnBoss() {
+    this.boss = {
+      x: this.width / 2,
+      y: 25,
+      radius: BOSS_QUEEN_RADIUS,
+      hp: BOSS_QUEEN_HP + this.wave,
+      maxHp: BOSS_QUEEN_HP + this.wave,
+      dir: 1,
+      speed: 100 + this.wave * 5,
+      fireTimer: BOSS_FIRE_COOLDOWN,
+    };
+    this.bossBullets = [];
+    this.status = 'boss-fight';
+    // Eliminar arañas durante boss fight
+    this.spiders = [];
+  }
+
+  _updateBoss(dt) {
+    if (!this.boss) return;
+
+    // Movimiento horizontal
+    this.boss.x += this.boss.speed * this.boss.dir * dt;
+    if (this.boss.x < this.boss.radius + 10) { this.boss.x = this.boss.radius + 10; this.boss.dir = 1; }
+    if (this.boss.x > this.width - this.boss.radius - 10) { this.boss.x = this.width - this.boss.radius - 10; this.boss.dir = -1; }
+
+    // Disparar cada cierto tiempo
+    this.boss.fireTimer -= dt;
+    if (this.boss.fireTimer <= 0) {
+      this.boss.fireTimer = Math.max(0.8, BOSS_FIRE_COOLDOWN - this.wave * 0.05);
+      // Disparar 3 balas en abanico
+      for (let i = -1; i <= 1; i++) {
+        const angle = Math.PI / 2 + i * 0.25;
+        this.bossBullets.push({
+          x: this.boss.x,
+          y: this.boss.y + this.boss.radius,
+          radius: 4,
+          vx: Math.cos(angle) * BOSS_BULLET_SPEED,
+          vy: Math.sin(angle) * BOSS_BULLET_SPEED,
+          alive: true,
+        });
+      }
+      AudioManager.sfx({ type: 'centipede_shoot', volume: 0.3 });
+    }
+
+    // Mover balas del jefe
+    for (const bullet of this.bossBullets) {
+      bullet.x += bullet.vx * dt;
+      bullet.y += bullet.vy * dt;
+      if (bullet.y > this.height + 30 || bullet.y < -30 || bullet.x < -30 || bullet.x > this.width + 30) {
+        bullet.alive = false;
+      }
+    }
+    this.bossBullets = this.bossBullets.filter(b => b.alive);
+
+    // Bala del jefe vs jugador
+    for (const bullet of this.bossBullets) {
+      const dx = this.player.x - bullet.x;
+      const dy = this.player.y - bullet.y;
+      if (Math.abs(dx) < PLAYER_SIZE + bullet.radius && Math.abs(dy) < PLAYER_SIZE + bullet.radius) {
+        this._playerHit();
+        return;
+      }
+    }
+
+    // Bala del jugador vs jefe
+    for (const bullet of this.bullets) {
+      const dx = bullet.x - this.boss.x;
+      const dy = bullet.y - this.boss.y;
+      if (Math.abs(dx) < bullet.width / 2 + this.boss.radius && Math.abs(dy) < bullet.height / 2 + this.boss.radius) {
+        bullet.alive = false;
+        this.boss.hp--;
+        this.score += 20;
+        this.particles.burst(this.boss.x + (Math.random() - 0.5) * 30, this.boss.y + (Math.random() - 0.5) * 30, '#ff6b4a', 5, 60);
+        AudioManager.sfx({ type: 'centipede_hit', volume: 0.25 });
+        HapticManager.vibrate('hit');
+
+        if (this.boss.hp <= 0) {
+          this._defeatBoss();
+        }
+        break;
+      }
+    }
+  }
+
+  _defeatBoss() {
+    this.score += 200;
+    AudioManager.sfx({ type: 'powerup', volume: 0.6 });
+    HapticManager.vibrate('powerup');
+    this.particles.burst(this.boss.x, this.boss.y, '#ff6b4a', 25, 200);
+    this.particles.burst(this.boss.x, this.boss.y, '#ffd700', 15, 150);
+    ProgressionManager.checkAchievement('centipede', 'queen-slayer');
+    ProgressionManager.addXp(75, 'boss-defeated');
+    this.boss = null;
+    this.bossBullets = [];
+    this.wave++;
+    this.waveTransitionTimer = 3;
+    this.status = 'wave-transition';
+  }
+
   _spawnSpider() {
+    if (this.status === 'boss-fight') return;
     const side = Math.floor(Math.random() * 4);
     let x, y, vx, vy;
     const speed = 60 + this.wave * 8;
@@ -129,6 +248,15 @@ export class Centipede extends GameBase {
         this._startNextWave();
       }
 
+      return;
+    }
+
+    if (this.status === 'boss-fight') {
+      this._updateBoss(dt);
+      this._updatePlayer(dt);
+      this._updateBullets(dt);
+      this.particles.update(dt);
+      this.input.endFrame();
       return;
     }
 
@@ -286,9 +414,9 @@ export class Centipede extends GameBase {
     }
     this.spiders = this.spiders.filter((s) => s.alive);
 
-    // Generar nueva araña periódicamente
+    // Generar nueva araña periódicamente (solo si no estamos en boss fight)
     this.spiderTimer -= dt;
-    if (this.spiderTimer <= 0) {
+    if (this.spiderTimer <= 0 && this.status !== 'boss-fight') {
       this.spiderTimer = 4 - Math.min(this.wave * 0.2, 2);
       this._spawnSpider();
     }
@@ -396,9 +524,16 @@ export class Centipede extends GameBase {
     const liveSegments = this.centipede.filter((s) => s.alive);
     if (liveSegments.length === 0 && this.status === 'playing') {
       this.wave += 1;
-      AudioManager.sfx({ type: 'powerup', volume: 0.5 });
-      this.waveTransitionTimer = 5; // auto-avance en 5 segundos
-      this.status = 'wave-transition';
+
+      // ¿Oleada de jefe?
+      if (this.wave % BOSS_WAVE_INTERVAL === 0) {
+        AudioManager.sfx({ type: 'powerup', volume: 0.5 });
+        this._spawnBoss();
+      } else {
+        AudioManager.sfx({ type: 'powerup', volume: 0.5 });
+        this.waveTransitionTimer = 5;
+        this.status = 'wave-transition';
+      }
     }
   }
 
@@ -430,9 +565,77 @@ export class Centipede extends GameBase {
       this.highscore = this.score;
       this.storage.set('highscore', this.highscore);
     }
+    // ── Progression ──
+    const duration = (Date.now() - this.startTime) / 1000;
+    ProgressionManager.recordGamePlay('centipede', this.score, false, duration);
+    if (this.wave >= 3) ProgressionManager.checkAchievement('centipede', 'wave-3');
+    if (this.wave >= 10) ProgressionManager.checkAchievement('centipede', 'wave-10');
   }
 
   // ── Render ─────────────────────────────────────────────────────────────
+
+  _renderBoss(ctx) {
+    if (!this.boss) return;
+    const r = this.boss.radius;
+    const pulse = Math.sin(Date.now() * 0.006) * 0.1 + 0.9;
+
+    ctx.save();
+    ctx.translate(this.boss.x, this.boss.y);
+    ctx.scale(pulse, pulse);
+
+    // Cuerpo grande
+    ctx.fillStyle = '#ff4d4d';
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Corona
+    ctx.fillStyle = '#ffd700';
+    for (let i = 0; i < 5; i++) {
+      const angle = (i / 5) * Math.PI * 2 - Math.PI / 2;
+      ctx.fillRect(
+        Math.cos(angle) * r - 3,
+        Math.sin(angle) * r - 6,
+        6, 10
+      );
+    }
+
+    // Ojos grandes y rojos
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(-r * 0.35, -r * 0.2, r * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(r * 0.35, -r * 0.2, r * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ff0000';
+    const lookDir = this.boss.dir;
+    ctx.beginPath();
+    ctx.arc(-r * 0.35 + lookDir * 2, -r * 0.2, r * 0.12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(r * 0.35 + lookDir * 2, -r * 0.2, r * 0.12, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  _renderBossBullets(ctx) {
+    ctx.fillStyle = '#ff6b4a';
+    for (const b of this.bossBullets) {
+      if (!b.alive) continue;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+      ctx.fill();
+      // Rastro
+      ctx.fillStyle = 'rgba(255, 107, 74, 0.3)';
+      ctx.beginPath();
+      ctx.arc(b.x - b.vx * 0.03, b.y - b.vy * 0.03, b.radius * 0.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ff6b4a';
+    }
+  }
 
   render(ctx) {
     ctx.fillStyle = COLORS.bg;
@@ -443,7 +646,34 @@ export class Centipede extends GameBase {
     this._renderSpiders(ctx);
     this._renderBullets(ctx);
     this._renderPlayer(ctx);
+    this._renderBoss(ctx);
+    this._renderBossBullets(ctx);
     this.particles.render(ctx);      this.renderHUD(ctx);
+
+    if (this.status === 'boss-fight') {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx.fillRect(0, 0, this.width, this.height);
+      ctx.fillStyle = '#ff6b4a';
+      ctx.font = 'bold 24px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(t('centipede.bossWave'), this.width / 2, this.height / 2 - 30);
+      if (this.boss) {
+        // Barra de vida del jefe
+        const barW = 200;
+        const barH = 12;
+        const barX = this.width / 2 - barW / 2;
+        ctx.fillStyle = 'rgba(255, 0, 0, 0.4)';
+        ctx.fillRect(barX, this.height / 2 + 5, barW, barH);
+        ctx.fillStyle = '#ff6b4a';
+        ctx.fillRect(barX, this.height / 2 + 5, barW * (this.boss.hp / this.boss.maxHp), barH);
+        ctx.strokeStyle = '#ffb454';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(barX, this.height / 2 + 5, barW, barH);
+      }
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+    }
 
     if (this.status === 'wave-transition') {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';

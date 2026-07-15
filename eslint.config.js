@@ -31,6 +31,10 @@ export default [
         CanvasRenderingContext2D: 'readonly',
         CustomEvent: 'readonly',
         MutationObserver: 'readonly',
+        getComputedStyle: 'readonly',
+        confirm: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
       },
     },
     rules: {

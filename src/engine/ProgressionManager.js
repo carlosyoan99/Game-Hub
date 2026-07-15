@@ -107,6 +107,180 @@ const ACHIEVEMENT_DEFS = {
     { id: 'wave-5',       name: 'prog.asteroids.wave5',      desc: 'prog.asteroids.wave5.desc',     icon: 'trophy' },
     { id: 'wave-10',      name: 'prog.asteroids.wave10',     desc: 'prog.asteroids.wave10.desc',    icon: 'crown' },
   ],
+  snake: [
+    { id: 'small-snake',  name: 'prog.snake.small',     desc: 'prog.snake.small.desc',   icon: 'star' },
+    { id: 'big-snake',    name: 'prog.snake.big',       desc: 'prog.snake.big.desc',     icon: 'trophy' },
+    { id: 'immortal',     name: 'prog.snake.immortal',  desc: 'prog.snake.immortal.desc', icon: 'crown' },
+    { id: 'snake-boss',   name: 'prog.snake.boss',      desc: 'prog.snake.boss.desc',    icon: 'crown' },
+  ],
+  pong: [
+    { id: 'first-point',  name: 'prog.pong.firstPoint',  desc: 'prog.pong.firstPoint.desc',  icon: 'star' },
+    { id: 'win-streak-3', name: 'prog.pong.streak3',     desc: 'prog.pong.streak3.desc',     icon: 'trophy' },
+    { id: 'unbeatable',   name: 'prog.pong.unbeatable',  desc: 'prog.pong.unbeatable.desc',  icon: 'crown' },
+    { id: 'boss-victory', name: 'prog.pong.boss',        desc: 'prog.pong.boss.desc',       icon: 'crown' },
+  ],
+  'flappy-bird': [
+    { id: 'first-flight', name: 'prog.flappy.firstFlight', desc: 'prog.flappy.firstFlight.desc', icon: 'star' },
+    { id: 'pipe-master',  name: 'prog.flappy.pipeMaster',  desc: 'prog.flappy.pipeMaster.desc',  icon: 'trophy' },
+    { id: 'bird-legend',  name: 'prog.flappy.legend',      desc: 'prog.flappy.legend.desc',      icon: 'crown' },
+    { id: 'flappy-boss',  name: 'prog.flappy.boss',        desc: 'prog.flappy.boss.desc',       icon: 'crown' },
+  ],
+  centipede: [
+    { id: 'wave-3',       name: 'prog.centipede.wave3',      desc: 'prog.centipede.wave3.desc',    icon: 'star' },
+    { id: 'wave-10',      name: 'prog.centipede.wave10',     desc: 'prog.centipede.wave10.desc',   icon: 'trophy' },
+    { id: 'queen-slayer', name: 'prog.centipede.queen',      desc: 'prog.centipede.queen.desc',    icon: 'crown' },
+  ],
+  'mario-like': [
+    { id: 'world-clear',  name: 'prog.mario.worldClear',     desc: 'prog.mario.worldClear.desc',   icon: 'star' },
+    { id: 'castle-clear', name: 'prog.mario.castleClear',    desc: 'prog.mario.castleClear.desc',  icon: 'crown' },
+  ],
+  'space-invaders': [
+    { id: 'first-blood',     name: 'prog.spaceinvaders.firstBlood',  desc: 'prog.spaceinvaders.firstBlood.desc',  icon: 'star' },
+    { id: 'wave-5',          name: 'prog.spaceinvaders.wave5',       desc: 'prog.spaceinvaders.wave5.desc',       icon: 'trophy' },
+    { id: 'invader-legend',  name: 'prog.spaceinvaders.legend',      desc: 'prog.spaceinvaders.legend.desc',      icon: 'crown' },
+  ],
+  galaga: [
+    { id: 'first-hit',       name: 'prog.galaga.firstHit',    desc: 'prog.galaga.firstHit.desc',    icon: 'star' },
+    { id: 'galaga-wave-10',  name: 'prog.galaga.wave10',      desc: 'prog.galaga.wave10.desc',      icon: 'trophy' },
+    { id: 'galaga-master',   name: 'prog.galaga.master',      desc: 'prog.galaga.master.desc',      icon: 'crown' },
+  ],
+  frogger: [
+    { id: 'first-cross',     name: 'prog.frogger.firstCross',   desc: 'prog.frogger.firstCross.desc',  icon: 'star' },
+    { id: 'river-king',      name: 'prog.frogger.riverKing',    desc: 'prog.frogger.riverKing.desc',   icon: 'trophy' },
+    { id: 'frog-legend',     name: 'prog.frogger.legend',       desc: 'prog.frogger.legend.desc',      icon: 'crown' },
+  ],
+  tetris: [
+    { id: 'first-line',      name: 'prog.tetris.firstLine',    desc: 'prog.tetris.firstLine.desc',  icon: 'star' },
+    { id: 'line-clear-50',   name: 'prog.tetris.lines50',      desc: 'prog.tetris.lines50.desc',    icon: 'trophy' },
+    { id: 'tetris-master',   name: 'prog.tetris.master',       desc: 'prog.tetris.master.desc',     icon: 'crown' },
+  ],
+  'pac-man': [
+    { id: 'first-dot',       name: 'prog.pacman.firstDot',     desc: 'prog.pacman.firstDot.desc',   icon: 'star' },
+    { id: 'ghost-hunter',    name: 'prog.pacman.ghostHunter',  desc: 'prog.pacman.ghostHunter.desc',icon: 'trophy' },
+    { id: 'pac-legend',      name: 'prog.pacman.legend',       desc: 'prog.pacman.legend.desc',     icon: 'crown' },
+  ],
+  'donkey-kong': [
+    { id: 'first-platform',  name: 'prog.donkeykong.firstPlatform',  desc: 'prog.donkeykong.firstPlatform.desc', icon: 'star' },
+    { id: 'barrel-dodger',   name: 'prog.donkeykong.barrelDodger',   desc: 'prog.donkeykong.barrelDodger.desc',  icon: 'trophy' },
+    { id: 'kong-conqueror',  name: 'prog.donkeykong.conqueror',      desc: 'prog.donkeykong.conqueror.desc',     icon: 'crown' },
+  ],
+  'missile-command': [
+    { id: 'first-save',      name: 'prog.missile.firstSave',   desc: 'prog.missile.firstSave.desc',  icon: 'star' },
+    { id: 'missile-master',  name: 'prog.missile.master',      desc: 'prog.missile.master.desc',     icon: 'trophy' },
+    { id: 'last-defense',    name: 'prog.missile.lastDefense', desc: 'prog.missile.lastDefense.desc',icon: 'crown' },
+  ],
+  platformer: [
+    { id: 'first-level',     name: 'prog.platformer.firstLevel',   desc: 'prog.platformer.firstLevel.desc',   icon: 'star' },
+    { id: 'platform-pro',    name: 'prog.platformer.pro',          desc: 'prog.platformer.pro.desc',          icon: 'trophy' },
+    { id: 'speed-runner',    name: 'prog.platformer.speedRunner',  desc: 'prog.platformer.speedRunner.desc',  icon: 'crown' },
+  ],
+  'fancy-pants': [
+    { id: 'fancy-first',     name: 'prog.fancy.firstLevel',    desc: 'prog.fancy.firstLevel.desc',   icon: 'star' },
+    { id: 'fancy-runner',    name: 'prog.fancy.runner',        desc: 'prog.fancy.runner.desc',       icon: 'trophy' },
+    { id: 'wall-jump-master',name: 'prog.fancy.wallJump',      desc: 'prog.fancy.wallJump.desc',     icon: 'crown' },
+  ],
+  'coop-platformer': [
+    { id: 'coop-first',      name: 'prog.coop.firstLevel',     desc: 'prog.coop.firstLevel.desc',    icon: 'star' },
+    { id: 'coop-pro',        name: 'prog.coop.pro',            desc: 'prog.coop.pro.desc',           icon: 'trophy' },
+    { id: 'fire-water',      name: 'prog.coop.masters',        desc: 'prog.coop.masters.desc',      icon: 'crown' },
+  ],
+  'trick-quiz': [
+    { id: 'first-win',       name: 'prog.quiz.firstWin',       desc: 'prog.quiz.firstWin.desc',     icon: 'star' },
+    { id: 'trickster',       name: 'prog.quiz.trickster',      desc: 'prog.quiz.trickster.desc',    icon: 'trophy' },
+    { id: 'quiz-master',     name: 'prog.quiz.master',         desc: 'prog.quiz.master.desc',       icon: 'crown' },
+  ],
+  'papa-pizzeria': [
+    { id: 'first-pizza',     name: 'prog.papa.firstPizza',     desc: 'prog.papa.firstPizza.desc',   icon: 'star' },
+    { id: 'pizza-chef',      name: 'prog.papa.chef',           desc: 'prog.papa.chef.desc',         icon: 'trophy' },
+    { id: 'pizza-legend',    name: 'prog.papa.legend',         desc: 'prog.papa.legend.desc',       icon: 'crown' },
+  ],
+  'stick-rpg': [
+    { id: 'first-day',       name: 'prog.stickrpg.firstDay',   desc: 'prog.stickrpg.firstDay.desc', icon: 'star' },
+    { id: 'stick-rich',      name: 'prog.stickrpg.rich',       desc: 'prog.stickrpg.rich.desc',     icon: 'trophy' },
+    { id: 'rpg-legend',      name: 'prog.stickrpg.legend',     desc: 'prog.stickrpg.legend.desc',   icon: 'crown' },
+  ],
+  'crush-the-castle': [
+    { id: 'castle-first',    name: 'prog.crush.firstCastle',   desc: 'prog.crush.firstCastle.desc', icon: 'star' },
+    { id: 'castle-crusher',  name: 'prog.crush.crusher',       desc: 'prog.crush.crusher.desc',     icon: 'trophy' },
+    { id: 'demolition-expert',name: 'prog.crush.expert',       desc: 'prog.crush.expert.desc',     icon: 'crown' },
+  ],
+  bowman: [
+    { id: 'first-shot',      name: 'prog.bowman.firstShot',    desc: 'prog.bowman.firstShot.desc',  icon: 'star' },
+    { id: 'sharpshooter',    name: 'prog.bowman.sharpshooter', desc: 'prog.bowman.sharpshooter.desc',icon: 'trophy' },
+    { id: 'bowman-legend',   name: 'prog.bowman.legend',       desc: 'prog.bowman.legend.desc',     icon: 'crown' },
+  ],
+  'bloons-td': [
+    { id: 'first-bloon',     name: 'prog.bloons.firstBloon',   desc: 'prog.bloons.firstBloon.desc', icon: 'star' },
+    { id: 'bloon-slayer',    name: 'prog.bloons.slayer',       desc: 'prog.bloons.slayer.desc',     icon: 'trophy' },
+    { id: 'td-master',       name: 'prog.bloons.master',       desc: 'prog.bloons.master.desc',     icon: 'crown' },
+  ],
+  'territory-war': [
+    { id: 'first-victory',   name: 'prog.territory.firstVictory',   desc: 'prog.territory.firstVictory.desc',icon: 'star' },
+    { id: 'war-veteran',     name: 'prog.territory.veteran',        desc: 'prog.territory.veteran.desc',     icon: 'trophy' },
+    { id: 'territory-legend',name: 'prog.territory.legend',          desc: 'prog.territory.legend.desc',      icon: 'crown' },
+  ],
+  'swords-and-souls': [
+    { id: 'first-wave',      name: 'prog.swords.firstWave',    desc: 'prog.swords.firstWave.desc',   icon: 'star' },
+    { id: 'swords-wave-10',  name: 'prog.swords.wave10',       desc: 'prog.swords.wave10.desc',      icon: 'trophy' },
+    { id: 'swords-legend',   name: 'prog.swords.legend',       desc: 'prog.swords.legend.desc',      icon: 'crown' },
+  ],
+  'outrun-like': [
+    { id: 'first-race',      name: 'prog.outrun-like.first-race',     desc: 'prog.outrun-like.first-race.desc',    icon: 'star' },
+    { id: 'road-warrior',    name: 'prog.outrun-like.road-warrior',   desc: 'prog.outrun-like.road-warrior.desc',   icon: 'crown' },
+    { id: 'arcade-king',     name: 'prog.outrun-like.arcade-king',    desc: 'prog.outrun-like.arcade-king.desc',    icon: 'trophy' },
+    { id: 'near-miss-pro',   name: 'prog.outrun-like.near-miss-pro',  desc: 'prog.outrun-like.near-miss-pro.desc',  icon: 'star' },
+    { id: 'speed-demon',     name: 'prog.outrun-like.speed-demon',    desc: 'prog.outrun-like.speed-demon.desc',    icon: 'crown' },
+  ],
+  'contra-like': [
+    { id: 'first-stage',    name: 'prog.contra-like.first-stage',   desc: 'prog.contra-like.first-stage.desc',  icon: 'star' },
+    { id: 'game-cleared',   name: 'prog.contra-like.game-cleared',  desc: 'prog.contra-like.game-cleared.desc', icon: 'crown' },
+    { id: 'contra-master',  name: 'prog.contra-like.contra-master', desc: 'prog.contra-like.contra-master.desc',icon: 'trophy' },
+  ],
+  'space-harrier': [
+    { id: 'first-clear',   name: 'prog.space-harrier.first-clear',  desc: 'prog.space-harrier.first-clear.desc', icon: 'star' },
+    { id: 'harrier-ace',   name: 'prog.space-harrier.harrier-ace',  desc: 'prog.space-harrier.harrier-ace.desc', icon: 'crown' },
+    { id: 'sky-warrior',   name: 'prog.space-harrier.sky-warrior',  desc: 'prog.space-harrier.sky-warrior.desc', icon: 'trophy' },
+    { id: 'perfect-run',   name: 'prog.space-harrier.perfect-run',  desc: 'prog.space-harrier.perfect-run.desc', icon: 'crown' },
+  ],
+  'metroid-like': [
+    { id: 'boss-slayer',   name: 'prog.metroid-like.boss-slayer',   desc: 'prog.metroid-like.boss-slayer.desc',  icon: 'crown' },
+    { id: 'explorer',      name: 'prog.metroid-like.explorer',      desc: 'prog.metroid-like.explorer.desc',     icon: 'star' },
+    { id: 'demolition',    name: 'prog.metroid-like.demolition',    desc: 'prog.metroid-like.demolition.desc',   icon: 'trophy' },
+  ],
+  'street-fighter': [
+    { id: 'first-victory',     name: 'prog.street-fighter.firstVictory',   desc: 'prog.street-fighter.firstVictory.desc',  icon: 'star' },
+    { id: 'fighting-legend',   name: 'prog.street-fighter.fightingLegend', desc: 'prog.street-fighter.fightingLegend.desc', icon: 'crown' },
+    { id: 'round-fighter',     name: 'prog.street-fighter.roundFighter',   desc: 'prog.street-fighter.roundFighter.desc',   icon: 'trophy' },
+  ],
+  'henry-stickmin': [
+    { id: 'first-ending',       name: 'prog.henry.firstEnding',      desc: 'prog.henry.firstEnding.desc',    icon: 'star' },
+    { id: 'ending-collector',   name: 'prog.henry.collector',        desc: 'prog.henry.collector.desc',      icon: 'trophy' },
+    { id: 'henry-completionist',name: 'prog.henry.completionist',    desc: 'prog.henry.completionist.desc',  icon: 'crown' },
+  ],
+  'golden-axe': [
+    { id: 'first-blood',     name: 'prog.golden-axe.first-blood',    desc: 'prog.golden-axe.first-blood.desc',    icon: 'star' },
+    { id: 'stage-master',    name: 'prog.golden-axe.stage-master',   desc: 'prog.golden-axe.stage-master.desc',   icon: 'trophy' },
+    { id: 'game-cleared',    name: 'prog.golden-axe.game-cleared',   desc: 'prog.golden-axe.game-cleared.desc',   icon: 'crown' },
+    { id: 'no-continue',     name: 'prog.golden-axe.no-continue',    desc: 'prog.golden-axe.no-continue.desc',    icon: 'crown' },
+  ],
+  'guitar-hero': [
+    { id: 'first-song',        name: 'prog.guitar-hero.first-song',       desc: 'prog.guitar-hero.first-song.desc',       icon: 'star' },
+    { id: 'rock-legend',       name: 'prog.guitar-hero.rock-legend',      desc: 'prog.guitar-hero.rock-legend.desc',      icon: 'trophy' },
+    { id: 'precision-player',  name: 'prog.guitar-hero.precision-player', desc: 'prog.guitar-hero.precision-player.desc',  icon: 'crown' },
+    { id: 'combo-king',        name: 'prog.guitar-hero.combo-king',       desc: 'prog.guitar-hero.combo-king.desc',       icon: 'crown' },
+  ],
+  'bejeweled': [
+    { id: 'first-clear',     name: 'prog.bejeweled.first-clear',     desc: 'prog.bejeweled.first-clear.desc',     icon: 'star' },
+    { id: 'cascade-master',  name: 'prog.bejeweled.cascade-master',  desc: 'prog.bejeweled.cascade-master.desc',   icon: 'trophy' },
+    { id: 'gem-hoarder',     name: 'prog.bejeweled.gem-hoarder',     desc: 'prog.bejeweled.gem-hoarder.desc',     icon: 'crown' },
+    { id: 'speed-demon',     name: 'prog.bejeweled.speed-demon',     desc: 'prog.bejeweled.speed-demon.desc',     icon: 'crown' },
+  ],
+  'lemonade-stand': [
+    { id: 'first-profit',      name: 'prog.lemonade-stand.first-profit',      desc: 'prog.lemonade-stand.first-profit.desc',      icon: 'star' },
+    { id: 'lemonade-tycoon',   name: 'prog.lemonade-stand.lemonade-tycoon',   desc: 'prog.lemonade-stand.lemonade-tycoon.desc',   icon: 'trophy' },
+    { id: 'master-chef',       name: 'prog.lemonade-stand.master-chef',       desc: 'prog.lemonade-stand.master-chef.desc',       icon: 'crown' },
+    { id: 'mass-production',   name: 'prog.lemonade-stand.mass-production',   desc: 'prog.lemonade-stand.mass-production.desc',   icon: 'crown' },
+  ],
 };
 
 // ─── Clase Singleton ───────────────────────────────────────────────────
@@ -290,6 +464,14 @@ class ProgressionManagerImpl {
   // ═════════════════════════════════════════════════════════════════════
   //  Logros
   // ═════════════════════════════════════════════════════════════════════
+
+  /**
+   * Devuelve los IDs de todos los juegos que tienen logros definidos.
+   * @returns {string[]}
+   */
+  getGamesWithAch() {
+    return Object.keys(ACHIEVEMENT_DEFS);
+  }
 
   /**
    * Devuelve las definiciones de logros para un juego.

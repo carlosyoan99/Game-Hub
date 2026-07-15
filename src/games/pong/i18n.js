@@ -5,4 +5,6 @@ export default {
   'pong.firstTo':         { es: 'Primero en {n} puntos',     en: 'First to {n} points' },
   'pong.gameComplete':    { es: '¡VICTORIA!',                en: 'VICTORY!' },
   'pong.lost':            { es: 'DERROTA',                   en: 'DEFEAT' },
+  'pong.bossRound':       { es: '⚔️ RONDA DEL JEFE',         en: '⚔️ BOSS ROUND' },
+  'pong.aiStyle':         { es: 'Estilo IA',                      en: 'AI Style' },
 };

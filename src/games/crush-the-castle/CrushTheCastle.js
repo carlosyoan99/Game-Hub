@@ -15,6 +15,7 @@ import { ParticleSystem } from '../../engine/ParticleSystem.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
+import { ProgressionManager } from '../../engine/ProgressionManager.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
 import { GRAVITY, BLOCK_SIZE, BLOCK_GAP, PROJECTILE_RADIUS, DEBRIS_OPTS, COLORS, BLOCK_TYPES } from './constants.js';
 
@@ -35,6 +36,7 @@ export class CrushTheCastle extends GameBase {
   }
 
   _restart() {
+    this.startTime = Date.now();
     this.rng = new SeededRandom();
     this.score = 0;
     this.wave = 1;
@@ -369,6 +371,7 @@ export class CrushTheCastle extends GameBase {
     const aliveSoldiers = this.soldiers.filter((s) => s.alive);
     if (aliveSoldiers.length === 0) {
       this.status = 'won';
+      this._recordProgressionPlay(true);
       AudioManager.sfx({ type: 'powerup', volume: 0.5 });
       HapticManager.vibrate('powerup');
       if (this.score > this.highscore) {
@@ -380,6 +383,7 @@ export class CrushTheCastle extends GameBase {
 
     if (this.ammo <= 0) {
       this.status = 'lost';
+      this._recordProgressionPlay(false);
       AudioManager.sfx({ type: 'castle_hit', volume: 0.5 });
       HapticManager.vibrate('hit');
       return;
@@ -417,6 +421,14 @@ export class CrushTheCastle extends GameBase {
     } else {
       this._restart();
     }
+  }
+
+  _recordProgressionPlay(won) {
+    const duration = (Date.now() - this.startTime) / 1000;
+    ProgressionManager.recordGamePlay('crush-the-castle', this.score, won, duration);
+    if (this.wave >= 1) ProgressionManager.checkAchievement('crush-the-castle', 'castle-first');
+    if (this.wave >= 10) ProgressionManager.checkAchievement('crush-the-castle', 'castle-crusher');
+    if (this.wave >= 20) ProgressionManager.checkAchievement('crush-the-castle', 'demolition-expert');
   }
 
   render(ctx) {

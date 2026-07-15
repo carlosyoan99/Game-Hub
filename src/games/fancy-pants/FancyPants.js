@@ -7,6 +7,7 @@ import { aabbIntersects, clamp } from '../../engine/CollisionUtils.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
+import { ProgressionManager } from '../../engine/ProgressionManager.js';
 
 const TILE_SIZE = 32;
 const GRAVITY = 1500;
@@ -189,6 +190,7 @@ export class FancyPants extends GameBase {
   }
 
   _restart() {
+    this.startTime = Date.now();
     this.player = {
       x: this.spawnPoint.x,
       y: this.spawnPoint.y,
@@ -324,12 +326,21 @@ export class FancyPants extends GameBase {
     }
   }
 
+  _recordProgressionPlay(won) {
+    const duration = (Date.now() - this.startTime) / 1000;
+    ProgressionManager.recordGamePlay('fancy-pants', Math.floor(this.elapsed), won, duration);
+    if (this.currentLevel >= 1) ProgressionManager.checkAchievement('fancy-pants', 'fancy-first');
+    if (this.currentLevel >= 5) ProgressionManager.checkAchievement('fancy-pants', 'fancy-runner');
+    if (this.status === 'won' || won) ProgressionManager.checkAchievement('fancy-pants', 'wall-jump-master');
+  }
+
   _loseLife() {
     this.lives -= 1;
     AudioManager.sfx({ type: 'hit', volume: 0.4 });
     HapticManager.vibrate('hit');
     if (this.lives <= 0) {
       this.status = 'lost';
+      this._recordProgressionPlay(false);
       AudioManager.sfx({ type: 'explosion', volume: 0.4 });
     } else {
       this.player.x = this.spawnPoint.x;
@@ -342,6 +353,7 @@ export class FancyPants extends GameBase {
   _win() {
     if (this.currentLevel >= MAX_LEVEL) {
       this.status = 'won';
+      this._recordProgressionPlay(true);
       AudioManager.sfx({ type: 'powerup', volume: 0.6 });
       HapticManager.vibrate('powerup');
     } else {

@@ -1,6 +1,9 @@
 import { InputManager } from './InputManager.js';
 import { renderGamepadIndicator, createToastManager } from './GameUI.js';
 import { t } from './i18n.js';
+import { AspectRatioManager } from './AspectRatioManager.js';
+import { CRTEffects } from './CRTEffects.js';
+import { SettingsManager } from './SettingsManager.js';
 
 /**
  * GameEngine
@@ -30,6 +33,11 @@ export class GameEngine {
     this.currentGame = null;
     this.input = new InputManager();
     this.input.attach(this.canvas);
+
+    // ── Aspect Ratio + CRT effects ────────────────────────────────
+    this.aspectRatio = new AspectRatioManager(SettingsManager.aspectRatio);
+    this.crtEffects = new CRTEffects();
+    this._prevCrtEnabled = SettingsManager.crtEffect;
 
     // ── Toast notifications ────────────────────────────────────────
     this._toasts = createToastManager();
@@ -94,6 +102,21 @@ export class GameEngine {
     this.canvas.width = width;
     this.canvas.height = height;
     this.currentGame?.handleResize?.(width, height);
+
+    // Recalcular dimensiones según proporción
+    this.aspectRatio.getVisibleDimensions(width, height);
+    this.aspectRatio.getBars(width, height);
+  }
+
+  /**
+   * Establece la proporción de aspecto y redimensiona.
+   * @param {'4:3'|'5:3'|'16:9'} key
+   */
+  setAspectRatio(key) {
+    this.aspectRatio.setRatio(key);
+    if (this.canvas) {
+      this.resize(this.canvas.width, this.canvas.height);
+    }
   }
 
   _loop(timestamp) {
@@ -106,25 +129,44 @@ export class GameEngine {
       // Refrescar estado del gamepad (navigator.getGamepads()) antes de update().
       this.input.poll();
 
+      // ── 1. Renderizar juego al offscreen canvas interno ──────────
+      const offCtx = this.aspectRatio.offscreenCtx;
+      offCtx.clearRect(0, 0, this.aspectRatio.offscreenCanvas.width, this.aspectRatio.offscreenCanvas.height);
       this.currentGame.update(dt);
+      this.currentGame.render(offCtx);
+
+      // ── 2. Escalar offscreen → canvas visible ────────────────────
+      const dims = { width: this.aspectRatio.visibleW, height: this.aspectRatio.visibleH };
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-      this.currentGame.render(this.ctx);
 
-      // Actualizar toasts (deben actualizarse con dt real para
-      // que el fade-out sea suave incluso si el juego pausa su dt).
-      this._toasts.updateToasts(dt);
+      // Fondo negro sólido
+      this.ctx.fillStyle = '#000000';
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-      // Indicador visual de gamepad conectado (esquina superior derecha).
-      // Se renderiza sobre el HUD del juego automáticamente.
-      // Pasa la posición del ratón para el tooltip hover.
+      this.aspectRatio.drawToCanvas(this.ctx, offCtx, dims);
+
+      // ── 3. Glow dinámico en barras CRT ───────────────────────────
+      const reducedMotion = SettingsManager.reducedMotion;
+      const crtEnabled = SettingsManager.crtEffect;
+      // Sincronizar estado de muestreo si cambió
+      if (crtEnabled !== this._prevCrtEnabled) {
+        this.crtEffects.setSamplingDisabled(!crtEnabled);
+        this._prevCrtEnabled = crtEnabled;
+      }
+      if (crtEnabled) {
+        this.crtEffects.update(dt, offCtx, this.aspectRatio, reducedMotion);
+        this.crtEffects.renderGlow(this.ctx, this.aspectRatio);
+      }
+
+      // ── 4. Gamepad indicator (sobre el canvas escalado, en coords visibles) ──
       renderGamepadIndicator(this.ctx, this.input, this.canvas.width,
         this.input.mouse.x, this.input.mouse.y);
 
-      // Toast notifications sobre el HUD
+      // ── 5. Toast notifications ───────────────────────────────────
+      this._toasts.updateToasts(dt);
       this._toasts.renderToasts(this.ctx, this.canvas.width, this.canvas.height);
 
-      // Limpiar estado transitorio del frame (clickedThisFrame, keysJustPressed).
-      // Los juegos ya no deben llamar endFrame() manualmente.
+      // ── 6. Fin del frame ─────────────────────────────────────────
       this.input.endFrame();
     }
 

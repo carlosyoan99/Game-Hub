@@ -15,6 +15,7 @@ import { ParticleSystem } from '../../engine/ParticleSystem.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
+import { ProgressionManager } from '../../engine/ProgressionManager.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
 import { icon } from '../../engine/IconRenderer.js';
 import { COLORS, TERRAIN_COLS, TERRAIN_ROWS, UNIT_TYPES } from './constants.js';
@@ -27,6 +28,20 @@ export class TerritoryWar extends GameBase {
 
     this._recomputeGrid();
     this._restart();
+  }
+
+  _defaultBindings() {
+    return {
+      cursorUp:     ['ArrowUp', 'KeyW', 'GamepadUp', 'GamepadLStickUp'],
+      cursorDown:   ['ArrowDown', 'KeyS', 'GamepadDown', 'GamepadLStickDown'],
+      cursorLeft:   ['ArrowLeft', 'KeyA', 'GamepadLeft', 'GamepadLStickLeft'],
+      cursorRight:  ['ArrowRight', 'KeyD', 'GamepadRight', 'GamepadLStickRight'],
+      select:       ['Space', 'Enter', 'GamepadA'],
+      cancel:       ['Escape', 'GamepadB'],
+      endTurn:      ['KeyT', 'GamepadStart'],
+      buyUnit:      ['KeyB', 'GamepadR1'],
+      restart:      ['Space', 'GamepadStart', 'GamepadA'],
+    };
   }
 
   _recomputeGrid() {
@@ -44,6 +59,7 @@ export class TerritoryWar extends GameBase {
   }
 
   _restart() {
+    this.startTime = Date.now();
     this.rng = new SeededRandom();
     this.turn = 1; // 1 = player, 2 = enemy
     this.phase = 'action'; // 'action' | 'moving' | 'attacking' | 'ai-thinking' | 'won' | 'lost'
@@ -59,6 +75,9 @@ export class TerritoryWar extends GameBase {
     this.animFrom = null;
     this.animTo = null;
     this.animUnit = null;
+    this.cursorCol = Math.floor(TERRAIN_COLS / 3);
+    this.cursorRow = Math.floor(TERRAIN_ROWS / 2);
+    this.buySelected = 0;
 
     this.playerResources = 300;
     this.enemyResources = 300;
@@ -242,6 +261,7 @@ export class TerritoryWar extends GameBase {
 
     if (enemyUnits.length === 0) {
       this.phase = 'won';
+      this._recordProgressionPlay(true);
       this.wins++;
       this.storage.set('wins', this.wins);
       if (this.turnNumber > this.highscore) {
@@ -253,6 +273,7 @@ export class TerritoryWar extends GameBase {
     }
     if (playerUnits.length === 0) {
       this.phase = 'lost';
+      this._recordProgressionPlay(false);
       this.message = 'Derrota... Todas tus unidades caídas';
       this._checkHighscore();
       return;
@@ -309,6 +330,11 @@ export class TerritoryWar extends GameBase {
   }
 
   update(dt) {
+    // ── Gamepad restart en pantallas finales ──
+    if ((this.phase === 'won' || this.phase === 'lost') && this.input.wasActionPressed('restart')) {
+      this._restart();
+      return;
+    }
     if (this.handleRestartInput(['won', 'lost'])) return;
 
     if (this.messageTimer > 0) this.messageTimer -= dt;
@@ -369,6 +395,28 @@ export class TerritoryWar extends GameBase {
 
     if (this.phase === 'action' && this.turn === 1) {
       this._handlePlayerInput();
+    }
+
+    // ── Gamepad grid cursor ──
+    if (this.phase === 'action' && this.turn === 1) {
+      if (this.input.wasActionPressed('cursorUp') && this.cursorRow > 0) this.cursorRow--;
+      if (this.input.wasActionPressed('cursorDown') && this.cursorRow < TERRAIN_ROWS - 1) this.cursorRow++;
+      if (this.input.wasActionPressed('cursorLeft') && this.cursorCol > 0) this.cursorCol--;
+      if (this.input.wasActionPressed('cursorRight') && this.cursorCol < TERRAIN_COLS - 1) this.cursorCol++;
+
+      if (this.input.wasActionPressed('select')) {
+        this._gamepadSelect();
+      }
+      if (this.input.wasActionPressed('cancel')) {
+        this.selectedUnit = null;
+        this.validTargets = [];
+      }
+      if (this.input.wasActionPressed('endTurn')) {
+        this._endTurn();
+      }
+      if (this.input.wasActionPressed('buyUnit')) {
+        this._gamepadBuyUnit();
+      }
     }
 
     this.input.endFrame();
@@ -438,6 +486,62 @@ export class TerritoryWar extends GameBase {
 
     this.selectedUnit = null;
     this.validTargets = [];
+  }
+
+  _gamepadSelect() {
+    const { cursorCol: col, cursorRow: row } = this;
+
+    // Deseleccionar si click en el mismo tile
+    if (this.selectedUnit && this.selectedUnit.col === col && this.selectedUnit.row === row) {
+      this.selectedUnit = null;
+      this.validTargets = [];
+      return;
+    }
+
+    // Si hay un objetivo válido (ataque o movimiento)
+    if (this.selectedUnit && this.validTargets.some((t) => t.col === col && t.row === row)) {
+      const target = this.validTargets.find((t) => t.col === col && t.row === row);
+      if (target && target.hp !== undefined) {
+        // Atacar
+        this.animating = true;
+        this.animationProgress = 0;
+        this.animUnit = this.selectedUnit;
+        this.animTarget = target;
+        this.phase = 'attacking';
+        AudioManager.sfx({ type: 'territory_attack', volume: 0.2 });
+        this.selectedUnit = null;
+        this.validTargets = [];
+        return;
+      } else if (target) {
+        // Mover
+        this.selectedUnit.col = col;
+        this.selectedUnit.row = row;
+        this.selectedUnit.hasMoved = true;
+        this._captureTerritory(col, row, 1);
+        this.selectedUnit = null;
+        this.validTargets = [];
+        this.selectedAction = null;
+        return;
+      }
+    }
+
+    // Seleccionar unidad propia
+    const clickedUnit = this.units.find(
+      (u) => u.owner === 1 && u.hp > 0 && u.col === col && u.row === row
+    );
+
+    if (clickedUnit && !clickedUnit.hasAttacked) {
+      this.selectedUnit = clickedUnit;
+      this.validTargets = this._getValidMoves(clickedUnit);
+      const attacks = this._getValidAttacks(clickedUnit);
+      this.validTargets = [...this.validTargets, ...attacks];
+    }
+  }
+
+  _gamepadBuyUnit() {
+    const unitTypes = this._getBuyableUnits();
+    this.buySelected = (this.buySelected + 1) % unitTypes.length;
+    this._playerBuyUnit(unitTypes[this.buySelected]);
   }
 
   _getBuyableUnits() {
@@ -526,6 +630,14 @@ export class TerritoryWar extends GameBase {
         height: btnH,
       },
     }));
+  }
+
+  _recordProgressionPlay(won) {
+    const duration = (Date.now() - this.startTime) / 1000;
+    ProgressionManager.recordGamePlay('territory-war', this.turnNumber, won, duration);
+    if (won) ProgressionManager.checkAchievement('territory-war', 'first-victory');
+    if (this.wins >= 5) ProgressionManager.checkAchievement('territory-war', 'war-veteran');
+    if (this.wins >= 10) ProgressionManager.checkAchievement('territory-war', 'territory-legend');
   }
 
   render(ctx) {

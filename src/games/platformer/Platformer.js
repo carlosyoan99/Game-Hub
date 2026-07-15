@@ -7,6 +7,7 @@ import { aabbIntersects, clamp } from '../../engine/CollisionUtils.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
+import { ProgressionManager } from '../../engine/ProgressionManager.js';
 
 const TILE_SIZE = 32;
 const GRAVITY = 1400; // px/s^2
@@ -146,9 +147,18 @@ export class Platformer extends GameBase {
   init(engine) {
     super.init(engine, 'platformer');
     this.bestTime = this.storage.get('bestTime', null);
-
     this.currentLevel = this.storage.get('savedLevel', 1);
     this._loadLevel();
+  }
+
+  _defaultBindings() {
+    return {
+      moveLeft:  ['ArrowLeft', 'KeyA', 'GamepadLeft', 'GamepadLStickLeft'],
+      moveRight: ['ArrowRight', 'KeyD', 'GamepadRight', 'GamepadLStickRight'],
+      jump:      ['Space', 'ArrowUp', 'KeyW', 'GamepadA', 'GamepadUp', 'GamepadLStickUp'],
+      next:      ['Space', 'GamepadA', 'GamepadStart'],
+      restart:   ['Space'],
+    };
   }
 
   handleResize(width, height) {
@@ -166,7 +176,7 @@ export class Platformer extends GameBase {
 
     // Spawn en la primera columna despejada
     let spawnY = TILE_SIZE * 16;
-    let spawnX = TILE_SIZE * 2;
+    const spawnX = TILE_SIZE * 2;
     for (let row = 0; row < rows.length; row++) {
       if (rows[row][2] === '.') { spawnY = row * TILE_SIZE; break; }
     }
@@ -201,6 +211,7 @@ export class Platformer extends GameBase {
     this.lives = 3;
     this.elapsed = 0;
     this.status = 'playing';
+    this.startTime = Date.now();
   }
 
   _nextLevel() {
@@ -211,22 +222,14 @@ export class Platformer extends GameBase {
 
   update(dt) {
     if (this.status === 'level-complete') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadStart')) this._nextLevel();
-
+      if (this.input.wasActionPressed('next') || this.input.mouse.clickedThisFrame) this._nextLevel();
       return;
     }
     if (this.handleRestartInput()) return;
-    if (this.status === 'level-complete') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadStart')) this._nextLevel();
-
-      return;
-    }
 
     this.elapsed += dt;
     this._updatePlayer(dt);
     this.camera.follow(this.player, this.tilemap.pixelWidth, this.tilemap.pixelHeight);
-
-    this.input.endFrame();
   }
 
   _updatePlayer(dt) {
@@ -288,6 +291,7 @@ export class Platformer extends GameBase {
     if (this.lives <= 0) {
       this.status = 'lost';
       AudioManager.sfx({ type: 'explosion', volume: 0.4 });
+      this._recordPlatformerPlay();
     } else {
       this.player.x = this.spawnPoint.x;
       this.player.y = this.spawnPoint.y;
@@ -301,6 +305,7 @@ export class Platformer extends GameBase {
       this.status = 'won';
       AudioManager.sfx({ type: 'powerup', volume: 0.6 });
       HapticManager.vibrate('powerup');
+      this._recordPlatformerPlay(true);
     } else {
       this.status = 'level-complete';
       AudioManager.sfx({ type: 'powerup', volume: 0.5 });
@@ -310,6 +315,14 @@ export class Platformer extends GameBase {
       this.bestTime = this.elapsed;
       this.storage.set('bestTime', this.bestTime);
     }
+  }
+
+  _recordPlatformerPlay(won = false) {
+    const duration = (Date.now() - this.startTime) / 1000;
+    ProgressionManager.recordGamePlay('platformer', Math.floor(this.elapsed), won, duration);
+    if (this.currentLevel >= 1) ProgressionManager.checkAchievement('platformer', 'first-level');
+    if (this.currentLevel >= 5) ProgressionManager.checkAchievement('platformer', 'platform-pro');
+    if (this.status === 'won' || won) ProgressionManager.checkAchievement('platformer', 'speed-runner');
   }
 
   render(ctx) {

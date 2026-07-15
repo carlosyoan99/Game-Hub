@@ -15,6 +15,7 @@ import { ParticleSystem } from '../../engine/ParticleSystem.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
+import { ProgressionManager } from '../../engine/ProgressionManager.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
 import { icon } from '../../engine/IconRenderer.js';
 import { GRAVITY, WIND_MAX, ARROW_RADIUS, MAX_TURNS, COLORS } from './constants.js';
@@ -35,6 +36,7 @@ export class Bowman extends GameBase {
   }
 
   _restart() {
+    this.startTime = Date.now();
     this.rng = new SeededRandom();
     this.player1HP = 100;
     this.player2HP = 100;
@@ -276,6 +278,7 @@ export class Bowman extends GameBase {
     if (this.player2HP <= 0) {
       this.player2HP = 0;
       this.status = 'won';
+      this._recordProgressionPlay(true);
       AudioManager.sfx({ type: 'powerup', volume: 0.5 });
       HapticManager.vibrate('powerup');
       if ((this.score || 0) > this.highscore) {
@@ -287,6 +290,7 @@ export class Bowman extends GameBase {
     if (this.player1HP <= 0) {
       this.player1HP = 0;
       this.status = 'lost';
+      this._recordProgressionPlay(false);
       AudioManager.sfx({ type: 'explosion', volume: 0.4 });
       HapticManager.vibrate('explosion');
       return;
@@ -352,6 +356,14 @@ export class Bowman extends GameBase {
     }
 
     this._setupTurn();
+  }
+
+  _recordProgressionPlay(won) {
+    const duration = (Date.now() - this.startTime) / 1000;
+    ProgressionManager.recordGamePlay('bowman', this.score || 0, won, duration);
+    if (this.score >= 1) ProgressionManager.checkAchievement('bowman', 'first-shot');
+    if (this.score >= 5) ProgressionManager.checkAchievement('bowman', 'sharpshooter');
+    if (this.score >= 50) ProgressionManager.checkAchievement('bowman', 'bowman-legend');
   }
 
   render(ctx) {

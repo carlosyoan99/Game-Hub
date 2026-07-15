@@ -6,6 +6,7 @@ import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
 import { renderOverlay } from '../../engine/GameUI.js';
+import { ProgressionManager } from '../../engine/ProgressionManager.js';
 
 // ── Constantes de juego ──────────────────────────────────────────────────
 
@@ -65,6 +66,7 @@ export class SpaceInvaders extends GameBase {
     this.highscore = this.storage.get('highscore', 0);
 
     this.particles = new ParticleSystem(80);
+    this.startTime = Date.now();
 
     this._restart();
   }
@@ -485,6 +487,11 @@ export class SpaceInvaders extends GameBase {
       this.highscore = this.score;
       this.storage.set('highscore', this.highscore);
     }
+    const duration = (Date.now() - this.startTime) / 1000;
+    ProgressionManager.recordGamePlay('space-invaders', this.score, false, duration);
+    if (this.score > 0) ProgressionManager.checkAchievement('space-invaders', 'first-blood');
+    if (this.wave >= 5) ProgressionManager.checkAchievement('space-invaders', 'wave-5');
+    if (this.score >= 10000) ProgressionManager.checkAchievement('space-invaders', 'invader-legend');
   }
 
   // ── Render ─────────────────────────────────────────────────────────────

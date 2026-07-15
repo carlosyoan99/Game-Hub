@@ -5,6 +5,7 @@ import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
 import { renderOverlay } from '../../engine/GameUI.js';
+import { ProgressionManager } from '../../engine/ProgressionManager.js';
 
 // ── Constantes ──────────────────────────────────────────────────────────
 
@@ -48,6 +49,7 @@ export class Galaga extends GameBase {
     this.highscore = this.storage.get('highscore', 0);
 
     this.particles = new ParticleSystem(80);
+    this.startTime = Date.now();
 
     this._restart();
   }
@@ -516,6 +518,11 @@ export class Galaga extends GameBase {
       this.highscore = this.score;
       this.storage.set('highscore', this.highscore);
     }
+    const duration = (Date.now() - this.startTime) / 1000;
+    ProgressionManager.recordGamePlay('galaga', this.score, false, duration);
+    if (this.score > 0) ProgressionManager.checkAchievement('galaga', 'first-hit');
+    if (this.wave >= 10) ProgressionManager.checkAchievement('galaga', 'galaga-wave-10');
+    if (this.score >= 50000) ProgressionManager.checkAchievement('galaga', 'galaga-master');
   }
 
   // ── Render ─────────────────────────────────────────────────────────────

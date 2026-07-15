@@ -1,7 +1,9 @@
 export default {
-  'snake.score':   { es: 'Puntos: {n}',           en: 'Score: {n}' },
-  'snake.speed':   { es: 'Vel: {n}',              en: 'Spd: {n}' },
-  'snake.length':  { es: 'Long: {n}',             en: 'Len: {n}' },
-  'snake.total':   { es: 'Total: {n}',            en: 'Total: {n}' },
-  'snake.gameOver':{ es: 'GAME OVER',              en: 'GAME OVER' },
+  'snake.score':     { es: 'Puntos: {n}',           en: 'Score: {n}' },
+  'snake.speed':     { es: 'Vel: {n}',              en: 'Spd: {n}' },
+  'snake.length':    { es: 'Long: {n}',             en: 'Len: {n}' },
+  'snake.total':     { es: 'Total: {n}',            en: 'Total: {n}' },
+  'snake.gameOver':  { es: 'GAME OVER',              en: 'GAME OVER' },
+  'snake.bossFruit': { es: '🍎 Fruta del jefe',     en: '🍎 Boss fruit' },
+  'snake.bossEaten': { es: '¡Fruta del jefe comida! +50', en: 'Boss fruit eaten! +50' },
 };

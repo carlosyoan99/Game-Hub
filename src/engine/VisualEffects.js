@@ -14,7 +14,7 @@
  *
  *   // Transición fade-out/in entre niveles
  *   this.transition = new Transition();
- *   this.transition.fadeOut(0.3, () => { /* cargar nivel */ this.transition.fadeIn(0.3); });
+ *   this.transition.fadeOut(0.3, () => { this.transition.fadeIn(0.3); });
  *
  *   // Scanlines overlay
  *   ctx.save();
@@ -307,7 +307,7 @@ export function createPowerupFlash(duration = 0.3, color = '#ffb454') {
       const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
       grad.addColorStop(0, `rgba(255,255,255,${alpha * 0.6})`);
       grad.addColorStop(0.5, `rgba(255,255,255,${alpha * 0.2})`);
-      grad.addColorStop(1, `rgba(255,255,255,0)`);
+      grad.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.fillStyle = grad;
       ctx.beginPath();
       ctx.arc(x, y, r, 0, Math.PI * 2);

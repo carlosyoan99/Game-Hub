@@ -273,6 +273,236 @@ export const GAME_REGISTRY = [
       },
     },
   },
+  // ── Nuevos: Super Mario-like ──────────────────────────────────────────────
+
+  {
+    id: 'mario-like',
+    title: 'Super Mario Bros',
+    title_i18n: 'registry.mario-like.title',
+    tagline: 'Scroll lateral, power-ups y enemigos clásicos',
+    tagline_i18n: 'registry.mario-like.tagline',
+    level: 1,
+    load: () => import('./mario-like/index.js').then((m) => m.MarioLike),
+    test: {
+      frames: 350, keys: [
+        { code: 'ArrowRight', atFrame: 5 }, { code: 'Space', atFrame: 30 },
+        { code: 'ArrowRight', atFrame: 80 }, { code: 'Space', atFrame: 100 },
+      ],
+      assert: (g) => {
+        if (g.player === undefined) throw new Error('Missing player');
+        if (g.score === undefined) throw new Error('Missing score');
+      },
+    },
+  },
+
+  // ── Nuevos: Contra-like (Run & Gun) ────────────────────────────────────────
+
+  {
+    id: 'contra-like',
+    title: 'Contra',
+    title_i18n: 'registry.contra-like.title',
+    tagline: 'Run & gun con scroll lateral, power-ups y jefes',
+    tagline_i18n: 'registry.contra-like.tagline',
+    level: 3,
+    load: () => import('./contra-like/index.js').then((m) => m.ContraLike),
+    test: {
+      frames: 350, keys: [
+        { code: 'ArrowRight', atFrame: 5 }, { code: 'KeyJ', atFrame: 10 },
+        { code: 'ArrowRight', atFrame: 60 }, { code: 'Space', atFrame: 80 },
+        { code: 'ArrowRight', atFrame: 120 }, { code: 'KeyJ', atFrame: 150 },
+      ],
+      assert: (g) => {
+        if (g.player === undefined) throw new Error('Missing player');
+        if (g.score === undefined) throw new Error('Missing score');
+      },
+    },
+  },
+
+  // ── Nuevos: Space Harrier-like (Pseudo-3D Shooter) ───────────────────────────
+
+  {
+    id: 'space-harrier',
+    title: 'Space Harrier',
+    title_i18n: 'registry.space-harrier.title',
+    tagline: 'Pseudo-3D shooter sobre raíles con enemigos y jefes',
+    tagline_i18n: 'registry.space-harrier.tagline',
+    level: 4,
+    load: () => import('./space-harrier/index.js').then((m) => m.SpaceHarrier),
+    test: {
+      frames: 350, keys: [
+        { code: 'ArrowUp', atFrame: 5 }, { code: 'KeyJ', atFrame: 10 },
+        { code: 'ArrowLeft', atFrame: 50 }, { code: 'KeyJ', atFrame: 60 },
+        { code: 'ArrowRight', atFrame: 120 }, { code: 'KeyJ', atFrame: 150 },
+        { code: 'ArrowDown', atFrame: 200 }, { code: 'KeyJ', atFrame: 220 },
+      ],
+      assert: (g) => {
+        if (g.player === undefined) throw new Error('Missing player');
+        if (g.enemies === undefined) throw new Error('Missing enemies');
+      },
+    },
+  },
+
+  // ── Nuevos: Metroid-like (Exploración no lineal) ────────────────────────────
+
+  {
+    id: 'metroid-like',
+    title: 'Metroid',
+    title_i18n: 'registry.metroid-like.title',
+    tagline: 'Exploración no lineal con power-ups, mapa interconectado y jefe final',
+    tagline_i18n: 'registry.metroid-like.tagline',
+    level: 5,
+    load: () => import('./metroid-like/index.js').then((m) => m.MetroidLike),
+    test: {
+      frames: 350, keys: [
+        { code: 'ArrowRight', atFrame: 10 }, { code: 'Space', atFrame: 30 },
+        { code: 'ArrowRight', atFrame: 60 }, { code: 'ArrowRight', atFrame: 100 },
+        { code: 'Space', atFrame: 150 }, { code: 'ArrowRight', atFrame: 200 },
+      ],
+      assert: (g) => {
+        if (g.player === undefined) throw new Error('Missing player');
+        if (g.tilemap === undefined) throw new Error('Missing tilemap');
+      },
+    },
+  },
+
+  // ── Nuevos: OutRun-like (Carreras top-down) ─────────────────────────────────
+
+  {
+    id: 'outrun-like',
+    title: 'OutRun',
+    title_i18n: 'registry.outrun-like.title',
+    tagline: 'Carreras top-down con tráfico, derrapes y checkpoints',
+    tagline_i18n: 'registry.outrun-like.tagline',
+    level: 4,
+    load: () => import('./outrun-like/index.js').then((m) => m.OutRunLike),
+    test: {
+      frames: 350, keys: [
+        { code: 'ArrowUp', atFrame: 5 }, { code: 'ArrowRight', atFrame: 30 },
+        { code: 'ArrowUp', atFrame: 60 }, { code: 'ArrowLeft', atFrame: 120 },
+        { code: 'ArrowUp', atFrame: 200 },
+      ],
+      assert: (g) => {
+        if (g.player === undefined) throw new Error('Missing player');
+        if (g.traffic === undefined) throw new Error('Missing traffic');
+      },
+    },
+  },
+
+  // ── Nuevos: Street Fighter-like (Pelea 1v1) ─────────────────────────────────
+
+  {
+    id: 'street-fighter',
+    title: 'Street Fighter',
+    title_i18n: 'registry.street-fighter.title',
+    tagline: 'Pelea 1v1 local y vs IA con 4 personajes, supers y rounds',
+    tagline_i18n: 'registry.street-fighter.tagline',
+    level: 5,
+    load: () => import('./street-fighter/index.js').then((m) => m.StreetFighter),
+    test: {
+      frames: 350, keys: [
+        { code: 'Space', atFrame: 10 }, { code: 'KeyJ', atFrame: 50 },
+        { code: 'KeyD', atFrame: 80 }, { code: 'KeyK', atFrame: 120 },
+      ],
+      assert: (g) => {
+        if (g.p1 === undefined) throw new Error('Missing p1');
+        if (g.p2 === undefined) throw new Error('Missing p2');
+      },
+    },
+  },
+
+  // ── Nuevos: Golden Axe-like (Beat'em Up) ───────────────────────────────────
+
+  {
+    id: 'golden-axe',
+    title: 'Golden Axe',
+    title_i18n: 'registry.golden-axe.title',
+    tagline: 'Beat\'em up con 3 personajes, magia, combos y jefes',
+    tagline_i18n: 'registry.golden-axe.tagline',
+    level: 4,
+    load: () => import('./golden-axe/index.js').then((m) => m.GoldenAxe),
+    test: {
+      frames: 350, keys: [
+        { code: 'Space', atFrame: 10 }, { code: 'ArrowRight', atFrame: 30 },
+        { code: 'KeyJ', atFrame: 50 }, { code: 'ArrowRight', atFrame: 100 },
+        { code: 'KeyJ', atFrame: 120 }, { code: 'KeyL', atFrame: 200 },
+      ],
+      assert: (g) => {
+        if (g.player === undefined) throw new Error('Missing player');
+        if (g.enemies === undefined) throw new Error('Missing enemies');
+      },
+    },
+  },
+
+  // ── Nuevos: Guitar Hero-like (Ritmo) ───────────────────────────────────
+
+  {
+    id: 'guitar-hero',
+    title: 'Guitar Hero',
+    title_i18n: 'registry.guitar-hero.title',
+    tagline: 'Juego de ritmo con 5 cuerdas, combo y canciones procedurales',
+    tagline_i18n: 'registry.guitar-hero.tagline',
+    level: 4,
+    load: () => import('./guitar-hero/index.js').then((m) => m.GuitarHero),
+    test: {
+      frames: 350,
+      keys: [
+        { code: 'Space', atFrame: 10 }, { code: 'KeyA', atFrame: 12 },
+        { code: 'KeyS', atFrame: 14 }, { code: 'KeyD', atFrame: 16 },
+        { code: 'KeyF', atFrame: 18 }, { code: 'Space', atFrame: 20 },
+        { code: 'KeyA', atFrame: 22 }, { code: 'KeyS', atFrame: 24 },
+        { code: 'KeyD', atFrame: 26 }, { code: 'KeyF', atFrame: 28 },
+      ],
+      assert: (g) => {
+        if (g.song === undefined) throw new Error('Missing song');
+        if (g.score === undefined) throw new Error('Missing score');
+      },
+    },
+  },
+
+  // ── Nuevos: Bejeweled-like (Match-3 Puzzle) ────────────────────────────
+
+  {
+    id: 'bejeweled',
+    title: 'Bejeweled',
+    title_i18n: 'registry.bejeweled.title',
+    tagline: 'Match-3 con gemas, cascadas y modos de juego',
+    tagline_i18n: 'registry.bejeweled.tagline',
+    level: 3,
+    load: () => import('./bejeweled/index.js').then((m) => m.Bejeweled),
+    test: {
+      frames: 350, clicks: [
+        { atFrame: 20, x: 450, y: 250 },
+      ],
+      assert: (g) => {
+        if (g.grid === undefined) throw new Error('Missing grid');
+        if (g.score === undefined) throw new Error('Missing score');
+      },
+    },
+  },
+
+  // ── Nuevos: Lemonade Stand-like (Tycoon) ──────────────────────────────
+
+  {
+    id: 'lemonade-stand',
+    title: 'Lemonade Stand',
+    title_i18n: 'registry.lemonade-stand.title',
+    tagline: 'Tycoon de limonada con economía, clima y receta',
+    tagline_i18n: 'registry.lemonade-stand.tagline',
+    level: 3,
+    load: () => import('./lemonade-stand/index.js').then((m) => m.LemonadeStand),
+    test: {
+      frames: 350, keys: [
+        { code: 'KeyS', atFrame: 20 },
+        { code: 'Space', atFrame: 60 },
+        { code: 'Space', atFrame: 120 },
+      ],
+      assert: (g) => {
+        if (g.money === undefined) throw new Error('Missing money');
+        if (g.day === undefined) throw new Error('Missing day');
+      },
+    },
+  },
+
   // ── Juegos retro/arcade ───────────────────────────────────────────────────
 
   {

@@ -14,34 +14,50 @@
       <span id="current-title" class="hud__title"></span>
       <button id="back-button" class="hud__back" data-i18n="menu.back">← Menú</button>
     </div>
-    <button id="settings-btn" class="settings-btn" aria-label="Configuración"><img src="assets/icons/gear.svg" alt="" class="icon" width="18" height="18" /></button>
+    <div class="topbar__actions">
+      <button id="profile-btn" class="profile-btn" data-i18n="progression.profile" aria-label="Perfil">👤</button>
+      <button id="settings-btn" class="settings-btn" aria-label="Configuración"><img src="assets/icons/gear.svg" alt="" class="icon" width="18" height="18" /></button>
+    </div>
   </header>
 
-  <main class="stage">
-    <section id="menu" class="menu">
-      <div class="menu__toolbar">
-        <p class="menu__eyebrow" data-i18n="menu.eyebrow">Selecciona un juego</p>
-        <div class="menu__search-wrap">
-          <img src="assets/icons/search.svg" alt="" class="icon icon--search" width="16" height="16" />
-          <input id="game-search" class="menu__search" type="text" placeholder="Buscar juegos..." autocomplete="off" data-i18n-placeholder="menu.searchPlaceholder" />
-        </div>
-      </div>
-      <div id="game-grid" class="game-grid"></div>
-      <p id="search-empty" class="menu__empty" data-i18n="menu.empty" hidden>No se encontraron juegos</p>
-    </section>
+  <div class="crt-frame" id="crt-frame">
+    <div class="crt-frame__chassis">
+      <div class="crt-frame__screen" id="crt-screen">
+        <!-- Scanlines overlay (CSS) -->
+        <div class="crt-scanlines" id="crt-scanlines"></div>
+        <!-- Vignette overlay (SVG) -->
+        <div class="crt-vignette" id="crt-vignette"></div>
 
-    <div id="game-canvas-wrapper" hidden>
-      <div id="loading-indicator" class="loading-indicator" hidden>
-        <div class="loading-bar">
-          <div class="loading-bar__track">
-            <div class="loading-bar__fill"></div>
+        <main class="stage">
+          <section id="menu" class="menu">
+            <div class="menu__toolbar">
+              <p class="menu__eyebrow" data-i18n="menu.eyebrow">Selecciona un juego</p>
+              <div class="menu__search-wrap">
+                <img src="assets/icons/search.svg" alt="" class="icon icon--search" width="16" height="16" />
+                <input id="game-search" class="menu__search" type="text" placeholder="Buscar juegos..." autocomplete="off" data-i18n-placeholder="menu.searchPlaceholder" />
+              </div>
+            </div>
+            <div id="game-grid" class="game-grid"></div>
+            <p id="search-empty" class="menu__empty" data-i18n="menu.empty" hidden>No se encontraron juegos</p>
+          </section>
+
+          <div id="game-canvas-wrapper" hidden>
+            <div id="loading-indicator" class="loading-indicator" hidden>
+              <div class="loading-bar">
+                <div class="loading-bar__track">
+                  <div class="loading-bar__fill"></div>
+                </div>
+                <span class="loading-bar__label">Cargando...</span>
+              </div>
+            </div>
+            <canvas id="game-canvas" width="900" height="540"></canvas>
           </div>
-          <span class="loading-bar__label">Cargando...</span>
-        </div>
+        </main>
       </div>
-      <canvas id="game-canvas" width="900" height="540"></canvas>
     </div>
-  </main>
+    <!-- Fullscreen button -->
+    <button id="fullscreen-btn" class="crt-fullscreen-btn" hidden data-i18n="fullscreen.enter">⛶</button>
+  </div>
 
   <!-- ─── Settings Modal ──────────────────────────────────────────── -->
   <div id="settings-overlay" class="settings-overlay" hidden>
@@ -116,6 +132,32 @@
           </div>
         </div>
 
+        <!-- Proporción + CRT -->
+        <div class="settings-section">
+          <p class="settings-section__label" data-i18n="settings.appearance">PANTALLA</p>
+
+          <div class="settings-row">
+            <span class="settings-row__label" data-i18n="settings.aspectRatio">Proporción</span>
+            <div class="settings-row__widget">
+              <button id="settings-aspect-ratio" class="settings-toggle">
+                <span class="settings-toggle__opt" data-value="4:3">4:3</span>
+                <span class="settings-toggle__opt" data-value="5:3">5:3</span>
+                <span class="settings-toggle__opt" data-value="16:9">16:9</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="settings-row">
+            <span class="settings-row__label" data-i18n="settings.crtEffect">Efecto CRT</span>
+            <div class="settings-row__widget">
+              <button id="settings-crt" class="settings-toggle">
+                <span class="settings-toggle__opt" data-value="true">ON</span>
+                <span class="settings-toggle__opt" data-value="false">OFF</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Háptico -->
         <div class="settings-section">
           <p class="settings-section__label" data-i18n="settings.haptics">HÁPTICO</p>
@@ -128,6 +170,118 @@
                 <span class="settings-toggle__opt" data-value="false"><img src="assets/icons/vibrate-off.svg" alt="" class="icon toggle-icon" width="14" height="14" /> OFF</span>
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Progression Modal ──────────────────────────────────────── -->
+  <div id="progression-overlay" class="progression-overlay" hidden>
+    <div class="progression-modal" role="dialog" aria-label="Perfil">
+      <div class="progression-header">
+        <h2 class="progression-title" data-i18n="progression.profile">PERFIL</h2>
+        <button id="progression-close" class="progression-close" data-i18n="settings.close"><img src="assets/icons/close.svg" alt="" class="icon" width="16" height="16" /></button>
+      </div>
+
+      <div class="progression-tabs">
+        <button class="progression-tab progression-tab--active" data-tab="profile" data-i18n="progression.profile">PERFIL</button>
+        <button class="progression-tab" data-tab="achievements" data-i18n="progression.achievements">LOGROS</button>
+        <button class="progression-tab" data-tab="stats" data-i18n="progression.stats">ESTADÍSTICAS</button>
+        <button class="progression-tab" data-tab="unlockables" data-i18n="progression.unlockables">DESBLOQUEABLES</button>
+        <button class="progression-tab" data-tab="highscores" data-i18n="progression.highscores">RÉCORDS</button>
+      </div>
+
+      <div class="progression-body" id="progression-body">
+        <!-- ── Tab: Perfil ────────────────────────────────────────── -->
+        <div id="prog-panel-profile" class="progression-panel progression-panel--active">
+          <div class="prog-profile">
+            <div class="prog-profile__avatar">👤</div>
+            <div class="prog-profile__info">
+              <label class="prog-profile__name-label" data-i18n="progression.profile">Nombre</label>
+              <input id="prog-name-input" class="prog-profile__name-input" type="text" maxlength="20" value="Jugador" />
+            </div>
+          </div>
+
+          <div class="prog-level-section">
+            <div class="prog-level-section__header">
+              <span id="prog-level-number" class="prog-level-section__level">Nivel 1</span>
+              <span id="prog-level-title" class="prog-level-section__title">Novato</span>
+            </div>
+            <div class="prog-xp-bar">
+              <div class="prog-xp-bar__track">
+                <div id="prog-xp-fill" class="prog-xp-bar__fill" style="width: 0%"></div>
+              </div>
+              <span id="prog-xp-text" class="prog-xp-bar__label">XP: 0 / 0</span>
+            </div>
+          </div>
+
+          <div class="prog-stats-row">
+            <div class="prog-stat-card">
+              <span class="prog-stat-card__value" id="prog-stat-played">0</span>
+              <span class="prog-stat-card__label" data-i18n="progression.totalPlayed">Partidas</span>
+            </div>
+            <div class="prog-stat-card">
+              <span class="prog-stat-card__value" id="prog-stat-achievements">0 / 0</span>
+              <span class="prog-stat-card__label" data-i18n="progression.totalAch">Logros</span>
+            </div>
+            <div class="prog-stat-card">
+              <span class="prog-stat-card__value" id="prog-stat-time">0s</span>
+              <span class="prog-stat-card__label" data-i18n="progression.totalTime">Tiempo</span>
+            </div>
+          </div>
+
+          <button id="prog-reset-btn" class="prog-reset-btn" data-i18n="progression.reset">Resetear progreso</button>
+        </div>
+
+        <!-- ── Tab: Logros ────────────────────────────────────────── -->
+        <div id="prog-panel-achievements" class="progression-panel">
+          <div class="prog-ach-filter">
+            <label class="prog-ach-filter__label" data-i18n="menu.eyebrow">Juego:</label>
+            <select id="prog-ach-game-select" class="prog-ach-filter__select"></select>
+          </div>
+          <div id="prog-ach-grid" class="prog-ach-grid"></div>
+        </div>
+
+        <!-- ── Tab: Estadísticas ──────────────────────────────────── -->
+        <div id="prog-panel-stats" class="progression-panel">
+          <div class="prog-stats-table-wrap">
+            <table id="prog-stats-table" class="prog-stats-table">
+              <thead>
+                <tr>
+                  <th data-i18n="menu.eyebrow">Juego</th>
+                  <th data-i18n="progression.plays">Jugado</th>
+                  <th data-i18n="progression.wins">Victorias</th>
+                  <th data-i18n="progression.bestScore">Mejor</th>
+                  <th data-i18n="progression.totalTime">Tiempo</th>
+                </tr>
+              </thead>
+              <tbody id="prog-stats-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── Tab: Desbloqueables ────────────────────────────────── -->
+        <div id="prog-panel-unlockables" class="progression-panel">
+          <p class="prog-unlock-desc" data-i18n="progression.totalAch">Items desbloqueados al cumplir logros o acumular XP.</p>
+          <div id="prog-unlock-grid" class="prog-unlock-grid"></div>
+        </div>
+
+        <!-- ── Tab: High Scores ────────────────────────────────────── -->
+        <div id="prog-panel-highscores" class="progression-panel">
+          <div class="prog-hs-table-wrap">
+            <table id="prog-hs-table" class="prog-hs-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th data-i18n="menu.eyebrow">Juego</th>
+                  <th data-i18n="progression.bestScore">Mejor</th>
+                  <th data-i18n="progression.plays">Jugado</th>
+                  <th data-i18n="progression.totalTime">Tiempo</th>
+                </tr>
+              </thead>
+              <tbody id="prog-hs-tbody"></tbody>
+            </table>
           </div>
         </div>
       </div>

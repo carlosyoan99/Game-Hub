@@ -6,6 +6,7 @@ import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
 import { renderOverlay } from '../../engine/GameUI.js';
+import { ProgressionManager } from '../../engine/ProgressionManager.js';
 
 // ── Constantes ──────────────────────────────────────────────────────────
 
@@ -39,6 +40,7 @@ export class DonkeyKong extends GameBase {
     this.highscore = this.storage.get('highscore', 0);
 
     this.particles = new ParticleSystem(60);
+    this.startTime = Date.now();
 
     this._restart();
   }
@@ -435,6 +437,11 @@ export class DonkeyKong extends GameBase {
       this.highscore = this.score;
       this.storage.set('highscore', this.highscore);
     }
+    const duration = (Date.now() - this.startTime) / 1000;
+    ProgressionManager.recordGamePlay('donkey-kong', this.score, false, duration);
+    if (this.level >= 1) ProgressionManager.checkAchievement('donkey-kong', 'first-platform');
+    if (this.level >= 5) ProgressionManager.checkAchievement('donkey-kong', 'barrel-dodger');
+    if (this.level >= 8) ProgressionManager.checkAchievement('donkey-kong', 'kong-conqueror');
   }
 
   // ── Render ─────────────────────────────────────────────────────────────

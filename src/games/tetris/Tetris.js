@@ -5,6 +5,7 @@ import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
 import { renderOverlay } from '../../engine/GameUI.js';
+import { ProgressionManager } from '../../engine/ProgressionManager.js';
 
 // ── Constantes ──────────────────────────────────────────────────────────
 
@@ -85,8 +86,21 @@ export class Tetris extends GameBase {
     this.highscore = this.storage.get('highscore', 0);
 
     this.particles = new ParticleSystem(100);
+    this.startTime = Date.now();
 
     this._restart();
+  }
+
+  _defaultBindings() {
+    return {
+      moveLeft:  ['ArrowLeft', 'KeyA', 'GamepadLeft', 'GamepadLStickLeft'],
+      moveRight: ['ArrowRight', 'KeyD', 'GamepadRight', 'GamepadLStickRight'],
+      rotate:    ['ArrowUp', 'KeyW', 'GamepadUp', 'GamepadRStickUp'],
+      hardDrop:  ['Space', 'GamepadA', 'GamepadB'],
+      softDrop:  ['ArrowDown', 'KeyS', 'GamepadDown', 'GamepadLStickDown'],
+      pause:     ['KeyP', 'Escape'],
+      restart:   ['Space', 'GamepadStart', 'GamepadA'],
+    };
   }
 
   _restart() {
@@ -226,7 +240,7 @@ export class Tetris extends GameBase {
 
   update(dt) {
     if (this.status !== 'playing') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
+      if (this.input.wasPressed('Space') || this.input.wasActionPressed('restart') || this.input.mouse.clickedThisFrame) {
         this._restart();
       }
 
@@ -234,7 +248,7 @@ export class Tetris extends GameBase {
     }
 
     // Toggle pausa
-    if (this.input.wasPressed('KeyP') || this.input.wasPressed('Escape')) {
+    if (this.input.wasActionPressed('pause')) {
       this.paused = !this.paused;
       if (this.paused) AudioManager.sfx({ type: 'select', volume: 0.2 });
     }
@@ -245,14 +259,14 @@ export class Tetris extends GameBase {
     }
 
     // Input horizontal
-    if (this.input.wasPressed('ArrowLeft') || this.input.wasPressed('KeyA') || this.input.wasPressed('GamepadLeft') || this.input.wasPressed('GamepadLStickLeft')) {
+    if (this.input.wasActionPressed('moveLeft')) {
       if (!this._collides(this.piece.x - 1, this.piece.y, this._getShape())) {
         this.piece.x--;
         this._updateGhost();
         AudioManager.sfx({ type: 'select', volume: 0.1 });
       }
     }
-    if (this.input.wasPressed('ArrowRight') || this.input.wasPressed('KeyD') || this.input.wasPressed('GamepadRight') || this.input.wasPressed('GamepadLStickRight')) {
+    if (this.input.wasActionPressed('moveRight')) {
       if (!this._collides(this.piece.x + 1, this.piece.y, this._getShape())) {
         this.piece.x++;
         this._updateGhost();
@@ -261,7 +275,7 @@ export class Tetris extends GameBase {
     }
 
     // Rotación
-    if (this.input.wasPressed('ArrowUp') || this.input.wasPressed('KeyW') || this.input.wasPressed('GamepadUp') || this.input.wasPressed('GamepadRStickUp')) {
+    if (this.input.wasActionPressed('rotate')) {
       const newShape = (this.piece.shape + 1) % 4;
       if (!this._collides(this.piece.x, this.piece.y, SHAPES[this.piece.name][newShape])) {
         this.piece.shape = newShape;
@@ -282,7 +296,7 @@ export class Tetris extends GameBase {
     }
 
     // Hard drop
-    if (this.input.wasPressed('Space') || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadB')) {
+    if (this.input.wasActionPressed('hardDrop')) {
       this.score += (this.ghostY - this.piece.y) * 2;
       this.piece.y = this.ghostY;
       this._lockPiece();
@@ -291,7 +305,7 @@ export class Tetris extends GameBase {
     }
 
     // Soft drop
-    this.softDropping = this.input.isDown('ArrowDown') || this.input.isDown('KeyS') || this.input.isDown('GamepadDown') || this.input.isDown('GamepadLStickDown');
+    this.softDropping = this.input.isActionDown('softDrop');
 
     // Caída
     const interval = this.softDropping ? this.fallInterval * 0.05 : this.fallInterval;
@@ -324,6 +338,11 @@ export class Tetris extends GameBase {
       this.highscore = this.score;
       this.storage.set('highscore', this.highscore);
     }
+    const duration = (Date.now() - this.startTime) / 1000;
+    ProgressionManager.recordGamePlay('tetris', this.score, false, duration);
+    if (this.linesCleared >= 1) ProgressionManager.checkAchievement('tetris', 'first-line');
+    if (this.linesCleared >= 50) ProgressionManager.checkAchievement('tetris', 'line-clear-50');
+    if (this.linesCleared >= 100) ProgressionManager.checkAchievement('tetris', 'tetris-master');
   }
 
   // ── Render ─────────────────────────────────────────────────────────────
