@@ -1,0 +1,18 @@
+export default {
+  'goldenaxe.score':    { es: 'Puntos: {n}',              en: 'Score: {n}' },
+  'goldenaxe.hp':       { es: 'HP: {n}/{m}',              en: 'HP: {n}/{m}' },
+  'goldenaxe.mp':       { es: 'Magia: {n}',               en: 'Magic: {n}' },
+  'goldenaxe.lives':    { es: 'Vidas: {n}',               en: 'Lives: {n}' },
+  'goldenaxe.stage':    { es: 'Etapa {n}',                en: 'Stage {n}' },
+  'goldenaxe.potions':  { es: 'Pociones: {n}',            en: 'Potions: {n}' },
+  'goldenaxe.boss':     { es: '¡JEFE!',                   en: 'BOSS!' },
+  'goldenaxe.gameOver': { es: 'GAME OVER',                 en: 'GAME OVER' },
+  'goldenaxe.victory':  { es: '¡VICTORIA!',                en: 'VICTORY!' },
+  'goldenaxe.continue': { es: 'Click o Espacio para continuar', en: 'Click or Space to continue' },
+  'goldenaxe.magic':    { es: 'MAGIA',                     en: 'MAGIC' },
+  'goldenaxe.attack':   { es: 'ATAQUE',                    en: 'ATTACK' },
+  'goldenaxe.combo':    { es: 'Combo x{n}!',               en: 'Combo x{n}!' },
+  'goldenaxe.select':   { es: 'SELECCIONA TU GUERRERO',    en: 'SELECT YOUR WARRIOR' },
+  'goldenaxe.p1select': { es: 'P1: {name}',               en: 'P1: {name}' },
+  'goldenaxe.p2select': { es: 'P2: {name}',               en: 'P2: {name}' },
+};
