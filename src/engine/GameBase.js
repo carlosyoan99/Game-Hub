@@ -47,10 +47,33 @@ export class GameBase {
   }
 
   /**
-   * Libera recursos. Vacío por defecto porque el engine gestiona
-   * InputManager, AudioManager, etc. a nivel global.
-   * Las subclases pueden sobrescribirlo si necesitan limpieza extra.
+   * Mapa por defecto de acciones → teclas para action mapping.
+   * Cada juego puede sobrescribir este método para definir sus
+   * propios bindings. GameBase.init() lo aplica automáticamente
+   * si el juego tiene un storageKey.
+   *
+   * Las acciones comunes son:
+   *   moveLeft, moveRight, moveUp, moveDown
+   *   action  (disparar/saltar/confirmar — botón principal)
+   *   action2 (acción secundaria)
+   *   pause   (pausar menú)
+   *   back    (volver/cancelar)
+   *
+   * @returns {Object<string, string[]>}
    */
+  _defaultBindings() {
+    return {
+      moveLeft:  ['ArrowLeft', 'KeyA', 'GamepadLStickLeft', 'GamepadLeft'],
+      moveRight: ['ArrowRight', 'KeyD', 'GamepadLStickRight', 'GamepadRight'],
+      moveUp:    ['ArrowUp', 'KeyW', 'GamepadLStickUp', 'GamepadUp'],
+      moveDown:  ['ArrowDown', 'KeyS', 'GamepadLStickDown', 'GamepadDown'],
+      action:    ['Space', 'KeyJ', 'GamepadA'],
+      action2:   ['KeyK', 'GamepadX'],
+      pause:     ['Escape', 'KeyP', 'GamepadStart'],
+      back:      ['Escape', 'GamepadB'],
+    };
+  }
+
   /**
    * Actualiza las dimensiones del canvas al redimensionar la ventana.
    * Las subclases con lógica adicional deben sobrescribirlo y llamar

@@ -161,7 +161,6 @@ export class GoldenAxe extends GameBase {
     this.boss = null;
     this.bossBullets = [];
     this.score = 0;
-    this.status = 'playing';
     this.phase = 'playing';
     this.scrollX = 0;
     this.stageCleared = false;
@@ -1006,12 +1005,10 @@ export class GoldenAxe extends GameBase {
     this.selectedChar = 0;
     this.score = 0;
     this.stageScore = 0;
-    this.status = 'playing';
   }
 
   _endGame(won) {
     this.phase = won ? 'won' : 'lost';
-    this.status = won ? 'won' : 'lost';
     if (this.score > this.highscore) {
       this.highscore = this.score;
       this.storage.set('highscore', this.highscore);

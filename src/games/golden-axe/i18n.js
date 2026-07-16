@@ -15,4 +15,16 @@ export default {
   'goldenaxe.select':   { es: 'SELECCIONA TU GUERRERO',    en: 'SELECT YOUR WARRIOR' },
   'goldenaxe.p1select': { es: 'P1: {name}',               en: 'P1: {name}' },
   'goldenaxe.p2select': { es: 'P2: {name}',               en: 'P2: {name}' },
+
+  // ── Registro y Logros ──────────────────────────────────────────────────
+  'registry.golden-axe.title':    { es: 'Golden Axe',                         en: 'Golden Axe' },
+  'registry.golden-axe.tagline':  { es: "Beat'em up con 3 personajes, magia, combos y jefes", en: 'Beat\'em up with 3 characters, magic, combos and bosses' },
+  'prog.golden-axe.first-blood':             { es: 'Primer combate',                  en: 'First combat' },
+  'prog.golden-axe.first-blood.desc':        { es: 'Gana tu primer combate',          en: 'Win your first fight' },
+  'prog.golden-axe.stage-master':            { es: 'Señor de las etapas',             en: 'Stage master' },
+  'prog.golden-axe.stage-master.desc':       { es: 'Alcanza la etapa 2',              en: 'Reach stage 2' },
+  'prog.golden-axe.game-cleared':            { es: 'Héroe de batalla',               en: 'Battle hero' },
+  'prog.golden-axe.game-cleared.desc':       { es: 'Completa las 3 etapas',           en: 'Complete all 3 stages' },
+  'prog.golden-axe.no-continue':             { es: 'Sin continuaciones',              en: 'No continues' },
+  'prog.golden-axe.no-continue.desc':        { es: 'Completa el juego con 2+ vidas',  en: 'Finish the game with 2+ lives' },
 };

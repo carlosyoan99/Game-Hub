@@ -3,6 +3,10 @@
  * Motor de partículas reutilizable para efectos visuales (impactos,
  * explosiones, estelas) en juegos de Canvas 2D.
  *
+ * Internamente usa un pool de objetos pre-asignados para evitar
+ * presión de GC: las partículas se reusan, y las muertas se
+ * compactan con swap-remove en cada update.
+ *
  * Uso básico:
  *   this.particles = new ParticleSystem(150);
  *   this.particles.emit(x, y, '#ffb454', 12, 80, { vyOffset: -30 });
@@ -15,10 +19,30 @@ import { SettingsManager } from './SettingsManager.js';
 import { SeededRandom } from './SeededRandom.js';
 
 export class ParticleSystem {
-  constructor(gravity = 150) {
-    this.particles = [];
+  /**
+   * @param {number} gravity       Aceleración vertical (px/s²)
+   * @param {number} [maxParticles=300]  Capacidad máxima del pool
+   */
+  constructor(gravity = 150, maxParticles = 300) {
     this._gravity = gravity;
     this._rng = new SeededRandom();
+    this._maxParticles = maxParticles;
+    this._activeCount = 0;
+
+    // Pre-asignar pool de objetos reutilizables
+    this._pool = new Array(maxParticles);
+    for (let i = 0; i < maxParticles; i++) {
+      this._pool[i] = { x: 0, y: 0, vx: 0, vy: 0, life: 0, maxLife: 0, radius: 0, color: '' };
+    }
+  }
+
+  /**
+   * Devuelve una copia de las partículas activas (para lectura).
+   * Compatibilidad con código legacy que itera `this.particles`.
+   * @returns {Array<{x:number,y:number,vx:number,vy:number,life:number,maxLife:number,radius:number,color:string}>}
+   */
+  get particles() {
+    return this._pool.slice(0, this._activeCount);
   }
 
   /**
@@ -49,19 +73,24 @@ export class ParticleSystem {
     } = options;
 
     for (let i = 0; i < count; i++) {
+      if (this._activeCount >= this._maxParticles) break;
+
       const angle = this._rng.next() * Math.PI * 2;
       const spd = speed * (speedMin + this._rng.next() * (speedMax - speedMin));
       const life = lifeMin + this._rng.next() * (lifeMax - lifeMin);
-      this.particles.push({
-        x,
-        y,
-        vx: Math.cos(angle) * spd,
-        vy: Math.sin(angle) * spd + vyOffset,
-        life,
-        maxLife: life,
-        radius: radiusMin + this._rng.next() * (radiusMax - radiusMin),
-        color,
-      });
+
+      // Reutilizar slot del pool en lugar de crear un nuevo objeto
+      const p = this._pool[this._activeCount];
+      p.x = x;
+      p.y = y;
+      p.vx = Math.cos(angle) * spd;
+      p.vy = Math.sin(angle) * spd + vyOffset;
+      p.life = life;
+      p.maxLife = life;
+      p.radius = radiusMin + this._rng.next() * (radiusMax - radiusMin);
+      p.color = color;
+
+      this._activeCount++;
     }
   }
 
@@ -90,15 +119,26 @@ export class ParticleSystem {
     });
   }
 
-  /** Avanza todas las partículas un frame. */
+  /**
+   * Avanza todas las partículas un frame y compacta las muertas
+   * con swap-remove (O(1) por muerte, sin asignación de arrays).
+   */
   update(dt) {
-    for (const p of this.particles) {
+    for (let i = this._activeCount - 1; i >= 0; i--) {
+      const p = this._pool[i];
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       p.vy += this._gravity * dt;
       p.life -= dt;
+
+      if (p.life <= 0) {
+        // Swap-remove: mover la última activa a esta posición
+        this._activeCount--;
+        const last = this._pool[this._activeCount];
+        this._pool[i] = last;
+        this._pool[this._activeCount] = p;
+      }
     }
-    this.particles = this.particles.filter((p) => p.life > 0);
   }
 
   /**
@@ -110,7 +150,8 @@ export class ParticleSystem {
   render(ctx) {
     if (SettingsManager.reducedMotion) return;
     ctx.save();
-    for (const p of this.particles) {
+    for (let i = 0; i < this._activeCount; i++) {
+      const p = this._pool[i];
       const alpha = p.life / p.maxLife;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.radius * alpha, 0, Math.PI * 2);
@@ -121,13 +162,13 @@ export class ParticleSystem {
     ctx.restore();
   }
 
-  /** Elimina todas las partículas (útil al reiniciar). */
+  /** Elimina todas las partículas (útil al reiniciar) — O(1). */
   clear() {
-    this.particles = [];
+    this._activeCount = 0;
   }
 
   /** ¿No quedan partículas activas? */
   get isEmpty() {
-    return this.particles.length === 0;
+    return this._activeCount === 0;
   }
 }

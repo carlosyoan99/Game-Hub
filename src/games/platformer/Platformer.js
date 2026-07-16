@@ -233,8 +233,8 @@ export class Platformer extends GameBase {
   }
 
   _updatePlayer(dt) {
-    const left = this.input.isDown('ArrowLeft') || this.input.isDown('KeyA') || this.input.isDown('GamepadLeft') || this.input.isDown('GamepadLStickLeft');
-    const right = this.input.isDown('ArrowRight') || this.input.isDown('KeyD') || this.input.isDown('GamepadRight') || this.input.isDown('GamepadLStickRight');
+    const left = this.input.isActionDown('moveLeft');
+    const right = this.input.isActionDown('moveRight');
 
     if (left && !right) {
       this.player.vx = -MOVE_SPEED;
@@ -248,7 +248,7 @@ export class Platformer extends GameBase {
 
     this.player.vy = Math.min(this.player.vy + GRAVITY * dt, MAX_FALL_SPEED);
 
-    const jumpPressed = this.input.wasPressed('Space') || this.input.wasPressed('ArrowUp') || this.input.wasPressed('KeyW') || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadUp') || this.input.wasPressed('GamepadLStickUp');
+    const jumpPressed = this.input.wasActionPressed('jump');
     if (jumpPressed && (this.player.onGround || this.coyoteTimer > 0)) {
       this.player.vy = JUMP_VELOCITY;
       this.coyoteTimer = 0;
@@ -260,7 +260,7 @@ export class Platformer extends GameBase {
     // impulso UNA sola vez (jumpCut evita que se repita cada frame — sin
     // ese flag, vy*=0.5 en cada frame decae tan rápido que el salto corto
     // prácticamente no despega, en vez de dar un salto bajo perceptible).
-    const jumpHeld = this.input.isDown('Space') || this.input.isDown('ArrowUp') || this.input.isDown('KeyW') || this.input.isDown('GamepadA') || this.input.isDown('GamepadUp') || this.input.isDown('GamepadLStickUp');
+    const jumpHeld = this.input.isActionDown('jump');
     if (!jumpHeld && this.player.vy < 0 && !this.player.jumpCut) {
       this.player.vy *= JUMP_CUT_MULTIPLIER;
       this.player.jumpCut = true;

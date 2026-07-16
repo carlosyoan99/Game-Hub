@@ -11,4 +11,16 @@ export default {
   'flappy.classicDesc':  { es: 'Puntuación libre, sube hasta el jefe', en: 'Free play, climb to the boss' },
   'flappy.timeTrialDesc':{ es: 'Sobrevive 30 segundos',            en: 'Survive 30 seconds' },
   'flappy.start':        { es: 'Espacio para comenzar',            en: 'Press Space to start' },
+
+  // ── Registro y Logros ──────────────────────────────────────────────────
+  'prog.flappy.firstFlight':        { es: 'Primer vuelo',                 en: 'First flight' },
+  'prog.flappy.firstFlight.desc':   { es: 'Supera 1 tubería',            en: 'Pass 1 pipe' },
+  'prog.flappy.pipeMaster':         { es: 'Maestro de tuberías',          en: 'Pipe master' },
+  'prog.flappy.pipeMaster.desc':    { es: 'Supera 20 tuberías',          en: 'Pass 20 pipes' },
+  'prog.flappy.legend':             { es: 'Leyenda alada',                en: 'Winged legend' },
+  'prog.flappy.legend.desc':        { es: 'Supera 50 tuberías',          en: 'Pass 50 pipes' },
+  'prog.flappy.boss':         { es: 'Ave fénix',                      en: 'Phoenix Bird' },
+  'prog.flappy.boss.desc':    { es: 'Supera el modo jefe',            en: 'Survive boss mode' },
+  'registry.flappy-bird.title':   { es: 'Flappy Bird',                en: 'Flappy Bird' },
+  'registry.flappy-bird.tagline': { es: 'Gravedad constante y scroll infinito', en: 'Constant gravity and infinite scroll' },
 };

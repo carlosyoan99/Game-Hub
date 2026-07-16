@@ -19,4 +19,14 @@ export default {
   'papa.end.stats':        { es: 'Pizzas servidas: {n}  |  Puntuación: {score}', en: 'Pizzas served: {n}  |  Score: {score}' },
   'papa.end.bestScore':    { es: 'Mejor puntuación: {n}',         en: 'Best score: {n}' },
   'papa.end.restart':      { es: 'Click o Espacio para reiniciar', en: 'Click or Space to restart' },
+
+  // ── Registro y Logros ──────────────────────────────────────────────────
+  'prog.papa.firstPizza':                { es: 'Primera pizza',                en: 'First pizza' },
+  'prog.papa.firstPizza.desc':           { es: 'Completa tu primer día',       en: 'Complete your first day' },
+  'prog.papa.chef':                      { es: 'Chef pizzero',                 en: 'Pizza chef' },
+  'prog.papa.chef.desc':                 { es: 'Alcanza el día 10',            en: 'Reach day 10' },
+  'prog.papa.legend':                    { es: 'Leyenda de la pizza',          en: 'Pizza legend' },
+  'prog.papa.legend.desc':               { es: 'Consigue 500 puntos',          en: 'Score 500 points' },
+  'registry.papa-pizzeria.title':   { es: "Papa's Pizzeria",          en: "Papa's Pizzeria" },
+  'registry.papa-pizzeria.tagline': { es: 'Colas, temporizadores y multitarea culinaria', en: 'Queues, timers, and culinary multitasking' },
 };

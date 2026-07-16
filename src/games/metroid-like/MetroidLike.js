@@ -479,7 +479,6 @@ export class MetroidLike extends GameBase {
     this.transitionTarget = null;
     this.enterDir = '';
     this.score = 0;
-    this.status = 'playing';
     this.phase = 'playing';
     this.screwEffectTimer = 0;
   }
@@ -1265,7 +1264,6 @@ export class MetroidLike extends GameBase {
   }
 
   _endGame(won) {
-    this.status = won ? 'won' : 'lost';
     this.phase = won ? 'won' : 'lost';
     const score = this.score + this.hp * 10 + this.missileCount * 5 + this.bombCount * 3;
     if (score > this.highscore) {

@@ -11,4 +11,14 @@ export default {
   'bloons.bloonsOnScreen':{ es: 'Globos: {n}',          en: 'Bloons: {n}' },
   'bloons.score':         { es: 'Puntos: {n}',           en: 'Score: {n}' },
   'bloons.gameOver':      { es: 'GAME OVER',             en: 'GAME OVER' },
+
+  // ── Registro y Logros ──────────────────────────────────────────────────
+  'prog.bloons.firstBloon':              { es: 'Primer globo',                 en: 'First bloon' },
+  'prog.bloons.firstBloon.desc':         { es: 'Revienta tu primer globo',     en: 'Pop your first bloon' },
+  'prog.bloons.slayer':                  { es: 'Globo asesino',                en: 'Bloon slayer' },
+  'prog.bloons.slayer.desc':             { es: 'Alcanza la oleada 10',         en: 'Reach wave 10' },
+  'prog.bloons.master':                  { es: 'Maestro TD',                   en: 'TD master' },
+  'prog.bloons.master.desc':             { es: 'Alcanza la oleada 20',         en: 'Reach wave 20' },
+  'registry.bloons-td.title':{ es: 'Bloons TD',                       en: 'Bloons TD' },
+  'registry.bloons-td.tagline':{ es: 'Waypoints + torres defensivas', en: 'Waypoints + defensive towers' },
 };

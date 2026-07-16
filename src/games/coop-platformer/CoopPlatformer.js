@@ -205,13 +205,13 @@ export class CoopPlatformer extends GameBase {
 
   update(dt) {
     if (this.status === 'level-complete') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadStart')) this._nextLevel();
+      if (this.input.wasActionPressed('action') || this.input.mouse.clickedThisFrame) this._nextLevel();
 
       return;
     }
     if (this.handleRestartInput()) return;
     if (this.status === 'level-complete') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadStart')) this._nextLevel();
+      if (this.input.wasActionPressed('action') || this.input.mouse.clickedThisFrame) this._nextLevel();
 
       return;
     }
@@ -221,14 +221,14 @@ export class CoopPlatformer extends GameBase {
     // Cada jugador acepta un array de teclas por acción para soportar
     // teclado + gamepad (D-pad, stick izquierdo y botones de acción).
     this._updateCharacter(this.player1, {
-      left: ['KeyA', 'GamepadLeft', 'GamepadLStickLeft'],
-      right: ['KeyD', 'GamepadRight', 'GamepadLStickRight'],
-      jump: ['KeyW', 'GamepadA', 'GamepadLStickUp'],
+      p1_left: 'p1_left',
+      p1_right: 'p1_right',
+      p1_jump: 'p1_jump',
     }, dt);
     this._updateCharacter(this.player2, {
-      left: ['ArrowLeft', 'GamepadLeft', 'GamepadLStickLeft'],
-      right: ['ArrowRight', 'GamepadRight', 'GamepadLStickRight'],
-      jump: ['ArrowUp', 'GamepadA', 'GamepadLStickUp'],
+      p2_left: 'p2_left',
+      p2_right: 'p2_right',
+      p2_jump: 'p2_jump',
     }, dt);
     this._updateGate();
     this._checkWin();
@@ -251,28 +251,23 @@ export class CoopPlatformer extends GameBase {
       player.x += this.platform.deltaX;
     }
 
-    // Soporta arrays de teclas (teclado + gamepad). Si es string, se
-    // envuelve en array para mantener compatibilidad.
-    const leftArr = Array.isArray(keys.left) ? keys.left : [keys.left];
-    const rightArr = Array.isArray(keys.right) ? keys.right : [keys.right];
-    const jumpArr = Array.isArray(keys.jump) ? keys.jump : [keys.jump];
-
-    const left = leftArr.some(k => this.input.isDown(k));
-    const right = rightArr.some(k => this.input.isDown(k));
+    // Usar action mapping con las acciones específicas de cada jugador
+    const left = this.input.isActionDown(keys.p1_left || keys.p2_left || 'moveLeft');
+    const right = this.input.isActionDown(keys.p1_right || keys.p2_right || 'moveRight');
     if (left && !right) player.vx = -MOVE_SPEED;
     else if (right && !left) player.vx = MOVE_SPEED;
     else player.vx = 0;
 
     player.vy = Math.min(player.vy + GRAVITY * dt, MAX_FALL_SPEED);
 
-    const jumpPressed = jumpArr.some(k => this.input.wasPressed(k));
+    const jumpPressed = this.input.wasActionPressed(keys.p1_jump || keys.p2_jump || 'action');
     if (jumpPressed && (player.onGround || player.coyoteTimer > 0)) {
       player.vy = JUMP_VELOCITY;
       player.coyoteTimer = 0;
       player.jumpCut = false;
       AudioManager.sfx({ type: 'coop_jump', volume: 0.3 });
     }
-    const jumpHeld = jumpArr.some(k => this.input.isDown(k));
+    const jumpHeld = this.input.isActionDown(keys.p1_jump || keys.p2_jump || 'action');
     if (!jumpHeld && player.vy < 0 && !player.jumpCut) {
       player.vy *= JUMP_CUT_MULTIPLIER;
       player.jumpCut = true;

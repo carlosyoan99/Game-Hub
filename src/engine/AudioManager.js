@@ -59,14 +59,14 @@ class AudioManagerImpl {
 
     /** @type {Map<string, AudioBuffer>} Búferes de audio cargados. */
     this._buffers = new Map();
+    /** @type {Map<string, AudioBuffer>} Búferes de ruido blanco cacheados (clave: "{duration}_{sampleRate}"). */
+    this._noiseBuffers = new Map();
     /** @type {AudioBufferSourceNode|null} Fuente de música actual. */
     this._musicSource = null;
     /** @type {boolean} ¿Se ha reanudado el contexto? */
     this._resumed = false;
     /** @type {boolean} ¿Silenciado? */
     this._muted = false;
-    /** @type {number[]} IDs de setTimeout pendientes para limpiar en destroy. */
-    this._timeoutIds = [];
 
     // Volúmenes con valores por defecto.
     this._masterVolume = 0.8;
@@ -187,19 +187,20 @@ class AudioManagerImpl {
    * @param {number} [volume=0.3]  Volumen (0-1).
    * @param {string} [type='sine']  Tipo de onda: sine|square|sawtooth|triangle.
    */
-  beep(freq, duration, volume = 0.3, type = 'sine') {
+  beep(freq, duration, volume = 0.3, type = 'sine', startTime) {
     if (!this.ready) return;
+    const t = startTime ?? this._ctx.currentTime;
 
     const osc = this._ctx.createOscillator();
     const gain = this._ctx.createGain();
     osc.type = type;
     osc.frequency.value = freq;
-    gain.gain.setValueAtTime(volume, this._ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this._ctx.currentTime + duration);
+    gain.gain.setValueAtTime(volume, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
     osc.connect(gain);
     gain.connect(this._sfxGain);
-    osc.start(0);
-    osc.stop(this._ctx.currentTime + duration + 0.05);
+    osc.start(t);
+    osc.stop(t + duration + 0.05);
   }
 
   /**
@@ -211,11 +212,17 @@ class AudioManagerImpl {
   noise(duration, volume = 0.5, lowpass = null) {
     if (!this.ready) return;
 
-    const bufferSize = this._ctx.sampleRate * duration;
-    const buffer = this._ctx.createBuffer(1, bufferSize, this._ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = Math.random() * 2 - 1;
+    // Generar o reutilizar buffer de ruido cacheado por duración + sample rate
+    const noiseKey = `${duration}_${this._ctx.sampleRate}`;
+    let buffer = this._noiseBuffers.get(noiseKey);
+    if (!buffer) {
+      const bufferSize = this._ctx.sampleRate * duration;
+      buffer = this._ctx.createBuffer(1, bufferSize, this._ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      this._noiseBuffers.set(noiseKey, buffer);
     }
 
     const source = this._ctx.createBufferSource();
@@ -246,23 +253,27 @@ class AudioManagerImpl {
    * @param {number} [opts.volume=1]  Volumen relativo (0-1).
    */
   sfx({ type, volume = 1 }) {
-    // No pushear timeouts ni crear sonidos si el contexto aún no se ha reanudado.
-    if (!this._resumed) return;
+    // No crear sonidos si el contexto de audio no está listo.
+    if (!this.ready) return;
 
     switch (type) {
       // ── Genéricos ─────────────────────────────────────────────────
 
-      case 'jump':
+      case 'jump': {
         // Barrido ascendente rápido.
-        this.beep(200, 0.12, volume * 0.4);
-        this._timeoutIds.push(setTimeout(() => this.beep(500, 0.08, volume * 0.3), 40));
+        const t = this._ctx.currentTime;
+        this.beep(200, 0.12, volume * 0.4, 'sine', t);
+        this.beep(500, 0.08, volume * 0.3, 'sine', t + 0.04);
         break;
+      }
 
-      case 'coin':
+      case 'coin': {
         // Dos tonos ascendentes (clásico Mario).
-        this.beep(988, 0.08, volume * 0.35);
-        this._timeoutIds.push(setTimeout(() => this.beep(1319, 0.15, volume * 0.35), 80));
+        const t = this._ctx.currentTime;
+        this.beep(988, 0.08, volume * 0.35, 'sine', t);
+        this.beep(1319, 0.15, volume * 0.35, 'sine', t + 0.08);
         break;
+      }
 
       case 'hit':
         // Ruido corto + tono grave.
@@ -272,7 +283,6 @@ class AudioManagerImpl {
 
       case 'shoot':
         // Barrido descendente rápido (laser genérico).
-        if (!this.ready) return;
         {
           const osc = this._ctx.createOscillator();
           const gain = this._ctx.createGain();
@@ -297,17 +307,18 @@ class AudioManagerImpl {
         this.beep(660, 0.06, volume * 0.3);
         break;
 
-      case 'powerup':
-        this.beep(400, 0.1, volume * 0.35);
-        this._timeoutIds.push(setTimeout(() => this.beep(600, 0.1, volume * 0.35), 100));
-        this._timeoutIds.push(setTimeout(() => this.beep(800, 0.2, volume * 0.35), 200));
+      case 'powerup': {
+        const t = this._ctx.currentTime;
+        this.beep(400, 0.1, volume * 0.35, 'sine', t);
+        this.beep(600, 0.1, volume * 0.35, 'sine', t + 0.1);
+        this.beep(800, 0.2, volume * 0.35, 'sine', t + 0.2);
         break;
+      }
 
       // ── Space Invaders ───────────────────────────────────────────
 
       case 'space_invaders_shoot': {
         // 3 tonos descendentes rápidos (clásico arcade).
-        if (!this.ready) return;
         const t = this._ctx.currentTime;
         [600, 500, 400].forEach((f, i) => {
           const osc = this._ctx.createOscillator();
@@ -335,14 +346,13 @@ class AudioManagerImpl {
       case 'pacman_chomp': {
         // Dos tonos alternados (wakka wakka).
         const t = this._ctx.currentTime;
-        this.beep(330, 0.07, volume * 0.25, 'square');
-        this._timeoutIds.push(setTimeout(() => this.beep(280, 0.07, volume * 0.25), 70));
+        this.beep(330, 0.07, volume * 0.25, 'square', t);
+        this.beep(280, 0.07, volume * 0.25, 'square', t + 0.07);
         break;
       }
 
       case 'pacman_death':
         // Secuencia descendente (muerte clásica).
-        if (!this.ready) return;
         {
           const t = this._ctx.currentTime;
           [500, 420, 350, 280, 210, 140].forEach((f, i) => {
@@ -362,12 +372,14 @@ class AudioManagerImpl {
 
       // ── Tetris ───────────────────────────────────────────────────
 
-      case 'tetris_clear':
+      case 'tetris_clear': {
         // Arpegio ascendente (línea completada).
-        this.beep(523, 0.08, volume * 0.35);
-        this._timeoutIds.push(setTimeout(() => this.beep(659, 0.08, volume * 0.35), 80));
-        this._timeoutIds.push(setTimeout(() => this.beep(784, 0.08, volume * 0.35), 160));
+        const t = this._ctx.currentTime;
+        this.beep(523, 0.08, volume * 0.35, 'sine', t);
+        this.beep(659, 0.08, volume * 0.35, 'sine', t + 0.08);
+        this.beep(784, 0.08, volume * 0.35, 'sine', t + 0.16);
         break;
+      }
 
       case 'tetris_drop':
         // Golpe grave corto (pieza fijada).
@@ -379,7 +391,6 @@ class AudioManagerImpl {
 
       case 'galaga_shoot': {
         // Disparo más agudo y corto que el genérico.
-        if (!this.ready) return;
         const t = this._ctx.currentTime;
         const osc = this._ctx.createOscillator();
         const gain = this._ctx.createGain();
@@ -397,11 +408,13 @@ class AudioManagerImpl {
 
       // ── Frogger ──────────────────────────────────────────────────
 
-      case 'frogger_hop':
+      case 'frogger_hop': {
         // Chirrido corto (salto de rana).
-        this.beep(600, 0.04, volume * 0.3, 'square');
-        this._timeoutIds.push(setTimeout(() => this.beep(800, 0.03, volume * 0.2), 20));
+        const t = this._ctx.currentTime;
+        this.beep(600, 0.04, volume * 0.3, 'square', t);
+        this.beep(800, 0.03, volume * 0.2, 'square', t + 0.02);
         break;
+      }
 
       case 'frogger_squish':
         // Golpe sordo (muerte).
@@ -426,7 +439,6 @@ class AudioManagerImpl {
 
       case 'missile_launch': {
         // Barrido ascendente (misil lanzado).
-        if (!this.ready) return;
         const t = this._ctx.currentTime;
         const osc = this._ctx.createOscillator();
         const gain = this._ctx.createGain();
@@ -452,7 +464,6 @@ class AudioManagerImpl {
 
       case 'asteroids_shoot': {
         // Láser agudo y rápido.
-        if (!this.ready) return;
         const t = this._ctx.currentTime;
         const osc = this._ctx.createOscillator();
         const gain = this._ctx.createGain();
@@ -476,11 +487,13 @@ class AudioManagerImpl {
 
       // ── Donkey Kong ──────────────────────────────────────────────
 
-      case 'dk_jump':
+      case 'dk_jump': {
         // Rebote elástico (salto de Mario en DK).
-        this.beep(400, 0.05, volume * 0.35, 'triangle');
-        this._timeoutIds.push(setTimeout(() => this.beep(700, 0.05, volume * 0.25), 50));
+        const t = this._ctx.currentTime;
+        this.beep(400, 0.05, volume * 0.35, 'triangle', t);
+        this.beep(700, 0.05, volume * 0.25, 'triangle', t + 0.05);
         break;
+      }
 
       // ── Breakout ──────────────────────────────────────────────────
 
@@ -489,19 +502,23 @@ class AudioManagerImpl {
         this.beep(600, 0.04, volume * 0.35, 'triangle');
         break;
 
-      case 'breakout_brick':
+      case 'breakout_brick': {
         // Ladrillo roto (dos tonos).
-        this.beep(523, 0.06, volume * 0.3, 'square');
-        this._timeoutIds.push(setTimeout(() => this.beep(784, 0.05, volume * 0.2), 30));
+        const t = this._ctx.currentTime;
+        this.beep(523, 0.06, volume * 0.3, 'square', t);
+        this.beep(784, 0.05, volume * 0.2, 'square', t + 0.03);
         break;
+      }
 
       // ── Snake ─────────────────────────────────────────────────────
 
-      case 'snake_eat':
+      case 'snake_eat': {
         // Comida coleccionada.
-        this.beep(600, 0.06, volume * 0.3, 'square');
-        this._timeoutIds.push(setTimeout(() => this.beep(900, 0.08, volume * 0.25), 50));
+        const t = this._ctx.currentTime;
+        this.beep(600, 0.06, volume * 0.3, 'square', t);
+        this.beep(900, 0.08, volume * 0.25, 'square', t + 0.05);
         break;
+      }
 
       case 'snake_die':
         // Muerte de la serpiente.
@@ -517,19 +534,23 @@ class AudioManagerImpl {
         this.noise(0.03, volume * 0.3, 2000);
         break;
 
-      case 'pong_score':
+      case 'pong_score': {
         // Punto anotado.
-        this.beep(800, 0.08, volume * 0.35, 'square');
-        this._timeoutIds.push(setTimeout(() => this.beep(600, 0.12, volume * 0.3), 80));
+        const t = this._ctx.currentTime;
+        this.beep(800, 0.08, volume * 0.35, 'square', t);
+        this.beep(600, 0.12, volume * 0.3, 'square', t + 0.08);
         break;
+      }
 
       // ── Flappy Bird ───────────────────────────────────────────────
 
-      case 'flappy_flap':
+      case 'flappy_flap': {
         // Aleteo corto.
-        this.beep(700, 0.03, volume * 0.25, 'square');
-        this._timeoutIds.push(setTimeout(() => this.beep(500, 0.02, volume * 0.15), 15));
+        const t = this._ctx.currentTime;
+        this.beep(700, 0.03, volume * 0.25, 'square', t);
+        this.beep(500, 0.02, volume * 0.15, 'square', t + 0.015);
         break;
+      }
 
       case 'flappy_score':
         // Pase de tubería.
@@ -538,23 +559,26 @@ class AudioManagerImpl {
 
       // ── Platformer ────────────────────────────────────────────────
 
-      case 'platformer_jump':
+      case 'platformer_jump': {
         // Salto más ligero que el genérico.
-        this.beep(350, 0.07, volume * 0.35, 'square');
-        this._timeoutIds.push(setTimeout(() => this.beep(700, 0.05, volume * 0.25), 35));
+        const t = this._ctx.currentTime;
+        this.beep(350, 0.07, volume * 0.35, 'square', t);
+        this.beep(700, 0.05, volume * 0.25, 'square', t + 0.035);
         break;
+      }
 
       // ── Fancy Pants ───────────────────────────────────────────────
 
-      case 'fancy_jump':
+      case 'fancy_jump': {
         // Salto con más cuerpo.
-        this.beep(250, 0.1, volume * 0.35, 'triangle');
-        this._timeoutIds.push(setTimeout(() => this.beep(600, 0.06, volume * 0.3), 50));
+        const t = this._ctx.currentTime;
+        this.beep(250, 0.1, volume * 0.35, 'triangle', t);
+        this.beep(600, 0.06, volume * 0.3, 'triangle', t + 0.05);
         break;
+      }
 
       case 'fancy_walljump': {
         // Salto de pared (sonido más energético).
-        if (!this.ready) return;
         const t = this._ctx.currentTime;
         const osc = this._ctx.createOscillator();
         const gain = this._ctx.createGain();
@@ -572,25 +596,31 @@ class AudioManagerImpl {
 
       // ── Coop Platformer ───────────────────────────────────────────
 
-      case 'coop_jump':
+      case 'coop_jump': {
         // Salto cooperativo.
-        this.beep(300, 0.07, volume * 0.3, 'sine');
-        this._timeoutIds.push(setTimeout(() => this.beep(550, 0.06, volume * 0.25), 40));
+        const t = this._ctx.currentTime;
+        this.beep(300, 0.07, volume * 0.3, 'sine', t);
+        this.beep(550, 0.06, volume * 0.25, 'sine', t + 0.04);
         break;
+      }
 
-      case 'coop_lever':
+      case 'coop_lever': {
         // Palanca accionada (clic metálico).
-        this.beep(800, 0.04, volume * 0.25, 'square');
-        this._timeoutIds.push(setTimeout(() => this.beep(1000, 0.03, volume * 0.2), 20));
+        const t = this._ctx.currentTime;
+        this.beep(800, 0.04, volume * 0.25, 'square', t);
+        this.beep(1000, 0.03, volume * 0.2, 'square', t + 0.02);
         break;
+      }
 
       // ── Trick Quiz ────────────────────────────────────────────────
 
-      case 'tquiz_correct':
+      case 'tquiz_correct': {
         // Respuesta correcta (campanita).
-        this.beep(784, 0.1, volume * 0.35, 'sine');
-        this._timeoutIds.push(setTimeout(() => this.beep(1047, 0.15, volume * 0.3), 100));
+        const t = this._ctx.currentTime;
+        this.beep(784, 0.1, volume * 0.35, 'sine', t);
+        this.beep(1047, 0.15, volume * 0.3, 'sine', t + 0.1);
         break;
+      }
 
       case 'tquiz_wrong':
         // Respuesta incorrecta (buzz).
@@ -600,11 +630,13 @@ class AudioManagerImpl {
 
       // ── Papa's Pizzeria ───────────────────────────────────────────
 
-      case 'papa_serve':
+      case 'papa_serve': {
         // Pizza servida.
-        this.beep(660, 0.06, volume * 0.3, 'triangle');
-        this._timeoutIds.push(setTimeout(() => this.beep(880, 0.08, volume * 0.25), 60));
+        const t = this._ctx.currentTime;
+        this.beep(660, 0.06, volume * 0.3, 'triangle', t);
+        this.beep(880, 0.08, volume * 0.25, 'triangle', t + 0.06);
         break;
+      }
 
       case 'papa_burn':
         // Orden quemada.
@@ -614,12 +646,14 @@ class AudioManagerImpl {
 
       // ── Stick RPG ─────────────────────────────────────────────────
 
-      case 'stick_buy':
+      case 'stick_buy': {
         // Compra realizada.
-        this.beep(523, 0.06, volume * 0.3, 'square');
-        this._timeoutIds.push(setTimeout(() => this.beep(659, 0.06, volume * 0.25), 60));
-        this._timeoutIds.push(setTimeout(() => this.beep(784, 0.1, volume * 0.2), 120));
+        const t = this._ctx.currentTime;
+        this.beep(523, 0.06, volume * 0.3, 'square', t);
+        this.beep(659, 0.06, volume * 0.25, 'square', t + 0.06);
+        this.beep(784, 0.1, volume * 0.2, 'square', t + 0.12);
         break;
+      }
 
       case 'stick_fight':
         // Golpe de pelea.
@@ -631,7 +665,6 @@ class AudioManagerImpl {
 
       case 'castle_shoot': {
         // Catapulta disparando.
-        if (!this.ready) return;
         const t2 = this._ctx.currentTime;
         const osc2 = this._ctx.createOscillator();
         const g2 = this._ctx.createGain();
@@ -663,7 +696,6 @@ class AudioManagerImpl {
 
       case 'bowman_fire': {
         // Flecha disparada (silbido).
-        if (!this.ready) return;
         const t3 = this._ctx.currentTime;
         const osc3 = this._ctx.createOscillator();
         const g3 = this._ctx.createGain();
@@ -692,11 +724,13 @@ class AudioManagerImpl {
         this.beep(2000, 0.02, volume * 0.15, 'square');
         break;
 
-      case 'bloons_place':
+      case 'bloons_place': {
         // Torre colocada.
-        this.beep(400, 0.06, volume * 0.3, 'triangle');
-        this._timeoutIds.push(setTimeout(() => this.beep(600, 0.06, volume * 0.25), 50));
+        const t = this._ctx.currentTime;
+        this.beep(400, 0.06, volume * 0.3, 'triangle', t);
+        this.beep(600, 0.06, volume * 0.25, 'triangle', t + 0.05);
         break;
+      }
 
       // ── Territory War ─────────────────────────────────────────────
 
@@ -715,7 +749,6 @@ class AudioManagerImpl {
 
       case 'swords_attack': {
         // Espada cortando (barrido descendente).
-        if (!this.ready) return;
         const t4 = this._ctx.currentTime;
         const osc4 = this._ctx.createOscillator();
         const g4 = this._ctx.createGain();
@@ -742,11 +775,13 @@ class AudioManagerImpl {
         this.beep(523, 0.06, volume * 0.3, 'triangle');
         break;
 
-      case 'swords_buy':
+      case 'swords_buy': {
         // Objeto comprado.
-        this.beep(659, 0.08, volume * 0.35, 'sine');
-        this._timeoutIds.push(setTimeout(() => this.beep(880, 0.1, volume * 0.3), 80));
+        const t = this._ctx.currentTime;
+        this.beep(659, 0.08, volume * 0.35, 'sine', t);
+        this.beep(880, 0.1, volume * 0.3, 'sine', t + 0.08);
         break;
+      }
 
       // ── Henry Stickmin ────────────────────────────────────────────
 
@@ -755,12 +790,14 @@ class AudioManagerImpl {
         this.beep(440, 0.04, volume * 0.25, 'sine');
         break;
 
-      case 'henry_success':
+      case 'henry_success': {
         // Opción exitosa.
-        this.beep(523, 0.08, volume * 0.35, 'sine');
-        this._timeoutIds.push(setTimeout(() => this.beep(784, 0.08, volume * 0.35), 80));
-        this._timeoutIds.push(setTimeout(() => this.beep(1047, 0.15, volume * 0.35), 160));
+        const t = this._ctx.currentTime;
+        this.beep(523, 0.08, volume * 0.35, 'sine', t);
+        this.beep(784, 0.08, volume * 0.35, 'sine', t + 0.08);
+        this.beep(1047, 0.15, volume * 0.35, 'sine', t + 0.16);
         break;
+      }
 
       case 'henry_fail':
         // Opción fallida.
@@ -888,10 +925,11 @@ class AudioManagerImpl {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return;
       const data = JSON.parse(raw);
-      if (data.master != null) this._masterVolume = clamp(data.master, 0, 1);
-      if (data.sfx != null) this._sfxVolume = clamp(data.sfx, 0, 1);
-      if (data.music != null) this._musicVolume = clamp(data.music, 0, 1);
-      if (data.muted != null) this._muted = !!data.muted;
+      // Validar tipo antes de clamp() para evitar NaN por datos corruptos
+      if (typeof data.master === 'number') this._masterVolume = clamp(data.master, 0, 1);
+      if (typeof data.sfx === 'number') this._sfxVolume = clamp(data.sfx, 0, 1);
+      if (typeof data.music === 'number') this._musicVolume = clamp(data.music, 0, 1);
+      if (typeof data.muted === 'boolean') this._muted = data.muted;
     } catch { /* ignorar */ }
   }
 
@@ -902,10 +940,8 @@ class AudioManagerImpl {
   /** Libera todos los recursos de audio. */
   destroy() {
     this.stopMusic();
-    // Cancelar timeouts pendientes.
-    for (const id of this._timeoutIds) clearTimeout(id);
-    this._timeoutIds = [];
     this._buffers.clear();
+    this._noiseBuffers.clear();
     if (this._ctx) {
       this._ctx.close();
       this._ctx = null;

@@ -266,7 +266,6 @@ export class GuitarHero extends GameBase {
     this.starPowerActive = false;
     this.starPowerTimer = 0;
     this.paused = false;
-    this.status = 'playing';
     this.phase = 'intro';
     this.songStartTime = Date.now();
   }
@@ -398,7 +397,6 @@ export class GuitarHero extends GameBase {
     } else if (this.songTime > this.song.length) {
       if (this.isPractice) {
         this.phase = 'prac-result';
-        this.status = 'playing';
       } else {
         this._endGame(true);
       }
@@ -740,16 +738,13 @@ export class GuitarHero extends GameBase {
     this.score = 0;
     this.notesHit = 0;
     this.totalNotes = 0;
-    this.status = 'playing';
   }
 
   _endGame(won) {
-    const isPractice = this.isPractice;
     this.phase = won ? 'won' : 'lost';
-    this.status = this.isPractice ? 'playing' : (won ? 'won' : 'lost');
 
     // In practice mode, just show result overlay but don't end the game
-    if (isPractice) {
+    if (this.isPractice) {
       return;
     }
 

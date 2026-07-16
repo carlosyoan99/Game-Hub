@@ -127,7 +127,6 @@ export class SpaceHarrier extends GameBase {
     this.fireTimer = 0;
     this.score = 0;
     this.stageScore = 0;
-    this.status = 'playing';
     this.phase = 'intro';
     this.introTimer = 2;
     this.groundOffset = 0;
@@ -675,7 +674,6 @@ export class SpaceHarrier extends GameBase {
   }
 
   _endGame(won) {
-    this.status = won ? 'won' : 'lost';
     this.phase = won ? 'won' : 'lost';
     if (this.score > this.highscore) {
       this.highscore = this.score;

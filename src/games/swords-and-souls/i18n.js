@@ -49,4 +49,14 @@ export default {
   'swords.trainingClickRhythm':  { es: '🏃 ¡Haz clic para mantener el ritmo!', en: '🏃 Click to keep the rhythm!' },
   'swords.trainingClickFast':    { es: 'Clickea lo más rápido que puedas',    en: 'Click as fast as you can' },
   'swords.back':               { es: '← VOLVER',                      en: '← BACK' },
+
+  // ── Registro y Logros ──────────────────────────────────────────────────
+  'prog.swords.firstWave':               { es: 'Primera oleada',               en: 'First wave' },
+  'prog.swords.firstWave.desc':          { es: 'Derrota la oleada 1',          en: 'Defeat wave 1' },
+  'prog.swords.wave10':                  { es: 'Guerrero veterano',            en: 'Veteran warrior' },
+  'prog.swords.wave10.desc':             { es: 'Alcanza la oleada 10',         en: 'Reach wave 10' },
+  'prog.swords.legend':                  { es: 'Leyenda de espadas',           en: 'Swords legend' },
+  'prog.swords.legend.desc':             { es: 'Alcanza la oleada 20',         en: 'Reach wave 20' },
+  'registry.swords-and-souls.title':   { es: 'Swords and Souls',      en: 'Swords and Souls' },
+  'registry.swords-and-souls.tagline': { es: 'Entrenamiento, combate por turnos y subida de nivel', en: 'Training, turn-based combat, leveling up' },
 };

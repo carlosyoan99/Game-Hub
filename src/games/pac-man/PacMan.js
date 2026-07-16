@@ -130,6 +130,14 @@ export class PacMan extends GameBase {
     this.modeIndex = 0;
   }
 
+  _defaultBindings() {
+    const parent = super._defaultBindings ? super._defaultBindings() : {};
+    return {
+      ...parent,
+      // hereda moveLeft, moveRight, moveUp, moveDown, action, action2, pause, back
+    };
+  }
+
   _tileX(px) { return Math.floor(px / TILE); }
   _tileY(py) { return Math.floor(py / TILE); }
   _centerX(tx) { return tx * TILE + TILE / 2; }
@@ -149,7 +157,7 @@ export class PacMan extends GameBase {
 
   update(dt) {
     if (this.status !== 'playing') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadStart')) {
+      if (this.input.wasActionPressed('action') || this.input.mouse.clickedThisFrame) {
         this._restart();
       }
 
@@ -193,10 +201,10 @@ export class PacMan extends GameBase {
     const p = this.player;
 
     // Input
-    if (this.input.isDown('ArrowRight') || this.input.isDown('KeyD') || this.input.isDown('GamepadRight') || this.input.isDown('GamepadLStickRight')) p.nextDir = 0;
-    else if (this.input.isDown('ArrowDown') || this.input.isDown('KeyS') || this.input.isDown('GamepadDown') || this.input.isDown('GamepadLStickDown')) p.nextDir = 1;
-    else if (this.input.isDown('ArrowLeft') || this.input.isDown('KeyA') || this.input.isDown('GamepadLeft') || this.input.isDown('GamepadLStickLeft')) p.nextDir = 2;
-    else if (this.input.isDown('ArrowUp') || this.input.isDown('KeyW') || this.input.isDown('GamepadUp') || this.input.isDown('GamepadLStickUp')) p.nextDir = 3;
+    if (this.input.isActionDown('moveRight')) p.nextDir = 0;
+    else if (this.input.isActionDown('moveDown')) p.nextDir = 1;
+    else if (this.input.isActionDown('moveLeft')) p.nextDir = 2;
+    else if (this.input.isActionDown('moveUp')) p.nextDir = 3;
 
     // Intentar cambiar dirección
     const nd = this.dirVectors[p.nextDir];

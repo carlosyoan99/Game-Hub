@@ -44,7 +44,8 @@ export function createHitbox(x, y, w, h, damage = 0, knockbackX = 0, knockbackY 
 }
 
 /**
- * Comprueba si dos hitboxes (AABB) intersectan.
+ * Comprueba si dos hitboxes con centro en (x,y) intersectan.
+ * Usa comparación centro-a-centro: distancia menor que suma de medios anchos.
  * @param {{ x: number, y: number, w: number, h: number }} a
  * @param {{ x: number, y: number, w: number, h: number }} b
  * @returns {boolean}

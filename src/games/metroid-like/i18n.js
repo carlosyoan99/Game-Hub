@@ -31,4 +31,14 @@ export default {
   'metroid.room9':      { es: 'Cavernas Profundas',    en: 'Deep Caverns' },
   'metroid.room10':     { es: 'Cumbre Baja',           en: 'Upper Hub' },
   'metroid.room11':     { es: 'La Cumbre',             en: 'The Summit' },
+
+  // ── Registro y Logros ──────────────────────────────────────────────────
+  'registry.metroid-like.title':    { es: 'Metroid',                          en: 'Metroid' },
+  'registry.metroid-like.tagline':  { es: 'Exploración no lineal con power-ups, mapa y jefe final', en: 'Non-linear exploration with power-ups, map and final boss' },
+  'prog.metroid-like.boss-slayer':            { es: 'Matadragones',                 en: 'Dragon slayer' },
+  'prog.metroid-like.boss-slayer.desc':       { es: 'Derrota al jefe final',        en: 'Defeat the final boss' },
+  'prog.metroid-like.explorer':               { es: 'Explorador',                  en: 'Explorer' },
+  'prog.metroid-like.explorer.desc':          { es: 'Encuentra el Space Jump',     en: 'Find the Space Jump' },
+  'prog.metroid-like.demolition':             { es: 'Demolición',                  en: 'Demolition' },
+  'prog.metroid-like.demolition.desc':        { es: 'Encuentra las bombas',        en: 'Find the bombs' },
 };

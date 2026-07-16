@@ -124,7 +124,6 @@ export class OutRunLike extends GameBase {
     this.score = 0;
     this.stageScore = 0;
     this.stageTime = this.stageConfig.timeBonus;
-    this.status = 'playing';
     this.phase = 'intro'; // 'intro' | 'playing' | 'checkpoint' | 'stage_clear' | 'won' | 'lost'
     this.introTimer = 2;
     this.checkpointTimer = 0;
@@ -460,7 +459,6 @@ export class OutRunLike extends GameBase {
   }
 
   _endGame(won) {
-    this.status = won ? 'won' : 'lost';
     this.phase = won ? 'won' : 'lost';
     if (this.score > this.highscore) {
       this.highscore = this.score;
@@ -819,7 +817,7 @@ export class OutRunLike extends GameBase {
     if (this.phase === 'stage_clear') {
       renderOverlay(ctx, {
         width: this.width, height: this.height,
-        title: t('outran.stageClear'),
+        title: t('outrun.stageClear'),
         subtitle: `${t('outrun.score', { n: this.stageScore })} | ${t('outrun.speed', { n: Math.floor(this.maxSpeedReached) })}`,
         actionText: t('game.continue'),
       });

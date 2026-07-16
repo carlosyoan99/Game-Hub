@@ -44,6 +44,14 @@ const COLORS = {
 };
 
 export class Galaga extends GameBase {
+  _defaultBindings() {
+    const parent = super._defaultBindings ? super._defaultBindings() : {};
+    return {
+      ...parent,
+      // hereda moveLeft, moveRight, action, action2, pause, back
+    };
+  }
+
   init(engine) {
     super.init(engine, 'galaga');
     this.highscore = this.storage.get('highscore', 0);
@@ -72,7 +80,6 @@ export class Galaga extends GameBase {
     this.wave = 1;
     this.fireCooldown = 0;
     this.status = 'playing';
-    this.phase = 'formation'; // 'formation' | 'attacking' | 'bonus'
     this.formationTimer = 0;
     this.attackTimer = 0;
     this.diveTimer = 0;
@@ -89,7 +96,6 @@ export class Galaga extends GameBase {
 
   _spawnFormation() {
     this.enemies = [];
-    this.phase = 'formation';
     this.diveCount = 0;
     this.divesPerWave = 3 + Math.floor(this.wave / 2);
     this.tractorBeamActive = false;
@@ -131,7 +137,6 @@ export class Galaga extends GameBase {
     if (divers.length === 0) return;
 
     const diver = divers[Math.floor(Math.random() * divers.length)];
-    this.phase = 'attacking';
     this.attackTimer = 4 + Math.random() * 2;
 
     // Trayectoria de picada: el enemigo se separa de la formacion
@@ -156,7 +161,7 @@ export class Galaga extends GameBase {
   update(dt) {
     if (this.status === 'wave-transition') {
       this.waveTransitionTimer -= dt;
-      if (this.waveTransitionTimer <= 0 || this.input.mouse.clickedThisFrame || this.input.wasPressed('Space') || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadStart')) {
+      if (this.waveTransitionTimer <= 0 || this.input.mouse.clickedThisFrame || this.input.wasActionPressed('action')) {
         this._startNextWave();
       }
       this.particles.update(dt);
@@ -165,7 +170,7 @@ export class Galaga extends GameBase {
     }
 
     if (this.status === 'game-over') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadStart')) {
+      if (this.input.wasActionPressed('action') || this.input.mouse.clickedThisFrame) {
         this._restart();
       }
 
@@ -199,16 +204,16 @@ export class Galaga extends GameBase {
 
     if (this.player.captured) return; // no se mueve mientras está capturada
 
-    if (this.input.isDown('ArrowLeft') || this.input.isDown('KeyA') || this.input.isDown('GamepadLeft') || this.input.isDown('GamepadLStickLeft')) {
+    if (this.input.isActionDown('moveLeft')) {
       this.player.x -= PLAYER_SPEED * dt;
     }
-    if (this.input.isDown('ArrowRight') || this.input.isDown('KeyD') || this.input.isDown('GamepadRight') || this.input.isDown('GamepadLStickRight')) {
+    if (this.input.isActionDown('moveRight')) {
       this.player.x += PLAYER_SPEED * dt;
     }
     this.player.x = Math.max(SHIP_RADIUS, Math.min(this.width - SHIP_RADIUS, this.player.x));
 
     this.fireCooldown -= dt;
-    if ((this.input.isDown('Space') || this.input.mouse.down || this.input.isDown('GamepadA')) && this.fireCooldown <= 0) {
+    if ((this.input.isActionDown('action') || this.input.mouse.down) && this.fireCooldown <= 0) {
       this._fireBullet();
       this.fireCooldown = FIRE_COOLDOWN;
     }
@@ -263,7 +268,8 @@ export class Galaga extends GameBase {
   }
 
   _updateFormation(dt) {
-    if (this.phase !== 'formation') return;
+    // Saltar si hay un enemigo en picada o bonus activo
+    if (this.enemies.some(e => e.diving) || this.bonusActive) return;
 
     // Movimiento de la formacion (wobble suave de izquierda a derecha)
     this.formationTimer += dt;
@@ -320,7 +326,6 @@ export class Galaga extends GameBase {
         enemy.x = enemy.startX;
         enemy.y = enemy.startY;
 
-        this.phase = 'formation';
         this.diveCount++;
         if (this.tractorTarget === enemy) {
           this.tractorBeamActive = false;
@@ -361,7 +366,6 @@ export class Galaga extends GameBase {
   _startBonusStage() {
     this.bonusActive = true;
     this.bonusTimer = 5;
-    this.phase = 'bonus';
 
     // Enemigos bonus vuelan en patrones
     const liveEnemies = this.enemies.filter((e) => e.alive && !e.diving);
@@ -388,7 +392,6 @@ export class Galaga extends GameBase {
 
     if (this.bonusTimer <= 0 || liveEnemies.length === 0) {
       this.bonusActive = false;
-      this.phase = 'formation';
       // Reponer formacion o pasar a siguiente oleada
       if (liveEnemies.length === 0) {
         this._nextWave();

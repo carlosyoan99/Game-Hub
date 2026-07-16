@@ -16,7 +16,16 @@ export class StorageManager {
   get(key, fallback = null) {
     try {
       const raw = localStorage.getItem(this._key(key));
-      return raw === null ? fallback : JSON.parse(raw);
+      if (raw === null) return fallback;
+      const parsed = JSON.parse(raw);
+      // Validar tipo contra el fallback para evitar datos corruptos
+      if (parsed === null || parsed === undefined) return fallback;
+      const fbType = typeof fallback;
+      if (fbType === 'number' || fbType === 'string' || fbType === 'boolean') {
+        if (typeof parsed !== fbType) return fallback;
+      }
+      if (Array.isArray(fallback) && !Array.isArray(parsed)) return fallback;
+      return parsed;
     } catch {
       return fallback;
     }

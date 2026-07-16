@@ -3,7 +3,7 @@ import { GAME_REGISTRY } from './games/registry.js';
 import { AudioManager } from './engine/AudioManager.js';
 import { SettingsManager } from './engine/SettingsManager.js';
 import { t, applyI18n, loadGameTranslations } from './engine/i18n.js';
-import { ProgressionManager } from './engine/ProgressionManager.js';
+import { ProgressionManager, registerAchievements, UNLOCKABLE_ITEMS } from './engine/ProgressionManager.js';
 
 const canvas = document.getElementById('game-canvas');
 const canvasWrapper = document.getElementById('game-canvas-wrapper');
@@ -79,14 +79,34 @@ function initAudio() {
 document.addEventListener('click', initAudio, { once: true });
 document.addEventListener('keydown', initAudio, { once: true });
 
-function renderMenu() {
-  gameGrid.innerHTML = '';
+function _buildMenuCards() {
+  gameGrid.textContent = '';
   for (const game of GAME_REGISTRY) {
     const card = document.createElement('button');
     card.className = 'game-card';
-    // Guardamos title, tagline y level en data attributes para filtrar y estilizar sin re-render
-    card.dataset.title = t(game.title_i18n).toLowerCase();
-    card.dataset.tagline = t(game.tagline_i18n).toLowerCase();
+    card.append(
+      Object.assign(document.createElement('span'), { className: 'game-card__title' }),
+      Object.assign(document.createElement('span'), { className: 'game-card__tagline' }),
+    );
+    card.addEventListener('click', () => launchGame(game));
+    gameGrid.appendChild(card);
+  }
+  _updateMenuTexts();
+}
+
+/** Actualiza textos y data attributes de las cards ya creadas según el idioma actual. */
+function _updateMenuTexts() {
+  const cards = gameGrid.children;
+  if (cards.length === 0) return; // init() aún no ha renderizado el menú
+  for (let i = 0; i < cards.length; i++) {
+    const card = cards[i];
+    const game = GAME_REGISTRY[i];
+    const titleText = t(game.title_i18n);
+    const taglineText = t(game.tagline_i18n);
+    card.querySelector('.game-card__title').textContent = titleText;
+    card.querySelector('.game-card__tagline').textContent = taglineText;
+    card.dataset.title = titleText.toLowerCase();
+    card.dataset.tagline = taglineText.toLowerCase();
     // Búsqueda bilingüe: id + título/tagline en ES y EN
     card.dataset.searchTokens = [
       game.id,
@@ -95,12 +115,6 @@ function renderMenu() {
       t(game.tagline_i18n, {}, 'es'),
       t(game.tagline_i18n, {}, 'en'),
     ].join(' ').toLowerCase();
-    card.innerHTML = `
-      <span class="game-card__title">${t(game.title_i18n)}</span>
-      <span class="game-card__tagline">${t(game.tagline_i18n)}</span>
-    `;
-    card.addEventListener('click', () => launchGame(game));
-    gameGrid.appendChild(card);
   }
 }
 
@@ -112,11 +126,13 @@ const searchEmpty = document.getElementById('search-empty');
 /** Aplica el filtro de búsqueda sobre las cards actuales del grid. */
 function _applySearchFilter() {
   const query = searchInput.value.trim().toLowerCase();
+  // Dividir query en palabras: TODAS deben aparecer en los tokens del juego
+  const queryWords = query ? query.split(/\s+/) : [];
   let visibleCount = 0;
 
   for (const card of gameGrid.children) {
     // Búsqueda sobre tokens bilingües (id + ES + EN)
-    const match = !query || card.dataset.searchTokens.includes(query);
+    const match = queryWords.length === 0 || queryWords.every(word => card.dataset.searchTokens.includes(word));
     card.hidden = !match;
     if (match) visibleCount++;
   }
@@ -134,6 +150,9 @@ async function launchGame(gameMeta) {
   currentTitle.textContent = t(gameMeta.title_i18n);
   canvasWrapper.hidden = false;  // Muestra el indicador "Cargando..."
   loadingIndicator.hidden = false;
+
+  // Desconectar observer del menú durante el juego
+  _menuObserver.disconnect();
 
   try {
     // Cargar el código del juego y sus traducciones en paralelo
@@ -159,6 +178,12 @@ function returnToMenu() {
   hud.hidden = true;
   menu.hidden = false;
   settingsBtn.hidden = false;
+
+  // Reconectar observer del menú al volver
+  _menuObserver.observe(menu, { attributes: true, attributeFilter: ['hidden'] });
+  _menuObserver.observe(settingsOverlay, { attributes: true, attributeFilter: ['hidden'] });
+  _menuObserver.observe(progOverlay, { attributes: true, attributeFilter: ['hidden'] });
+  _checkHubGpContext();
 }
 
 backButton.addEventListener('click', returnToMenu);
@@ -238,7 +263,7 @@ document.getElementById('settings-theme').addEventListener('click', () => {
 document.getElementById('settings-language').addEventListener('click', () => {
   const next = SettingsManager.language === 'es' ? 'en' : 'es';
   SettingsManager.language = next;
-  // onChange handler se encarga de renderMenu, applyI18n y _syncToggle
+  // onChange handler se encarga de _updateMenuTexts, applyI18n y _syncToggle
 });
 
 document.getElementById('settings-motion').addEventListener('click', () => {
@@ -336,7 +361,7 @@ SettingsManager.onChange('reducedMotion', (value) => {
 });
 
 SettingsManager.onChange('language', (value) => {
-  renderMenu();
+  _updateMenuTexts();
   applyI18n();
   _applySearchFilter();
   if (!settingsOverlay.hidden) _syncToggle('settings-language', value);
@@ -410,7 +435,8 @@ const progOverlay = document.getElementById('progression-overlay');
 const progClose = document.getElementById('progression-close');
 const profileBtn = document.getElementById('profile-btn');
 
-function openProgression() {
+async function openProgression() {
+  await _ensureAchievementsLoaded();
   progOverlay.hidden = false;
   _renderProfile();
   _renderAchievements();
@@ -423,7 +449,30 @@ function closeProgression() {
   progOverlay.hidden = true;
 }
 
-profileBtn.addEventListener('click', openProgression);
+// ─── Carga diferida de logros ─────────────────────────────────────────
+//
+// Al abrir el modal por primera vez, importamos dinámicamente los
+// achievements de todos los juegos. Los archivos index.js son mínimos
+// (∼5 líneas) y el módulo queda cacheado para accesos posteriores.
+
+let _achievementsLoaded = false;
+
+async function _ensureAchievementsLoaded() {
+  if (_achievementsLoaded) return;
+  const imports = GAME_REGISTRY.map(game =>
+    import(`./games/${game.id}/index.js`)
+      .then(mod => {
+        if (mod.achievements) {
+          registerAchievements(game.id, mod.achievements);
+        }
+      })
+      .catch(() => {/* sin logros */})
+  );
+  await Promise.all(imports);
+  _achievementsLoaded = true;
+}
+
+profileBtn.addEventListener('click', () => openProgression());
 progClose.addEventListener('click', closeProgression);
 progOverlay.addEventListener('click', (e) => {
   if (e.target === progOverlay) closeProgression();
@@ -498,9 +547,11 @@ document.getElementById('prog-reset-btn').addEventListener('click', () => {
 
 // ─── Achievements Tab ─────────────────────────────────────────────────
 
+let _lastAchGameId = null;
+
 function _buildGameSelect() {
   const select = document.getElementById('prog-ach-game-select');
-  select.innerHTML = '';
+  select.textContent = '';
 
   // Juegos con logros definidos — se obtienen dinámicamente del ProgressionManager
   const gameIds = ProgressionManager.getGamesWithAch();
@@ -515,35 +566,77 @@ function _buildGameSelect() {
   }
 }
 
+/** Crea las cards de logros con estructura vacía (1 vez por juego). */
+function _buildAchievementCards(gameId) {
+  const achievements = ProgressionManager.getAchievements(gameId);
+  const grid = document.getElementById('prog-ach-grid');
+  grid.textContent = '';
+
+  if (achievements.length === 0) {
+    const emptyMsg = document.createElement('p');
+    emptyMsg.style.cssText = 'color:var(--ink-dim);font-size:12px;text-align:center;padding:20px;';
+    emptyMsg.textContent = t('progression.totalPlayed', { n: 0 });
+    grid.appendChild(emptyMsg);
+    return false;
+  }
+
+  for (const ach of achievements) {
+    const card = document.createElement('div');
+    card.className = 'prog-ach-card';
+    card.append(
+      Object.assign(document.createElement('div'), { className: 'prog-ach-card__icon' }),
+      Object.assign(document.createElement('div'), { className: 'prog-ach-card__name' }),
+      Object.assign(document.createElement('div'), { className: 'prog-ach-card__desc' }),
+      Object.assign(document.createElement('div'), { className: 'prog-ach-card__status' }),
+    );
+    grid.appendChild(card);
+  }
+  return true;
+}
+
+/** Actualiza contenidos de las cards de logros ya creadas. */
+function _updateAchievementTexts(gameId) {
+  const achievements = ProgressionManager.getAchievements(gameId);
+  const grid = document.getElementById('prog-ach-grid');
+  const cards = grid.children;
+  const iconMap = { star: '⭐', trophy: '🏆', crown: '👑' };
+
+  for (let i = 0; i < cards.length; i++) {
+    const ach = achievements[i];
+    const card = cards[i];
+    card.className = `prog-ach-card${ach.unlocked ? '' : ' prog-ach-card--locked'}`;
+    card.querySelector('.prog-ach-card__icon').textContent = iconMap[ach.icon] || '⭐';
+    card.querySelector('.prog-ach-card__name').textContent = t(ach.name);
+    card.querySelector('.prog-ach-card__desc').textContent = t(ach.desc);
+    card.querySelector('.prog-ach-card__status').textContent = ach.unlocked ? '✅' : '🔒';
+  }
+}
+
 function _renderAchievements() {
   const select = document.getElementById('prog-ach-game-select');
   if (select.options.length === 0) _buildGameSelect();
 
   const gameId = select.value || 'breakout';
   const achievements = ProgressionManager.getAchievements(gameId);
-  const grid = document.getElementById('prog-ach-grid');
-  grid.innerHTML = '';
 
+  // Sin logros: mostrar mensaje y marcar como "no cache"
   if (achievements.length === 0) {
-    grid.innerHTML = `<p style="color:var(--ink-dim);font-size:12px;text-align:center;padding:20px;">${t('progression.totalPlayed', { n: 0 })}</p>`;
+    const grid = document.getElementById('prog-ach-grid');
+    grid.textContent = '';
+    const emptyMsg = document.createElement('p');
+    emptyMsg.style.cssText = 'color:var(--ink-dim);font-size:12px;text-align:center;padding:20px;';
+    emptyMsg.textContent = t('progression.totalPlayed', { n: 0 });
+    grid.appendChild(emptyMsg);
+    _lastAchGameId = null;
     return;
   }
 
-  for (const ach of achievements) {
-    const card = document.createElement('div');
-    card.className = `prog-ach-card${ach.unlocked ? '' : ' prog-ach-card--locked'}`;
-
-    const iconMap = { star: '⭐', trophy: '🏆', crown: '👑' };
-    const iconChar = iconMap[ach.icon] || '⭐';
-
-    card.innerHTML = `
-      <div class="prog-ach-card__icon">${iconChar}</div>
-      <div class="prog-ach-card__name">${t(ach.name)}</div>
-      <div class="prog-ach-card__desc">${t(ach.desc)}</div>
-      <div class="prog-ach-card__status">${ach.unlocked ? '✅' : '🔒'}</div>
-    `;
-    grid.appendChild(card);
+  // Solo rebuild si cambió de juego; si es el mismo, actualizar textos
+  if (_lastAchGameId !== gameId) {
+    _buildAchievementCards(gameId);
+    _lastAchGameId = gameId;
   }
+  _updateAchievementTexts(gameId);
 }
 
 // Cambiar juego en achievements filter
@@ -552,77 +645,158 @@ achSelect.addEventListener('change', _renderAchievements);
 
 // ─── Stats Tab ────────────────────────────────────────────────────────
 
-function _renderStats() {
+let _statsRowsBuilt = false;
+
+/** Pre-crea una fila por cada juego en el registro (1 vez). */
+function _buildStatsRows() {
   const tbody = document.getElementById('prog-stats-tbody');
-  tbody.innerHTML = '';
-
-  for (const game of GAME_REGISTRY) {
-    const stats = ProgressionManager.getGameStats(game.id);
-    const title = t(game.title_i18n);
-
-    if (stats.plays === 0) continue; // Omitir juegos no jugados
-
+  tbody.textContent = '';
+  for (const _ of GAME_REGISTRY) {
     const tr = document.createElement('tr');
+    tr.hidden = true;
+    // 5 columnas: juego, jugado, victorias, mejor, tiempo
+    for (let c = 0; c < 5; c++) tr.appendChild(document.createElement('td'));
+    tbody.appendChild(tr);
+  }
+  _statsRowsBuilt = true;
+}
+
+/** Actualiza textos y visibilidad de las filas de stats. */
+function _updateStatsRows() {
+  const tbody = document.getElementById('prog-stats-tbody');
+  const rows = tbody.children;
+  let visibleCount = 0;
+
+  for (let i = 0; i < GAME_REGISTRY.length; i++) {
+    const game = GAME_REGISTRY[i];
+    const stats = ProgressionManager.getGameStats(game.id);
+    const row = rows[i];
+    const cols = row.children;
+
+    if (stats.plays === 0) {
+      row.hidden = true;
+      continue;
+    }
+
+    row.hidden = false;
+    visibleCount++;
     const timeS = stats.totalTime;
     const timeStr = timeS < 60 ? `${Math.round(timeS)}s` : `${Math.floor(timeS / 60)}m ${Math.round(timeS % 60)}s`;
-
-    tr.innerHTML = `
-      <td>${title}</td>
-      <td>${stats.plays}</td>
-      <td>${stats.wins}</td>
-      <td>${stats.bestScore}</td>
-      <td>${timeStr}</td>
-    `;
-    tbody.appendChild(tr);
+    cols[0].textContent = t(game.title_i18n);
+    cols[1].textContent = stats.plays;
+    cols[2].textContent = stats.wins;
+    cols[3].textContent = stats.bestScore;
+    cols[4].textContent = timeStr;
   }
 
-  // Si no hay stats, mostrar mensaje
-  if (tbody.children.length === 0) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td colspan="5" style="text-align:center;color:var(--ink-dim);padding:20px;">${t('game.score', { n: 0 })}</td>`;
-    tbody.appendChild(tr);
+  // Mensaje vacío (cuando ningún juego ha sido jugado)
+  const emptyRowId = 'prog-stats-empty';
+  let emptyRow = tbody.querySelector(`#${emptyRowId}`);
+  if (visibleCount === 0) {
+    if (!emptyRow) {
+      emptyRow = document.createElement('tr');
+      emptyRow.id = emptyRowId;
+      const emptyTd = document.createElement('td');
+      emptyTd.colSpan = 5;
+      emptyTd.style.cssText = 'text-align:center;color:var(--ink-dim);padding:20px;';
+      emptyRow.appendChild(emptyTd);
+      tbody.appendChild(emptyRow);
+    }
+    emptyRow.hidden = false;
+    emptyRow.querySelector('td').textContent = t('game.score', { n: 0 });
+  } else if (emptyRow) {
+    emptyRow.hidden = true;
   }
+}
+
+function _renderStats() {
+  if (!_statsRowsBuilt) _buildStatsRows();
+  _updateStatsRows();
 }
 
 // ─── Unlockables Tab ──────────────────────────────────────────────────
 
-function _renderUnlockables() {
+// Mapa de iconos: nombre → emoji (fuente única: UNLOCKABLE_ITEMS de ProgressionManager)
+const _UNLOCK_ICON_MAP = {
+  star: '⭐', bolt: '⚡', heart: '❤️', clock: '⏱️', refresh: '♾️', skull: '💀', gear: '📺', frame: '🖼️',
+};
+
+let _unlockCardsBuilt = false;
+
+/** Crea las cards de desbloqueables con estructura vacía (1 sola vez). */
+function _buildUnlockCards() {
   const grid = document.getElementById('prog-unlock-grid');
-  grid.innerHTML = '';
+  grid.textContent = '';
 
-  const items = [
-    { id: 'skin-asteroids-gold', name: 'prog.unlock.skinAsteroidsGold', icon: '⭐' },
-    { id: 'skin-pacman-blue', name: 'prog.unlock.skinPacmanBlue', icon: '⭐' },
-    { id: 'skin-ship-neon', name: 'prog.unlock.skinShipNeon', icon: '⭐' },
-    { id: 'powerup-wide-paddle', name: 'prog.unlock.widePaddle', icon: '⚡' },
-    { id: 'powerup-extra-life', name: 'prog.unlock.extraLife', icon: '❤️' },
-    { id: 'mode-speedrun', name: 'prog.unlock.modeSpeedrun', icon: '⏱️' },
-    { id: 'mode-endless', name: 'prog.unlock.modeEndless', icon: '♾️' },
-    { id: 'mode-hardcore', name: 'prog.unlock.modeHardcore', icon: '💀' },
-    { id: 'cosmetic-scanlines', name: 'prog.unlock.scanlines', icon: '📺' },
-    { id: 'cosmetic-retro-border', name: 'prog.unlock.retroBorder', icon: '🖼️' },
-  ];
-
-  for (const item of items) {
-    const unlocked = ProgressionManager.isUnlocked(item.id);
+  for (const item of UNLOCKABLE_ITEMS) {
     const card = document.createElement('div');
-    card.className = `prog-unlock-card${unlocked ? ' prog-unlock-card--unlocked' : ' prog-unlock-card--locked'}`;
-
-    card.innerHTML = `
-      <div class="prog-unlock-card__icon">${item.icon}</div>
-      <div class="prog-unlock-card__name">${t(item.name)}</div>
-      <div class="prog-unlock-card__status">${unlocked ? t('progression.unlocked') : t('progression.locked')}</div>
-    `;
+    card.className = 'prog-unlock-card';
+    card.append(
+      Object.assign(document.createElement('div'), { className: 'prog-unlock-card__icon' }),
+      Object.assign(document.createElement('div'), { className: 'prog-unlock-card__name' }),
+      Object.assign(document.createElement('div'), { className: 'prog-unlock-card__status' }),
+    );
     grid.appendChild(card);
   }
+  _unlockCardsBuilt = true;
+}
+
+/** Actualiza contenidos de las cards de desbloqueables ya creadas. */
+function _updateUnlockTexts() {
+  const grid = document.getElementById('prog-unlock-grid');
+  const cards = grid.children;
+
+  for (let i = 0; i < cards.length; i++) {
+    const item = UNLOCKABLE_ITEMS[i];
+    const card = cards[i];
+    const unlocked = ProgressionManager.isUnlocked(item.id);
+    card.className = `prog-unlock-card${unlocked ? ' prog-unlock-card--unlocked' : ' prog-unlock-card--locked'}`;
+    card.querySelector('.prog-unlock-card__icon').textContent = _UNLOCK_ICON_MAP[item.icon] || '⭐';
+    card.querySelector('.prog-unlock-card__name').textContent = t(item.name);
+    card.querySelector('.prog-unlock-card__status').textContent = unlocked ? t('progression.unlocked') : t('progression.locked');
+  }
+}
+
+function _renderUnlockables() {
+  if (!_unlockCardsBuilt) _buildUnlockCards();
+  _updateUnlockTexts();
 }
 // ─── High Scores Tab ───────────────────────────────────────────────────
 
-function _renderHighScores() {
-  const tbody = document.getElementById('prog-hs-tbody');
-  tbody.innerHTML = '';
+let _hsRowsBuilt = false;
 
-  // Collect scores from all games
+/** Pre-crea una fila por cada juego en el registro (1 vez). */
+function _buildHighScoreRows() {
+  const tbody = document.getElementById('prog-hs-tbody');
+  tbody.textContent = '';
+  const HS_COL_CLASSES = ['prog-hs-rank', 'prog-hs-game', 'prog-hs-score', 'prog-hs-plays', 'prog-hs-time'];
+  for (const game of GAME_REGISTRY) {
+    const tr = document.createElement('tr');
+    tr.dataset.gameId = game.id;
+    for (let c = 0; c < 5; c++) {
+      const td = document.createElement('td');
+      td.className = HS_COL_CLASSES[c];
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+  // Fila de mensaje vacío (oculta por defecto)
+  const emptyTr = document.createElement('tr');
+  emptyTr.id = 'prog-hs-empty';
+  const emptyTd = document.createElement('td');
+  emptyTd.colSpan = 5;
+  emptyTd.style.cssText = 'text-align:center;color:var(--ink-dim);padding:30px;';
+  emptyTr.appendChild(emptyTd);
+  emptyTr.hidden = true;
+  tbody.appendChild(emptyTr);
+  _hsRowsBuilt = true;
+}
+
+/** Reordena filas según ranking y actualiza contenidos. */
+function _updateHighScoreRows() {
+  const tbody = document.getElementById('prog-hs-tbody');
+
+  // Colectar + ordenar puntuaciones
   const scores = [];
   for (const game of GAME_REGISTRY) {
     const stats = ProgressionManager.getGameStats(game.id);
@@ -636,40 +810,68 @@ function _renderHighScores() {
       });
     }
   }
-
-  // Sort by best score descending
   scores.sort((a, b) => b.bestScore - a.bestScore);
 
+  // Empty state
+  const emptyRow = tbody.querySelector('#prog-hs-empty');
   if (scores.length === 0) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td colspan="5" style="text-align:center;color:var(--ink-dim);padding:30px;">🎮 ${t('progression.hsEmpty')}</td>`;
-    tbody.appendChild(tr);
+    for (const row of tbody.children) {
+      if (row.dataset?.gameId) row.hidden = true;
+    }
+    emptyRow.hidden = false;
+    emptyRow.querySelector('td').textContent = `🎮 ${t('progression.hsEmpty')}`;
     return;
   }
+  emptyRow.hidden = true;
 
-  const medalEmojis = ['🥇', '🥈', '🥉'];
-
-  for (let i = 0; i < scores.length; i++) {
-    const s = scores[i];
-    const rank = i + 1;
-    const tr = document.createElement('tr');
-    tr.className = rank <= 3 ? 'prog-hs-row--top' : '';
-
-    const timeS = s.totalTime;
-    const timeStr = timeS < 60 ? `${Math.round(timeS)}s` : `${Math.floor(timeS / 60)}m ${Math.round(timeS % 60)}s`;
-
-    // Format score with commas
-    const scoreStr = s.bestScore.toLocaleString();
-
-    tr.innerHTML = `
-      <td class="prog-hs-rank">${rank <= 3 ? medalEmojis[rank - 1] : `#${rank}`}</td>
-      <td class="prog-hs-game">${s.title}</td>
-      <td class="prog-hs-score">${scoreStr}</td>
-      <td class="prog-hs-plays">${s.plays}</td>
-      <td class="prog-hs-time">${timeStr}</td>
-    `;
-    tbody.appendChild(tr);
+  // Mapa de búsqueda rápida gameId → fila
+  const rowMap = new Map();
+  for (const row of tbody.children) {
+    if (row.dataset?.gameId) rowMap.set(row.dataset.gameId, row);
   }
+
+  // Reordenar filas en el DOM según ranking + actualizar contenidos
+  const medalEmojis = ['🥇', '🥈', '🥉'];
+  let prevSibling = null;
+  const scoredIds = new Set();
+
+  for (let rank = 0; rank < scores.length; rank++) {
+    const s = scores[rank];
+    const row = rowMap.get(s.id);
+    if (!row) continue;
+
+    scoredIds.add(s.id);
+
+    // Mover fila a su posición correcta en el ranking
+    const ref = prevSibling ? prevSibling.nextSibling : tbody.firstChild;
+    tbody.insertBefore(row, ref);
+
+    // Actualizar contenido
+    const rankNum = rank + 1;
+    const cols = row.children;
+    const timeStr = s.totalTime < 60 ? `${Math.round(s.totalTime)}s` : `${Math.floor(s.totalTime / 60)}m ${Math.round(s.totalTime % 60)}s`;
+    row.className = rankNum <= 3 ? 'prog-hs-row--top' : '';
+    row.hidden = false;
+    cols[0].textContent = rankNum <= 3 ? medalEmojis[rank] : `#${rankNum}`;
+    cols[1].textContent = s.title;
+    cols[2].textContent = s.bestScore.toLocaleString();
+    cols[3].textContent = s.plays;
+    cols[4].textContent = timeStr;
+
+    prevSibling = row;
+  }
+
+  // Ocultar filas de juegos sin puntuación
+  for (const row of tbody.children) {
+    if (row.dataset?.gameId && !scoredIds.has(row.dataset.gameId)) {
+      row.hidden = true;
+    }
+  }
+}
+
+function _renderHighScores() {
+  if (!_hsRowsBuilt) _buildHighScoreRows();
+  _updateHighScoreRows();
 }
 
 // ════════════════════════════════════════════════════════════════════════
@@ -852,6 +1054,26 @@ _menuObserver.observe(menu, { attributes: true, attributeFilter: ['hidden'] });
 _menuObserver.observe(settingsOverlay, { attributes: true, attributeFilter: ['hidden'] });
 _menuObserver.observe(progOverlay, { attributes: true, attributeFilter: ['hidden'] });
 
+// ─── Carga de traducciones de juegos al inicio ─────────────────────
+//
+// Como las claves registry.* y prog.* están ahora en cada game/i18n.js
+// (no en el engine), cargamos todas las traducciones al inicio para
+// que el menú principal muestre los nombres correctos.
+
+let _gameTranslationsLoaded = false;
+
+async function loadAllGameTranslations() {
+  if (_gameTranslationsLoaded) return;
+  // loadGameTranslations ya tiene try/catch interno — no necesita .catch() extra
+  await Promise.all(GAME_REGISTRY.map(game => loadGameTranslations(game.id)));
+  _gameTranslationsLoaded = true;
+}
+
+async function init() {
+  await loadAllGameTranslations();
+  _buildMenuCards();
+}
+
 applyCRT(SettingsManager.crtEffect);
 
-renderMenu();
+init();

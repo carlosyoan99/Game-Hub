@@ -37,4 +37,16 @@ export default {
   'lemonade.recipeHint':{ es: '3 limones + 3 azúcar = 1 jarra (6 vasos)', en: '3 lemons + 3 sugar = 1 pitcher (6 cups)' },
   'lemonade.noStock':   { es: '¡Sin stock! Compra suministros', en: 'No stock! Buy supplies' },
   'lemonade.bankrupt':  { es: '¡Sin dinero! Has quebrado', en: 'Out of money! Bankrupt' },
+
+  // ── Registro y Logros ──────────────────────────────────────────────────
+  'registry.lemonade-stand.title':    { es: 'Lemonade Stand',               en: 'Lemonade Stand' },
+  'registry.lemonade-stand.tagline':  { es: 'Tycoon de limonada con economía, clima y receta', en: 'Lemonade tycoon with economy, weather and recipe' },
+  'prog.lemonade-stand.first-profit':        { es: 'Primera ganancia',              en: 'First profit' },
+  'prog.lemonade-stand.first-profit.desc':   { es: 'Termina tu primer día',         en: 'Complete your first day' },
+  'prog.lemonade-stand.lemonade-tycoon':     { es: 'Magnate de limonada',          en: 'Lemonade tycoon' },
+  'prog.lemonade-stand.lemonade-tycoon.desc':{ es: 'Gana $5000 en total',           en: 'Earn $5000 total' },
+  'prog.lemonade-stand.master-chef':          { es: 'Maestro limonero',             en: 'Master chef' },
+  'prog.lemonade-stand.master-chef.desc':     { es: 'Alcanza 80% de reputación',    en: 'Reach 80% reputation' },
+  'prog.lemonade-stand.mass-production':      { es: 'Producción en masa',           en: 'Mass production' },
+  'prog.lemonade-stand.mass-production.desc': { es: 'Vende 200 vasos en total',      en: 'Sell 200 total cups' },
 };

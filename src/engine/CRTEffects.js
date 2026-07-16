@@ -163,9 +163,8 @@ export class CRTEffects {
     const h = ctx.canvas.height;
 
     try {
-      // Muestrear 1px de cada borde
-      // Usamos una franja de 3px para obtener un promedio más estable
-      const stripSize = 3;
+      // Muestrear 1px de cada borde para minimizar lecturas de getImageData
+      const stripSize = 1;
 
       // Borde superior
       const topData = ctx.getImageData(0, 0, w, stripSize).data;

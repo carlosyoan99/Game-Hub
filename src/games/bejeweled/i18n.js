@@ -16,4 +16,16 @@ export default {
   'bejeweled.match4':   { es: '¡MATCH-4! +GEMA RAYADA',   en: 'MATCH-4! +STRIPED' },
   'bejeweled.match5':   { es: '¡MATCH-5! +GEMA BOMBA',    en: 'MATCH-5! +BOMB' },
   'bejeweled.continue': { es: 'Click o Espacio para continuar', en: 'Click or Space to continue' },
+
+  // ── Registro y Logros ──────────────────────────────────────────────────
+  'registry.bejeweled.title':    { es: 'Bejeweled',                       en: 'Bejeweled' },
+  'registry.bejeweled.tagline':  { es: 'Match-3 con gemas, cascadas y modos de juego', en: 'Match-3 with gems, cascades and game modes' },
+  'prog.bejeweled.first-clear':             { es: 'Primera victoria',               en: 'First victory' },
+  'prog.bejeweled.first-clear.desc':        { es: 'Completa un modo de juego',      en: 'Complete a game mode' },
+  'prog.bejeweled.cascade-master':          { es: 'Maestro de cascadas',           en: 'Cascade master' },
+  'prog.bejeweled.cascade-master.desc':     { es: 'Alcanza combo de 5 cascadas',    en: 'Reach 5-cascade combo' },
+  'prog.bejeweled.gem-hoarder':             { es: 'Acaparador de gemas',           en: 'Gem hoarder' },
+  'prog.bejeweled.gem-hoarder.desc':        { es: 'Limpia 100 gemas en total',      en: 'Clear 100 total gems' },
+  'prog.bejeweled.speed-demon':             { es: 'Demonio de velocidad',           en: 'Speed demon' },
+  'prog.bejeweled.speed-demon.desc':        { es: 'Gana en modo Contrarreloj',      en: 'Win in Time Attack mode' },
 };

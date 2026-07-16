@@ -52,7 +52,6 @@ export class Breakout extends GameBase {
     this.currentLevel = this.storage.get('savedLevel', 1);
     this.selectedDifficulty = this.storage.get('difficulty', 1);
     this.phase = 'select-difficulty'; // 'select-difficulty' | 'playing' | 'won' | 'lost' | 'level-complete' | 'boss-fight'
-    this.status = 'playing';
 
     this.startTime = Date.now();
     this._livesLostThisLevel = 0;
@@ -197,7 +196,6 @@ export class Breakout extends GameBase {
         const duration = (Date.now() - this.startTime) / 1000;
         ProgressionManager.recordGamePlay('breakout', this.score, true, duration);
         ProgressionManager.addXp(75, 'boss-defeated');
-        this.status = 'won';
         this.phase = 'won';
       }
     }
@@ -267,10 +265,10 @@ export class Breakout extends GameBase {
       if (this.phase !== 'boss-fight') return; // si murió el jefe
 
       // Movimiento de paleta
-      if (this.input.isDown('ArrowLeft') || this.input.isDown('KeyA') || this.input.isDown('GamepadLeft') || this.input.isDown('GamepadLStickLeft')) {
+      if (this.input.isActionDown('moveLeft')) {
         this.paddle.x -= 360 * dt;
       }
-      if (this.input.isDown('ArrowRight') || this.input.isDown('KeyD') || this.input.isDown('GamepadRight') || this.input.isDown('GamepadLStickRight')) {
+      if (this.input.isActionDown('moveRight')) {
         this.paddle.x += 360 * dt;
       }
       if (this.input.mouse.x >= 0) {
@@ -317,7 +315,7 @@ export class Breakout extends GameBase {
     }
 
     if (this.phase === 'level-complete') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadStart')) {
+      if (this.input.wasActionPressed('action') || this.input.mouse.clickedThisFrame) {
         this._nextLevel();
       }
       return;
@@ -329,10 +327,10 @@ export class Breakout extends GameBase {
     }
 
     // Paleta
-    if (this.input.isDown('ArrowLeft') || this.input.isDown('KeyA') || this.input.isDown('GamepadLeft') || this.input.isDown('GamepadLStickLeft')) {
+    if (this.input.isActionDown('moveLeft')) {
       this.paddle.x -= 360 * dt;
     }
-    if (this.input.isDown('ArrowRight') || this.input.isDown('KeyD') || this.input.isDown('GamepadRight') || this.input.isDown('GamepadLStickRight')) {
+    if (this.input.isActionDown('moveRight')) {
       this.paddle.x += 360 * dt;
     }
     if (this.input.mouse.x >= 0) {
@@ -595,7 +593,6 @@ export class Breakout extends GameBase {
 
   _endGame(status) {
     this.phase = status;
-    this.status = status;
     // ── SFX / Haptics ──
     if (status === 'lost') {
       AudioManager.sfx({ type: 'explosion', volume: 0.5 });
@@ -617,7 +614,6 @@ export class Breakout extends GameBase {
     this.score = 0;
     this.selectedDifficulty = this.storage.get('difficulty', 1);
     this.phase = 'select-difficulty';
-    this.status = 'playing';
     this.startTime = Date.now();
     this._livesLostThisLevel = 0;
     this.boss = null;

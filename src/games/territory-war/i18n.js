@@ -28,4 +28,14 @@ export default {
   'territory.victoryMsg':   { es: '¡Has conquistado todo en {n} turnos!', en: 'You conquered all in {n} turns!' },
   'territory.defeat':       { es: 'DERROTA',       en: 'DEFEAT' },
   'territory.defeatMsg':    { es: 'Tus unidades han caído', en: 'Your units have fallen' },
+
+  // ── Registro y Logros ──────────────────────────────────────────────────
+  'prog.territory.firstVictory':         { es: 'Primera victoria',             en: 'First victory' },
+  'prog.territory.firstVictory.desc':    { es: 'Gana tu primera batalla',      en: 'Win your first battle' },
+  'prog.territory.veteran':              { es: 'Veterano de guerra',           en: 'War veteran' },
+  'prog.territory.veteran.desc':         { es: 'Gana 5 batallas',              en: 'Win 5 battles' },
+  'prog.territory.legend':               { es: 'Leyenda del territorio',       en: 'Territory legend' },
+  'prog.territory.legend.desc':          { es: 'Gana 10 batallas',             en: 'Win 10 battles' },
+  'registry.territory-war.title':   { es: 'Territory War',            en: 'Territory War' },
+  'registry.territory-war.tagline': { es: 'IA de bots, turnos y captura de territorio', en: 'Bot AI, turns, and territory capture' },
 };

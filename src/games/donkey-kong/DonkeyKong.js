@@ -45,6 +45,14 @@ export class DonkeyKong extends GameBase {
     this._restart();
   }
 
+  _defaultBindings() {
+    const parent = super._defaultBindings ? super._defaultBindings() : {};
+    return {
+      ...parent,
+      jump: ['Space', 'ArrowUp', 'KeyW', 'GamepadA', 'GamepadUp', 'GamepadLStickUp'],
+    };
+  }
+
   _restart() {
     this.score = 0;
     this.lives = 3;
@@ -192,7 +200,7 @@ export class DonkeyKong extends GameBase {
 
   update(dt) {
     if (this.status !== 'playing') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadStart')) {
+      if (this.input.wasActionPressed('action') || this.input.mouse.clickedThisFrame) {
         this._restart();
       }
 
@@ -239,11 +247,11 @@ export class DonkeyKong extends GameBase {
 
     // Input horizontal
     p.vx = 0;
-    if (this.input.isDown('ArrowLeft') || this.input.isDown('KeyA') || this.input.isDown('GamepadLeft') || this.input.isDown('GamepadLStickLeft')) {
+    if (this.input.isActionDown('moveLeft')) {
       p.vx = -PLAYER_SPEED;
       p.facing = -1;
     }
-    if (this.input.isDown('ArrowRight') || this.input.isDown('KeyD') || this.input.isDown('GamepadRight') || this.input.isDown('GamepadLStickRight')) {
+    if (this.input.isActionDown('moveRight')) {
       p.vx = PLAYER_SPEED;
       p.facing = 1;
     }
@@ -255,10 +263,10 @@ export class DonkeyKong extends GameBase {
       const ly = ladder.y;
       if (p.x + p.w / 2 > lx - 10 && p.x - p.w / 2 < lx + 10 && p.y + p.h > ly && p.y < ly + ladder.h) {
         onLadder = true;
-        if (this.input.isDown('ArrowUp') || this.input.isDown('KeyW') || this.input.isDown('GamepadUp') || this.input.isDown('GamepadLStickUp')) {
+        if (this.input.isActionDown('moveUp')) {
           p.vy = -LADDER_SPEED;
           p.onGround = false;
-        } else if (this.input.isDown('ArrowDown') || this.input.isDown('KeyS') || this.input.isDown('GamepadDown') || this.input.isDown('GamepadLStickDown')) {
+        } else if (this.input.isActionDown('moveDown')) {
           p.vy = LADDER_SPEED;
           p.onGround = false;
         } else {
@@ -270,7 +278,7 @@ export class DonkeyKong extends GameBase {
 
     if (!onLadder) {
       // Salto
-      if (p.onGround && (this.input.wasPressed('Space') || this.input.wasPressed('ArrowUp') || this.input.wasPressed('KeyW') || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadUp') || this.input.wasPressed('GamepadLStickUp'))) {
+      if (p.onGround && this.input.wasActionPressed('jump')) {
         p.vy = JUMP_VELOCITY;
         p.onGround = false;
         AudioManager.sfx({ type: 'dk_jump', volume: 0.3 });

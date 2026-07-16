@@ -218,13 +218,13 @@ export class FancyPants extends GameBase {
 
   update(dt) {
     if (this.status === 'level-complete') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadStart')) this._nextLevel();
+      if (this.input.wasActionPressed('action') || this.input.mouse.clickedThisFrame) this._nextLevel();
 
       return;
     }
     if (this.handleRestartInput()) return;
     if (this.status === 'level-complete') {
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadStart')) this._nextLevel();
+      if (this.input.wasActionPressed('action') || this.input.mouse.clickedThisFrame) this._nextLevel();
 
       return;
     }
@@ -244,8 +244,8 @@ export class FancyPants extends GameBase {
   }
 
   _updatePlayer(dt) {
-    const left = this.input.isDown('ArrowLeft') || this.input.isDown('KeyA') || this.input.isDown('GamepadLeft') || this.input.isDown('GamepadLStickLeft');
-    const right = this.input.isDown('ArrowRight') || this.input.isDown('KeyD') || this.input.isDown('GamepadRight') || this.input.isDown('GamepadLStickRight');
+    const left = this.input.isActionDown('moveLeft');
+    const right = this.input.isActionDown('moveRight');
 
     if (this.wallJumpLock > 0) {
       this.wallJumpLock -= dt;
@@ -282,7 +282,7 @@ export class FancyPants extends GameBase {
       }
     }
 
-    const jumpPressed = this.input.wasPressed('Space') || this.input.wasPressed('ArrowUp') || this.input.wasPressed('KeyW') || this.input.wasPressed('GamepadA') || this.input.wasPressed('GamepadUp') || this.input.wasPressed('GamepadLStickUp');
+    const jumpPressed = this.input.wasActionPressed('jump');
     if (jumpPressed) {
       if (this.player.onGround || this.coyoteTimer > 0) {
         this.player.vy = JUMP_VELOCITY;
@@ -301,7 +301,7 @@ export class FancyPants extends GameBase {
       }
     }
 
-    const jumpHeld = this.input.isDown('Space') || this.input.isDown('ArrowUp') || this.input.isDown('KeyW') || this.input.isDown('GamepadA') || this.input.isDown('GamepadUp') || this.input.isDown('GamepadLStickUp');
+    const jumpHeld = this.input.isActionDown('jump');
     if (!jumpHeld && this.player.vy < 0 && !this.player.jumpCut) {
       this.player.vy *= JUMP_CUT_MULTIPLIER;
       this.player.jumpCut = true;

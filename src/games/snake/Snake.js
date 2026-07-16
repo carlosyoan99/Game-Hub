@@ -136,18 +136,13 @@ export class Snake extends GameBase {
   }
 
   _handleDirectionInput() {
-    const upPressed = this.input.wasPressed('ArrowUp') || this.input.wasPressed('KeyW') || this.input.wasPressed('GamepadUp') || this.input.wasPressed('GamepadLStickUp');
-    const downPressed = this.input.wasPressed('ArrowDown') || this.input.wasPressed('KeyS') || this.input.wasPressed('GamepadDown') || this.input.wasPressed('GamepadLStickDown');
-    const leftPressed = this.input.wasPressed('ArrowLeft') || this.input.wasPressed('KeyA') || this.input.wasPressed('GamepadLeft') || this.input.wasPressed('GamepadLStickLeft');
-    const rightPressed = this.input.wasPressed('ArrowRight') || this.input.wasPressed('KeyD') || this.input.wasPressed('GamepadRight') || this.input.wasPressed('GamepadLStickRight');
-
-    if (upPressed && this.direction.y === 0) {
+    if (this.input.wasActionPressed('up') && this.direction.y === 0) {
       this.pendingDirection = { ...DIRECTIONS.up };
-    } else if (downPressed && this.direction.y === 0) {
+    } else if (this.input.wasActionPressed('down') && this.direction.y === 0) {
       this.pendingDirection = { ...DIRECTIONS.down };
-    } else if (leftPressed && this.direction.x === 0) {
+    } else if (this.input.wasActionPressed('left') && this.direction.x === 0) {
       this.pendingDirection = { ...DIRECTIONS.left };
-    } else if (rightPressed && this.direction.x === 0) {
+    } else if (this.input.wasActionPressed('right') && this.direction.x === 0) {
       this.pendingDirection = { ...DIRECTIONS.right };
     }
   }
@@ -156,7 +151,7 @@ export class Snake extends GameBase {
     if (this.handleRestartInput()) return;
 
     if (this.status === 'boss-won') {
-      if (this.input.wasPressed('Space') || this.input.wasActionPressed('restart') || this.input.mouse.clickedThisFrame) this._restart();
+      if (this.input.wasActionPressed('restart') || this.input.mouse.clickedThisFrame) this._restart();
       return;
     }
 

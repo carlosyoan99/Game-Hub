@@ -21,6 +21,15 @@ import { icon } from '../../engine/IconRenderer.js';
 import { GRAVITY, WIND_MAX, ARROW_RADIUS, MAX_TURNS, COLORS } from './constants.js';
 
 export class Bowman extends GameBase {
+  _defaultBindings() {
+    const parent = super._defaultBindings ? super._defaultBindings() : {};
+    return {
+      ...parent,
+      moveUp: ['ArrowUp', 'GamepadUp', 'GamepadLStickUp'],
+      moveDown: ['ArrowDown', 'GamepadDown', 'GamepadLStickDown'],
+    };
+  }
+
   init(engine) {
     super.init(engine, 'bowman');
     this.highscore = this.storage.get('highscore', 0);
@@ -183,9 +192,9 @@ export class Bowman extends GameBase {
       }
 
       if (this.turn === 1) {
-        if (this.input.wasPressed('ArrowUp') || this.input.wasPressed('GamepadUp') || this.input.isDown('GamepadLStickUp')) this.aimAngle = clamp(this.aimAngle + 0.1, -Math.PI * 0.45, -0.05);
-        if (this.input.wasPressed('ArrowDown') || this.input.wasPressed('GamepadDown') || this.input.isDown('GamepadLStickDown')) this.aimAngle = clamp(this.aimAngle - 0.1, -Math.PI * 0.45, -0.05);
-        if (this.input.mouse.clickedThisFrame || this.input.wasPressed('Space') || this.input.wasPressed('GamepadA')) {
+        if (this.input.wasActionPressed('moveUp') || this.input.isActionDown('moveUp')) this.aimAngle = clamp(this.aimAngle + 0.1, -Math.PI * 0.45, -0.05);
+        if (this.input.wasActionPressed('moveDown') || this.input.isActionDown('moveDown')) this.aimAngle = clamp(this.aimAngle - 0.1, -Math.PI * 0.45, -0.05);
+        if (this.input.mouse.clickedThisFrame || this.input.wasActionPressed('action')) {
           this._fire();
         }
       }

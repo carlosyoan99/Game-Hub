@@ -173,13 +173,13 @@ export class BloonsTD extends GameBase {
     this._handlePlacement();
 
     // Speed multiplier: 4=1x, 5=2x, 6=3x
-    if (this.input.wasPressed('Digit1')) this.selectedTowerType = 'dart';
-    if (this.input.wasPressed('Digit2')) this.selectedTowerType = 'cannon';
-    if (this.input.wasPressed('Digit3')) this.selectedTowerType = 'sniper';
-    if (this.input.wasPressed('Digit4')) this.speedMultiplier = 1;
-    if (this.input.wasPressed('Digit5')) this.speedMultiplier = 2;
-    if (this.input.wasPressed('Digit6')) this.speedMultiplier = 3;
-    if (this.input.wasPressed('KeyP')) this.placingTower = !this.placingTower;
+    if (this.input.wasActionPressed('tower1')) this.selectedTowerType = 'dart';
+    if (this.input.wasActionPressed('tower2')) this.selectedTowerType = 'cannon';
+    if (this.input.wasActionPressed('tower3')) this.selectedTowerType = 'sniper';
+    if (this.input.wasActionPressed('speed1')) this.speedMultiplier = 1;
+    if (this.input.wasActionPressed('speed2')) this.speedMultiplier = 2;
+    if (this.input.wasActionPressed('speed3')) this.speedMultiplier = 3;
+    if (this.input.wasActionPressed('placeMode')) this.placingTower = !this.placingTower;
 
     if (this.status === 'pre-wave') {
       // Auto-advance timer: 5 segundos reales después de completar oleada
@@ -190,7 +190,7 @@ export class BloonsTD extends GameBase {
           this._startWave();
         }
       }
-      if (this.input.wasPressed('Space') || this.input.mouse.clickedThisFrame) {
+      if (this.input.wasActionPressed('action') || this.input.mouse.clickedThisFrame) {
         this.autoAdvanceTimer = 0;
         this._startWave();
       }

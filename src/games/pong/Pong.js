@@ -53,6 +53,8 @@ export class Pong extends GameBase {
     return {
       up:    ['ArrowUp', 'KeyW', 'GamepadUp', 'GamepadLStickUp'],
       down:  ['ArrowDown', 'KeyS', 'GamepadDown', 'GamepadLStickDown'],
+      left:  ['ArrowLeft', 'KeyA', 'GamepadLeft', 'GamepadLStickLeft'],
+      right: ['ArrowRight', 'KeyD', 'GamepadRight', 'GamepadLStickRight'],
       restart: ['Space', 'GamepadStart', 'GamepadA'],
     };
   }
@@ -180,15 +182,15 @@ export class Pong extends GameBase {
   update(dt) {
     if (this.phase === 'select-difficulty') {
       // Keyboard/gamepad selection for difficulty
-      const left = this.input.wasPressed('ArrowLeft') || this.input.wasActionPressed('left');
-      const right = this.input.wasPressed('ArrowRight') || this.input.wasActionPressed('right');
+      const left = this.input.wasActionPressed('left');
+      const right = this.input.wasActionPressed('right');
       if (left || right) {
         this.selectedDifficulty = Math.max(0, Math.min(DIFFICULTIES.length - 1,
           this.selectedDifficulty + (right ? 1 : -1)));
       }
       // Switch AI style with up/down
-      const up = this.input.wasPressed('ArrowUp') || this.input.wasActionPressed('up');
-      const down = this.input.wasPressed('ArrowDown') || this.input.wasActionPressed('down');
+      const up = this.input.wasActionPressed('up');
+      const down = this.input.wasActionPressed('down');
       if (up || down) {
         this.selectedAiStyle = (this.selectedAiStyle + (up ? -1 : 1) + AI_STYLES.length) % AI_STYLES.length;
         AudioManager.sfx({ type: 'select', volume: 0.2 });
@@ -204,7 +206,7 @@ export class Pong extends GameBase {
           }
         }
       }
-      if (this.input.wasPressed('Enter') || this.input.wasActionPressed('restart') || this.input.wasActionPressed('flap')) {
+      if (this.input.wasPressed('Enter') || this.input.wasActionPressed('restart')) {
         if (this.selectedDifficulty >= 0) {
           this._startGame(this.selectedDifficulty);
         } else {
@@ -278,10 +280,10 @@ export class Pong extends GameBase {
 
   _movePlayer(dt) {
     const speed = 380;
-    if (this.input.isDown('ArrowUp') || this.input.isDown('KeyW') || this.input.isDown('GamepadUp') || this.input.isDown('GamepadLStickUp')) {
+    if (this.input.isActionDown('up')) {
       this.player.y -= speed * dt;
     }
-    if (this.input.isDown('ArrowDown') || this.input.isDown('KeyS') || this.input.isDown('GamepadDown') || this.input.isDown('GamepadLStickDown')) {
+    if (this.input.isActionDown('down')) {
       this.player.y += speed * dt;
     }
     if (this.input.mouse.y >= 0) {

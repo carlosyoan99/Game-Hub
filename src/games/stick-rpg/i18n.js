@@ -54,7 +54,6 @@ export default {
   'stick.end.bestDay':         { es: 'Mejor día alcanzado: {n}',      en: 'Best day reached: {n}' },
   'stick.dialogue.noMoney':    { es: '❌ No tienes suficiente dinero.', en: '❌ Not enough money.' },
   'stick.dialogue.tired':      { es: '😴 Demasiado cansado. Vuelve a casa a dormir.', en: '😴 Too tired. Go home and sleep.' },
-  'stick.dialogue.dead':       { es: '💸 Te quedaste sin dinero.',    en: '💸 You ran out of money.' },
   'stick.dialogue.bankrupt':   { es: '💸 Te quedaste sin dinero.',    en: '💸 You ran out of money.' },
   'stick.dialogue.sleep':      { es: '☀️ Día {n}. ¡Energía al máximo!', en: '☀️ Day {n}. Full energy!' },
   'stick.dialogue.homeRead':   { es: '📖 Encontraste un artículo fascinante sobre... bueno, algo.', en: '📖 You found a fascinating article about... well, something.' },
@@ -91,4 +90,14 @@ export default {
   'stick.event.argue':         { es: '💬 Discutes con un extraño. +1 fuerza, -1 carisma', en: '💬 You argue with a stranger. +1 strength, -1 charisma' },
   'stick.event.medal':         { es: '🏅 ¡Ganaste una medalla en el gimnasio! +2 fuerza', en: '🏅 You won a medal at the gym! +2 strength' },
   'stick.dialogue.closed':     { es: '🚫 {action} no está disponible hoy.', en: '🚫 {action} is not available today.' },
+
+  // ── Registro y Logros ──────────────────────────────────────────────────
+  'prog.stickrpg.firstDay':              { es: 'Primer día',                   en: 'First day' },
+  'prog.stickrpg.firstDay.desc':         { es: 'Sobrevive al día 1',           en: 'Survive day 1' },
+  'prog.stickrpg.rich':                  { es: 'Multimillonario',              en: 'Stick millionaire' },
+  'prog.stickrpg.rich.desc':             { es: 'Alcanza 10.000 de oro',        en: 'Reach 10,000 gold' },
+  'prog.stickrpg.legend':                { es: 'Leyenda del RPG',              en: 'RPG legend' },
+  'prog.stickrpg.legend.desc':           { es: 'Alcanza el día 30',            en: 'Reach day 30' },
+  'registry.stick-rpg.title':   { es: 'Stick RPG',                    en: 'Stick RPG' },
+  'registry.stick-rpg.tagline': { es: 'Días, energía, diálogos y cambio de escenas', en: 'Days, energy, dialogues, scene switching' },
 };

@@ -178,7 +178,8 @@ export class InputManager {
     this._onTouchStart = (e) => {
       if (e.touches.length === 0) return;
       this._onMouseMove(e.touches[0]);
-      this._onMouseDown();
+      // Touch equivale al botón izquierdo del ratón (button = 0)
+      this._onMouseDown({ button: 0 });
       e.preventDefault();
     };
     this._onTouchEnd = () => this._onMouseUp();
@@ -390,10 +391,11 @@ export class InputManager {
   /** Limpia teclas virtuales de gamepad de keys/keysJustPressed. */
   _clearGamepadKeys() {
     const gamepadPrefix = 'Gamepad';
-    for (const key of this.keys) {
+    // Iterar sobre copias del Set para no mutar durante la iteración
+    for (const key of [...this.keys]) {
       if (key.startsWith(gamepadPrefix)) this.keys.delete(key);
     }
-    for (const key of this.keysJustPressed) {
+    for (const key of [...this.keysJustPressed]) {
       if (key.startsWith(gamepadPrefix)) this.keysJustPressed.delete(key);
     }
   }

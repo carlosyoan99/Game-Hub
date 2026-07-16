@@ -74,7 +74,11 @@ export class FlappyBird extends GameBase {
 
   _defaultBindings() {
     return {
-      flap:    ['Space', 'ArrowUp', 'KeyW', 'GamepadA', 'GamepadB', 'GamepadUp', 'GamepadStart'],
+      up:      ['ArrowUp', 'KeyW', 'GamepadUp', 'GamepadLStickUp'],
+      down:    ['ArrowDown', 'KeyS', 'GamepadDown', 'GamepadLStickDown'],
+      left:    ['ArrowLeft', 'KeyA', 'GamepadLeft', 'GamepadLStickLeft'],
+      right:   ['ArrowRight', 'KeyD', 'GamepadRight', 'GamepadLStickRight'],
+      flap:    ['Space', 'ArrowUp', 'KeyW', 'GamepadA', 'GamepadB', 'GamepadStart'],
       restart: ['Space', 'GamepadStart', 'GamepadA'],
     };
   }
@@ -132,21 +136,21 @@ export class FlappyBird extends GameBase {
 
   update(dt) {
     if (this.phase === 'select-mode') {
-      if (this.input.wasPressed('Space') || this.input.wasActionPressed('flap') || this.input.mouse.clickedThisFrame) {
+      if (this.input.wasActionPressed('flap') || this.input.mouse.clickedThisFrame) {
         this.selectedMode = 1;
         AudioManager.sfx({ type: 'select', volume: 0.25 });
         this.phase = 'playing';
       }
-      if (this.input.wasPressed('ArrowRight') || this.input.wasActionPressed('right')) {
+      if (this.input.wasActionPressed('right')) {
         this.selectedMode = 1;
       }
-      if (this.input.wasPressed('ArrowLeft') || this.input.wasActionPressed('left')) {
+      if (this.input.wasActionPressed('left')) {
         this.selectedMode = 0;
       }
-      if (this.input.wasPressed('ArrowUp') || this.input.wasActionPressed('up')) {
+      if (this.input.wasActionPressed('up')) {
         this.selectedMode = this.selectedMode === 0 ? 1 : 0;
       }
-      if (this.input.wasPressed('ArrowDown') || this.input.wasActionPressed('down')) {
+      if (this.input.wasActionPressed('down')) {
         this.selectedMode = this.selectedMode === 0 ? 1 : 0;
       }
       return;

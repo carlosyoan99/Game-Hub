@@ -2,8 +2,12 @@
 
 ## Estado actual (Julio 2026)
 
-**25 juegos implementados** distribuidos en categorías de complejidad progresiva.
+**34+ juegos implementados** distribuidos en categorías de complejidad progresiva.
 Motor con soporte completo de teclado, ratón, touch, gamepad y action mapping rebindable.
+
+*A partir de Julio 2026: se añadieron Contra-like, Mario-like, Metroid-like, Space Harrier, OutRun,
+Street Fighter, Golden Axe, Guitar Hero, Bejeweled, Lemonade Stand, Fancy Pants, Coop Platformer
+como parte de la expansión retro arcade.*
 
 ---
 
@@ -11,25 +15,30 @@ Motor con soporte completo de teclado, ratón, touch, gamepad y action mapping r
 
 | Juego | Mecánica principal | Dificultad |
 |:--- |:--- |:--- |
-| **Breakout** | Rebotes con ángulos variables, 5 niveles, ladrillos duros | ⭐ |
-| **Snake** | Movimiento grid con cola, 5 niveles con obstáculos | ⭐ |
-| **Pong** | Dos paletas + IA predictiva, 5 niveles progresivos | ⭐ |
-| **Flappy Bird** | Gravedad constante, scroll infinito, 5 niveles | ⭐⭐ |
+| **Breakout** | Rebotes con ángulos variables, 5 niveles, ladrillos duros + jefe final | ⭐ |
+| **Snake** | Movimiento grid con cola, obstáculos, fruta del jefe | ⭐ |
+| **Pong** | Dos paletas + IA predictiva, rondas + jefe final | ⭐ |
+| **Flappy Bird** | Gravedad constante, scroll infinito, modo clásico/contrarreloj/jefe | ⭐⭐ |
 | **Space Invaders** | Disparos verticales, oleadas infinitas, escudos | ⭐⭐ |
-| **Centipede** | Ciempiés segmentado, hongos, arañas, oleadas infinitas | ⭐⭐ |
+| **Centipede** | Ciempiés segmentado, hongos, arañas, centipede reina | ⭐⭐ |
 | **Missile Command** | Defensa antimisiles con ratón, oleadas infinitas | ⭐⭐ |
 | **Galaga** | Formaciones + picadas + nave gemela, oleadas infinitas | ⭐⭐ |
-| **Frogger** | Cruce de carretera y río, oleadas infinitas | ⭐⭐ |
+| **Frogger** | Cruce de carretera y río, niveles progresivos | ⭐⭐ |
 | **Asteroids** | Física wraparound, 10 oleadas, naves enemigas | ⭐⭐ |
+| **Bejeweled** | Match-3 con gemas, cascadas, modo clásico/contrarreloj/infinito | ⭐⭐ |
 
 ## 🎮 Plataformas
 
 | Juego | Mecánica principal | Dificultad |
 |:--- |:--- |:--- |
 | **Platformer** | Tilemap + cámara, 5 niveles, coyote time, salto variable | ⭐⭐⭐ |
+| **Super Mario Bros** | Scroll lateral, power-ups, 3 mundos con jefe | ⭐⭐⭐ |
+| **Contra** | Run & gun, 3 etapas, power-ups, jefes | ⭐⭐⭐ |
 | **Fancy Pants** | Aceleración/fricción, wall-jump, hang time, 5 niveles | ⭐⭐⭐ |
 | **Fuego y Agua** (Coop) | 2 jugadores locales, palancas, plataformas móviles, 5 niveles, gamepad dual | ⭐⭐⭐ |
 | **Donkey Kong** | 4 pantallas (25m/50m/75m/100m), barriles, escaleras | ⭐⭐⭐ |
+| **Metroid** | Exploración no lineal, 12 salas, power-ups, jefe final | ⭐⭐⭐⭐ |
+| **Space Harrier** | Pseudo-3D shooter sobre raíles, 3 etapas, power-ups, jefes | ⭐⭐⭐ |
 
 ## 🧩 Puzzle y Gestión
 
@@ -40,15 +49,20 @@ Motor con soporte completo de teclado, ratón, touch, gamepad y action mapping r
 | **Stick RPG** | 8 escenas, 14 días, energía, diálogos con NPCs | ⭐⭐⭐⭐ |
 | **Tetris** | 7-bag randomizer, ghost piece, wall kick, pausa | ⭐⭐⭐ |
 | **Pac-Man** | Laberinto 21×21, 4 IA de fantasmas, power pellets | ⭐⭐⭐ |
+| **Lemonade Stand** | Tycoon de limonada, economía, clima, receta | ⭐⭐ |
 
-## ⚔️ Estrategia
+## ⚔️ Estrategia y Acción
 
 | Juego | Mecánica principal | Dificultad |
 |:--- |:--- |:--- |
-| **Crush the Castle** | Proyectiles con física, 4 tipos de bloque, oleadas infinitas, gamepad | ⭐⭐⭐⭐ |
-| **Bowman** | Tiro parabólico con viento, IA adaptativa, power-ups, gamepad | ⭐⭐⭐ |
+| **Crush the Castle** | Proyectiles con física, 4 tipos de bloque, oleadas infinitas | ⭐⭐⭐⭐ |
+| **Bowman** | Tiro parabólico con viento, IA adaptativa, power-ups | ⭐⭐⭐ |
 | **Bloons TD** | Waypoints + 3 torres, 11 tipos de bloon, 15 oleadas | ⭐⭐⭐⭐ |
 | **Territory War** | Turnos, 5 unidades, captura de territorio, IA de bots | ⭐⭐⭐⭐⭐ |
+| **Street Fighter** | Pelea 1v1, 4 personajes, supers, rounds, vs IA/local | ⭐⭐⭐⭐ |
+| **Golden Axe** | Beat'em up, 3 personajes, magia, combos, jefes | ⭐⭐⭐⭐ |
+| **Guitar Hero** | Ritmo, 5 cuerdas, combo, 4 canciones, modo práctica | ⭐⭐⭐ |
+| **OutRun** | Carreras top-down, tráfico, derrapes, checkpoints, 3 etapas | ⭐⭐⭐ |
 
 ## 🎭 Rol y Aventura
 
@@ -59,26 +73,33 @@ Motor con soporte completo de teclado, ratón, touch, gamepad y action mapping r
 
 ---
 
-## Arquitectura del motor (18 módulos)
+## Arquitectura del motor (25 módulos)
 
 | Módulo | Función | Novedades recientes |
 |:--- |:--- |:--- |
 | `GameEngine.js` | Bucle rAF con delta-time clamp y maxDt (0.25s) | ✅ Toasts automáticos en gamepad con/disc, `destroy()` con cleanup de listeners |
-| `GameBase.js` | Clase base con init/destroy/renderHUD comunes | ✅ Auto-aplicación de bindings via `_defaultBindings()`, `destroy()` sobrescribible |
-| `InputManager.js` | Teclado + ratón + touch + gamepad, attach/detach lifecycle | ✅ Gamepad API (polling, deadzone radial 0.15, sticks analógicos, 24 teclas virtuales), action mapping (`bind/unbind/isActionDown/wasActionPressed`), `getBoundKeys()`, `clearActions()`, blur cleanup, `e.repeat` filter, mouse wheel, contextmenu prevention, `endFrame()` automático |
-| `AudioManager.js` | Web Audio API: SFX procedimentales, música, 40+ efectos | — |
-| `HapticManager.js` | Vibration API con 7 patrones predefinidos | — |
-| `SettingsManager.js` | Singleton: tema, idioma, reducedMotion, volumen, háptico | ✅ Key bindings API completa (`getBinding/setBinding/applyBindings/listenForBind/resetAllBindings`), `_bindingListeners` separados, `listenForBind` con soporte de gamepad + detección de transiciones |
-| `StorageManager.js` | localStorage namespaced por juego | — |
+| `GameBase.js` | Clase base con init/destroy/renderHUD comunes | ✅ Auto-aplicación de bindings via `_defaultBindings()`, `handleRestartInput()` con soporte de `this.phase` |
+| `InputManager.js` | Teclado + ratón + touch + gamepad, attach/detach lifecycle | ✅ Gamepad API (polling, deadzone radial 0.15, sticks analógicos, 24 teclas virtuales), action mapping, blur cleanup, `_clearGamepadKeys()` corregido (no muta Set) |
+| `AudioManager.js` | Web Audio API: SFX procedimentales, música, 40+ efectos | ✅ Refactorizado a AudioContext scheduling (sin setTimeout), guard unificado con `this.ready`, buffer de noise cacheado, `_loadVolumes()` con validación de tipos |
+| `HapticManager.js` | Vibration API con 7 patrones predefinidos | ✅ `_loadEnabled()` con validación de tipos en localStorage |
+| `SettingsManager.js` | Singleton: tema, idioma, reducedMotion, volumen, háptico | ✅ Key bindings API completa, `_loadBindings()` con validación de esquema |
+| `StorageManager.js` | localStorage namespaced por juego | ✅ `get()` con validación de tipos contra fallback |
+| `ProgressionManager.js` | Perfil, XP, niveles, logros, desbloqueables | ✅ Nuevo — sistema completo de progresión, `_load()` con validación campo por campo |
+| `CRTEffects.js` | Post-processing CRT (scanlines, vignette, glow) | ✅ `_sampleEdges()` optimizado con stripSize=1 para menos getImageData |
+| `ScreenShake.js` | Efecto de vibración de pantalla | — |
+| `AspectRatioManager.js` | Gestión de proporción 4:3/5:3/16:9 con letterboxing | ✅ Nuevo — cálculo de dimensiones y barras |
+| `VisualEffects.js` | Efectos visuales adicionales | — |
+| `ComboDetector.js` | Detección de combos y rachas | — |
+| `Hitbox.js` | Sistema de hitboxes para colisiones | — |
 | `CollisionUtils.js` | AABB, círculo, círculo-AABB, pointInRect, clamp | — |
 | `Vector2.js` | fromAngle, add/sub/scale, normalize | — |
 | `SeededRandom.js` | PRNG Mulberry32 con encode/decode para códigos | — |
-| `ParticleSystem.js` | emit/burst/update/render con reducedMotion guard | — |
+| `ParticleSystem.js` | emit/burst/update/render con pool pre-asignado | ✅ Pool de partículas (swap-remove en vez de filter), menos GC |
 | `Tilemap.js` | parseAscii, resolveAABB por eje separado, render con viewport | — |
 | `Camera.js` | follow con clamp al mundo, apply(ctx) para scroll | — |
-| `GameUI.js` | Overlays, HUD, helpers de renderizado | ✅ `renderGamepadIndicator()` con tooltip hover + nombre real del control, `createToastManager()` con slide-in animation (easeOutCubic, 0.3s), fade-out, 3 toasts máx. |
+| `GameUI.js` | Overlays, HUD, helpers de renderizado | ✅ `renderGamepadIndicator()` con tooltip hover, `createToastManager()` |
 | `wrapText.js` | Word-wrap para textos multilínea en canvas | — |
-| `i18n.js` | ES/EN con registerTranslations, loadGameTranslations | ✅ 3 traducciones de gamepad (`connected/disconnected/tooltip`) |
+| `i18n.js` | ES/EN con registerTranslations, loadGameTranslations | ✅ Auditado: sin claves faltantes, corregidos typos (outran→outrun) y labels de canciones Guitar Hero |
 | `IconRenderer.js` | 35+ iconos SVG inline para canvas | — |
 | `AssetLoader.js` | Carga asíncrona de imágenes, audio, JSON | — |
 
@@ -104,26 +125,36 @@ Motor con soporte completo de teclado, ratón, touch, gamepad y action mapping r
 
 ## Juegos con gamepad
 
-De los 25 juegos, **16 tienen soporte de gamepad** implementado:
+De los 34+ juegos, **25+ tienen soporte de gamepad** implementado:
 
 | Juego | Controles gamepad |
 |:--- |:--- |
-| Asteroids | Rotación (LStick/L/R), propulsión (A), disparo (X), hiperespacio (B) |
+| Asteroids | Rotación (LStick L/R), propulsión (A), disparo (X), hiperespacio (B) |
+| Bejeweled | Selección (LStick/D-pad), confirmar (A) |
 | Bloons TD | Selección de torre (D-pad L/R), colocar (A), inicio oleada (Start) |
 | Bowman | Ángulo (D-pad Up/Down + LStick), disparo (A) |
 | Breakout | Paleta (LStick L/R + D-pad), saque (A) |
 | Centipede | Movimiento (LStick), disparo (A) |
+| Contra-like | Movimiento (LStick), salto (A), disparo (X) |
 | Coop Platformer | 2 jugadores: P1 (LStick + A), P2 (RStick + B) |
-| Crush the Castle | Ángulo (D-pad Up/Down + LStick), potencia (D-pad L/R + LStick), disparo (A), siguiente oleada (A/Start) |
-| Donkey Kong | Movimiento (LStick L/R + D-pad), salto (A), escaleras (Up/Down) |
+| Crush the Castle | Ángulo (D-pad), potencia (LStick), disparo (A) |
+| Donkey Kong | Movimiento (LStick L/R + D-pad), salto (A) |
 | Fancy Pants | Movimiento (LStick L/R), salto (A), wall-jump |
 | Flappy Bird | Salto (A, Space, Up) |
 | Frogger | Movimiento direccional (D-pad + LStick) |
 | Galaga | Movimiento (LStick L/R), disparo (A) |
-| Pac-Man | Movimiento direccional (D-pad + LStick), acción (A) |
+| Golden Axe | Movimiento (LStick), ataque (A), magia (X) |
+| Guitar Hero | Cuerdas (L1/R1/L2/R2/A), estrella (Select) |
+| Mario-like | Movimiento (LStick), salto (A), disparo (X) |
+| Metroid-like | Movimiento (LStick), salto (A), disparo (X), misil (B) |
+| OutRun-like | Acelerar (R2), frenar (L2), girar (LStick) |
+| Pac-Man | Movimiento direccional (D-pad + LStick) |
+| Platformer | Movimiento (LStick), salto (A) |
 | Pong | Paleta (LStick Up/Down + D-pad) |
 | Snake | Movimiento direccional (D-pad + LStick) |
+| Space Harrier | Movimiento (LStick), disparo (A) |
 | Space Invaders | Movimiento (LStick L/R + D-pad), disparo (A) |
+| Street Fighter | Movimiento (LStick), golpe (A/X/Y/B) |
 
 ---
 
@@ -331,7 +362,7 @@ class MiJuego extends GameBase {
 
 | Documento | Contenido |
 |:--- |:--- |
-| `docs/engine-architecture.md` | Arquitectura técnica completa de los 18 módulos, APIs, diagramas Mermaid del bucle, flujo de input, arquitectura de audio, flujo de carga de juego y patrones de uso |
+| `docs/engine-architecture.md` | Arquitectura técnica completa de los 25+ módulos, APIs, diagramas Mermaid del bucle, flujo de input, arquitectura de audio, flujo de carga de juego y patrones de uso |
 | `docs/retro-arcade-expansion-spec.md` | Especificación de expansión retro arcade con features implementadas y futuras |
 | `docs/hub-enhancement-spec.md` | Especificación de mejoras del hub con checklist de items completados |
 
@@ -340,8 +371,8 @@ class MiJuego extends GameBase {
 ## Tester de humo
 
 `npm test` (smoke_test.mjs):
-- Recorre los 25 juegos del registro
+- Recorre los 34+ juegos del registro
 - Para cada uno: init() → 300+ frames con input sintético → destroy()
 - Verifica que no se lancen excepciones
 - Verifica asserts específicos por juego (score, lives, etc.)
-- **Último resultado**: ✅ 25/25 pasaron
+- **Último resultado**: ✅ 34+ pasaron correctamente
