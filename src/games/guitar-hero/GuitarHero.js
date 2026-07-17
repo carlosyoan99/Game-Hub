@@ -74,7 +74,7 @@ export class GuitarHero extends GameBase {
 
   _startGame() {
     const def = SONG_DEFS[this.selectedSong] || SONG_DEFS[0];
-    this.song = generateSongFromDef(def);
+    this.song = generateSongFromDef(def, this.rng);
     this.isPractice = this.practiceMode;
     this.speedMult = this.isPractice ? this.practiceSpeed : 1.0;
     this.totalNotes = this.song.totalNotes;
@@ -96,7 +96,7 @@ export class GuitarHero extends GameBase {
     this.concertLights = [];
     this.beatTimer = 0;
     this.beatFlash = 0;
-    this.equalizer = Array.from({ length: 12 }, () => Math.random() * 20 + 10);
+    this.equalizer = Array.from({ length: 12 }, () => this.rng.next() * 20 + 10);
     this.judgmentText = null;
     this.judgmentTimer = 0;
     this.starPower = 0;
@@ -203,7 +203,7 @@ export class GuitarHero extends GameBase {
       this.beatTimer -= beatInterval;
       this.beatFlash = 1;
       for (let i = 0; i < this.equalizer.length; i++) {
-        this.equalizer[i] = Math.random() * 30 + 15;
+        this.equalizer[i] = this.rng.next() * 30 + 15;
       }
     }
     this.beatFlash = Math.max(0, this.beatFlash - effectiveDt * 3);

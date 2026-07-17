@@ -23,10 +23,12 @@ export const SONG_DEFS = [
   { id: 'thunder-strike',name: 'Thunder Strike',labelKey: 'guitarhero.thunder',difficulty: 2, bpm: 160, length: 38, density: 0.65, useChords: true,  useFast: true,  color: '#ff4d4d', desc: '♪♪♪♪♫♪♪',style: 'Thrash' },
 ];
 
+const _rn = (rng) => rng ? rng.next() : Math.random();
+
 /**
  * Genera una secuencia de notas procedural para una canción
  */
-export function generateSongFromDef(def) {
+export function generateSongFromDef(def, rng) {
   const { bpm, length, density, useChords, useFast } = def;
   const beatsPerSecond = bpm / 60;
   const totalBeats = Math.floor(length * beatsPerSecond);
@@ -34,23 +36,23 @@ export function generateSongFromDef(def) {
   let lastBeat = -2;
 
   for (let beat = 0; beat < totalBeats; beat++) {
-    if (Math.random() > density) continue;
+    if (_rn(rng) > density) continue;
     if (beat - lastBeat < 0.5) continue;
 
-    if (useChords && Math.random() < 0.2 + def.difficulty * 0.05) {
-      const lane1 = Math.floor(Math.random() * LANE_COUNT);
+    if (useChords && _rn(rng) < 0.2 + def.difficulty * 0.05) {
+      const lane1 = Math.floor(_rn(rng) * LANE_COUNT);
       let lane2;
-      do { lane2 = Math.floor(Math.random() * LANE_COUNT); } while (lane2 === lane1);
+      do { lane2 = Math.floor(_rn(rng) * LANE_COUNT); } while (lane2 === lane1);
       notes.push({ lane: lane1, beat, chord: false });
       notes.push({ lane: lane2, beat, chord: true });
       lastBeat = beat;
     } else {
-      notes.push({ lane: Math.floor(Math.random() * LANE_COUNT), beat, chord: false });
+      notes.push({ lane: Math.floor(_rn(rng) * LANE_COUNT), beat, chord: false });
       lastBeat = beat;
     }
 
-    if (useFast && Math.random() < 0.15 && beat + 0.5 < totalBeats) {
-      notes.push({ lane: Math.floor(Math.random() * LANE_COUNT), beat: beat + 0.5, chord: false });
+    if (useFast && _rn(rng) < 0.15 && beat + 0.5 < totalBeats) {
+      notes.push({ lane: Math.floor(_rn(rng) * LANE_COUNT), beat: beat + 0.5, chord: false });
     }
   }
 

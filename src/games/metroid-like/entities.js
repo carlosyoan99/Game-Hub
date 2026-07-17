@@ -34,7 +34,7 @@ export function spawnEnemy(ch, x, y) {
 
   switch (ch) {
     case 'zoomer':
-      enemy.vx = 40 * (Math.random() > 0.5 ? 1 : -1);
+      enemy.vx = 40 * ((enemy.rng || Math).random() > 0.5 ? 1 : -1);
       break;
     case 'rinka':
       enemy.vx = 30;

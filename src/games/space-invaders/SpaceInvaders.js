@@ -297,11 +297,11 @@ export class SpaceInvaders extends GameBase {
     // Disparos de aliens
     this.shooterTimer -= dt;
     if (this.shooterTimer <= 0) {
-      this.shooterTimer = 1.5 + Math.random() * 2.5 - Math.min(this.wave * 0.1, 1.0);
+      this.shooterTimer = 1.5 + this.rng.next() * 2.5 - Math.min(this.wave * 0.1, 1.0);
 
       const shooters = liveAliens.filter((a) => a.isShooter);
       if (shooters.length > 0) {
-        const shooter = shooters[Math.floor(Math.random() * shooters.length)];
+        const shooter = shooters[this.rng.nextInt(0, shooters.length - 1)];
         this.alienBullets.push({
           x: shooter.x,
           y: shooter.y + shooter.height / 2,
@@ -349,8 +349,8 @@ export class SpaceInvaders extends GameBase {
       const liveAliens = this.aliens.filter((a) => a.alive).length;
       const totalAliens = ALIEN_ROWS * ALIEN_COLS;
       const spawnChance = liveAliens < totalAliens * 0.5 ? 0.02 : 0.005;
-      if (Math.random() < spawnChance * dt * 60) {
-        const fromRight = Math.random() < 0.5;
+      if (this.rng.next() < spawnChance * dt * 60) {
+        const fromRight = this.rng.next() < 0.5;
         this.mysteryShip = {
           x: fromRight ? this.width + 20 : -20,
           y: MYSTERY_SHIP_Y,
@@ -391,7 +391,7 @@ export class SpaceInvaders extends GameBase {
         if (!bullet.alive) continue;
         if (aabbIntersects(bullet, this.mysteryShip)) {
           bullet.alive = false;
-          const mysteryScore = MYSTERY_SCORES[Math.floor(Math.random() * MYSTERY_SCORES.length)];
+          const mysteryScore = MYSTERY_SCORES[this.rng.nextInt(0, MYSTERY_SCORES.length - 1)];
           this.score += mysteryScore;
           this.mysteryShip = null;
           AudioManager.sfx({ type: 'powerup', volume: 0.35 });
@@ -479,7 +479,7 @@ export class SpaceInvaders extends GameBase {
     for (const shield of this.shields) {
       for (const block of shield.blocks) {
         // Revivir algunos bloques destruidos (50%)
-        if (!block.alive && Math.random() < 0.5) {
+        if (!block.alive && this.rng.next() < 0.5) {
           block.alive = true;
         }
       }

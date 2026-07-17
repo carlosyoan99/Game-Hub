@@ -7,16 +7,18 @@ import { spawnParticles } from '../../engine/ParticleSystem.js';
 import { t } from '../../engine/i18n.js';
 import { GRID_COLS, GRID_ROWS, GEM_TYPES, GEM_SIZE, GEM_GAP } from './constants.js';
 
+const _rn = (rng) => rng ? rng.next() : Math.random();
+
 /**
  * Genera un tablero sin emparejamientos iniciales
  */
-export function generateBoard(grid) {
+export function generateBoard(grid, rng) {
   for (let row = 0; row < GRID_ROWS; row++) {
     grid[row] = [];
     for (let col = 0; col < GRID_COLS; col++) {
       let type;
       do {
-        type = Math.floor(Math.random() * GEM_TYPES.length);
+        type = Math.floor(_rn(rng) * GEM_TYPES.length);
       } while (wouldMatch(grid, row, col, type));
       grid[row][col] = { type, special: null };
     }
@@ -180,6 +182,7 @@ export function processMatches(state) {
  * Aplica gravedad: las gemas caen para llenar espacios vacíos
  */
 export function applyGravity(state) {
+  const rng = state.rng;
   let moved = false;
   for (let col = 0; col < GRID_COLS; col++) {
     let writeRow = GRID_ROWS - 1;
@@ -195,7 +198,7 @@ export function applyGravity(state) {
     }
     for (let row = writeRow; row >= 0; row--) {
       state.grid[row][col] = {
-        type: Math.floor(Math.random() * GEM_TYPES.length),
+        type: Math.floor(_rn(rng) * GEM_TYPES.length),
         special: null,
       };
       moved = true;
@@ -258,11 +261,11 @@ export function hasValidMoves(grid) {
 /**
  * Mezcla el tablero (regenera sin matches iniciales)
  */
-export function shuffleBoard(grid) {
+export function shuffleBoard(grid, rng) {
   for (let row = 0; row < GRID_ROWS; row++) {
     for (let col = 0; col < GRID_COLS; col++) {
       grid[row][col] = {
-        type: Math.floor(Math.random() * GEM_TYPES.length),
+        type: Math.floor(_rn(rng) * GEM_TYPES.length),
         special: null,
       };
     }
@@ -270,7 +273,7 @@ export function shuffleBoard(grid) {
   for (let row = 0; row < GRID_ROWS; row++) {
     for (let col = 0; col < GRID_COLS; col++) {
       while (wouldMatch(grid, row, col, grid[row][col].type)) {
-        grid[row][col].type = Math.floor(Math.random() * GEM_TYPES.length);
+        grid[row][col].type = Math.floor(_rn(rng) * GEM_TYPES.length);
       }
     }
   }

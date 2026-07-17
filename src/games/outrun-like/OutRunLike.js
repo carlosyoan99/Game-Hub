@@ -150,18 +150,18 @@ export class OutRunLike extends GameBase {
   _generateRoadElements() {
     this.roadElements = [];
     for (let y = 0; y < STAGE_LENGTH; y += 60) {
-      const lane = Math.floor(Math.random() * LANE_COUNT);
-      const type = Math.random() < 0.3 ? 'palm' : 'bush';
-      const side = Math.random() < 0.5 ? -1 : 1;
+      const lane = this.rng.nextInt(0, LANE_COUNT - 1);
+      const type = this.rng.next() < 0.3 ? 'palm' : 'bush';
+      const side = this.rng.next() < 0.5 ? -1 : 1;
       this.roadElements.push({
         y, lane, type, side,
-        offset: (Math.random() - 0.5) * 20,
+        offset: (this.rng.next() - 0.5) * 20,
       });
     }
   }
 
   _spawnInitialTraffic() {
-    for (let y = -200; y > -STAGE_LENGTH; y -= 200 + Math.random() * 300) {
+    for (let y = -200; y > -STAGE_LENGTH; y -= 200 + this.rng.next() * 300) {
       this._spawnTrafficCar(y);
     }
   }
@@ -169,16 +169,16 @@ export class OutRunLike extends GameBase {
   // ── Spawn de tráfico ────────────────────────────────────────────────
 
   _spawnTrafficCar(y) {
-    const lane = Math.floor(Math.random() * LANE_COUNT);
+    const lane = this.rng.nextInt(0, LANE_COUNT - 1);
     const carX = ROAD_LEFT + lane * LANE_WIDTH + (LANE_WIDTH - CAR_W) / 2;
-    const speed = TRAFFIC_SPEED_BASE + (Math.random() - 0.5) * TRAFFIC_SPEED_VAR;
+    const speed = TRAFFIC_SPEED_BASE + (this.rng.next() - 0.5) * TRAFFIC_SPEED_VAR;
     this.traffic.push({
       x: carX,
       y,
       width: CAR_W, height: CAR_H,
       lane,
       speed: -speed, // moving toward player (down)
-      color: TRAFFIC_COLORS[Math.floor(Math.random() * TRAFFIC_COLORS.length)],
+      color: TRAFFIC_COLORS[this.rng.nextInt(0, TRAFFIC_COLORS.length - 1)],
       alive: true,
       honked: false,
     });
@@ -316,11 +316,11 @@ export class OutRunLike extends GameBase {
 
     this.trafficTimer -= dt;
     if (this.trafficTimer <= 0) {
-      const spawnY = -CAR_H - 50 - Math.random() * 100;
+      const spawnY = -CAR_H - 50 - this.rng.next() * 100;
       this._spawnTrafficCar(spawnY);
       const interval = this.stageConfig.trafficDensity > 1.5
-        ? TRAFFIC_MIN_INTERVAL + Math.random() * 0.3
-        : TRAFFIC_MIN_INTERVAL + Math.random() * TRAFFIC_MAX_INTERVAL;
+        ? TRAFFIC_MIN_INTERVAL + this.rng.next() * 0.3
+        : TRAFFIC_MIN_INTERVAL + this.rng.next() * TRAFFIC_MAX_INTERVAL;
       this.trafficTimer = interval / this.stageConfig.trafficDensity;
     }
 
@@ -477,11 +477,11 @@ export class OutRunLike extends GameBase {
     if (!this.driftParticles) this.driftParticles = [];
     for (let i = 0; i < 6; i++) {
       this.driftParticles.push({
-        x: x + CAR_W / 2 + (Math.random() - 0.5) * 20,
-        y: this.height - CAR_H / 2 + (Math.random() - 0.5) * 10,
-        vx: (Math.random() - 0.5) * 100,
-        vy: Math.random() * 80 + 20,
-        life: 0.4 + Math.random() * 0.3,
+        x: x + CAR_W / 2 + (this.rng.next() - 0.5) * 20,
+        y: this.height - CAR_H / 2 + (this.rng.next() - 0.5) * 10,
+        vx: (this.rng.next() - 0.5) * 100,
+        vy: this.rng.next() * 80 + 20,
+        life: 0.4 + this.rng.next() * 0.3,
         color: '#ffd700',
       });
     }
@@ -692,8 +692,8 @@ export class OutRunLike extends GameBase {
       ctx.strokeStyle = `rgba(255, 255, 255, ${intensity * 0.15})`;
       ctx.lineWidth = 1;
       for (let i = 0; i < 8; i++) {
-        const sx = roadX + Math.random() * ROAD_WIDTH * 0.8;
-        const sy = Math.random() * this.height;
+        const sx = roadX + this.rng.next() * ROAD_WIDTH * 0.8;
+        const sy = this.rng.next() * this.height;
         ctx.beginPath();
         ctx.moveTo(sx, sy);
         ctx.lineTo(sx, sy - 50 - intensity * 100);
@@ -703,8 +703,8 @@ export class OutRunLike extends GameBase {
 
     // ── Shake ───────────────────────────────────────────────────────
     if (this.shakeTimer && this.shakeTimer > 0) {
-      const shakeX = (Math.random() - 0.5) * this.shakeIntensity;
-      const shakeY = (Math.random() - 0.5) * this.shakeIntensity;
+      const shakeX = (this.rng.next() - 0.5) * this.shakeIntensity;
+      const shakeY = (this.rng.next() - 0.5) * this.shakeIntensity;
       ctx.translate(shakeX, shakeY);
       this.shakeTimer -= 1/60;
     }

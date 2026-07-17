@@ -138,8 +138,9 @@ export function updateMiniBoss(miniBoss, player, bossBullets, dt, takeDamageFn) 
     if (miniBoss.spikeTimer <= 0) {
       miniBoss.spikeTimer = 2;
       for (let i = 0; i < 3; i++) {
+        const rng2 = miniBoss.rng;
         bossBullets.push(createBossBullet(
-          100 + Math.random() * (ROOM_W - 200), ROOM_H - 40,
+          100 + (rng2 || Math).random() * (ROOM_W - 200), ROOM_H - 40,
           0, -200, 5, 1,
         ));
       }
@@ -163,7 +164,7 @@ export function updateBoss2(boss2, player, bossBullets, dt, takeDamageFn) {
     const dist = Math.hypot(dx, dy);
     if (dist < 30) {
       boss2.swooping = false;
-      boss2.swoopTimer = 1 + Math.random() * 0.5;
+      boss2.swoopTimer = 1 + (boss2.rng || Math).random() * 0.5;
     } else {
       const swoopSpeed = boss2.speed * (boss2.phase === 3 ? 2 : 1.5);
       boss2.x += (dx / dist) * swoopSpeed * dt;

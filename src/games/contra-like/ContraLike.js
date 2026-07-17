@@ -243,7 +243,7 @@ export class ContraLike extends GameBase {
       if (!state) continue;
       state.timer -= 1 / 60;
       if (state.timer <= 0 && state.count < state.total) {
-        const enemy = createEnemy(zone.type, zone.atX, TILE * 14);
+        const enemy = createEnemy(zone.type, zone.atX, TILE * 14, this.rng);
         if (enemy) this.enemies.push(enemy);
         state.count++;
         state.timer = state.interval;
@@ -261,7 +261,7 @@ export class ContraLike extends GameBase {
   _updateEnemies(dt) {
     for (const e of this.enemies) {
       if (!e.alive) continue;
-      const newBullets = updateEnemy(e, dt, this.player, this.tilemap, this.scrollX, this.width);
+      const newBullets = updateEnemy(e, dt, this.player, this.tilemap, this.scrollX, this.width, this.rng);
       this.enemyBullets.push(...newBullets);
     }
     this.enemies = this.enemies.filter(e => e.alive);
@@ -315,8 +315,8 @@ export class ContraLike extends GameBase {
             spawnParticles(this.particles, e.x + e.width / 2, e.y + e.height / 2, '#ff6b4a', 10);
 
             // Drop powerup (20% chance)
-            if (Math.random() < 0.2) {
-              this.powerups.push(createPowerup(e.x, e.y));
+            if (this.rng.next() < 0.2) {
+              this.powerups.push(createPowerup(e.x, e.y, this.rng));
             }
           }
           break;

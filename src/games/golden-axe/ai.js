@@ -9,15 +9,17 @@ import { ENEMY_TYPES, GRAVITY, MAX_FALL } from './constants.js';
 import { createArrow, createBossBullet, createEnemy } from './entities.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 
+const _rn = (rng) => rng ? rng.next() : Math.random();
+
 /**
  * Actualiza un enemigo individual (IA básica de aproximación)
  */
-export function updateEnemyAI(e, player, dt, height) {
+export function updateEnemyAI(e, player, dt, height, rng) {
   if (!e.alive) return;
 
   e.aiTimer -= dt;
   if (e.aiTimer <= 0) {
-    e.aiTimer = 0.3 + Math.random() * 0.4;
+    e.aiTimer = 0.3 + _rn(rng) * 0.4;
     const dx = player.x - e.x;
     if (!player.dead) {
       e.vx = dx > 0 ? ENEMY_TYPES[e.type].speed : -ENEMY_TYPES[e.type].speed;
@@ -38,7 +40,7 @@ export function updateEnemyAI(e, player, dt, height) {
  * Actualiza el comportamiento del arquero (disparo + retirada)
  * Devuelve flechas creadas en este frame
  */
-export function updateArcherBehavior(e, player, dt, arrows) {
+export function updateArcherBehavior(e, player, dt, arrows, rng) {
   if (e.type !== 'archer' || !e.alive || player.dead) return;
   const dx = player.x + player.width / 2 - e.x;
   const dist = Math.abs(dx);
@@ -57,7 +59,7 @@ export function updateArcherBehavior(e, player, dt, arrows) {
       (dy / norm) * 200,
       6,
     ));
-    e.attackCooldown = 1.2 + Math.random() * 0.5;
+    e.attackCooldown = 1.2 + _rn(rng) * 0.5;
     AudioManager.sfx({ type: 'shoot', volume: 0.15 });
   }
 }
@@ -130,7 +132,7 @@ function aabbHit(a, b) {
  * Actualiza la IA del jefe según su patrón
  * Devuelve { bossBullets, minions, bossDefeated }
  */
-export function updateBoss(boss, player, dt, scrollX, width, height, bossX) {
+export function updateBoss(boss, player, dt, scrollX, width, height, bossX, rng) {
   if (!boss || !boss.alive) {
     return { bossBullets: [], minions: [] };
   }
@@ -180,7 +182,7 @@ export function updateBoss(boss, player, dt, scrollX, width, height, bossX) {
           6, '#4a9eff', true,
         ));
       }
-      if (boss.enraged && Math.random() < 0.4) {
+      if (boss.enraged && _rn(rng) < 0.4) {
         minions.push(createEnemy(
           { type: 'skeleton', fromLeft: false, delay: 0 },
           ENEMY_TYPES.skeleton, bossX, width, height
@@ -200,8 +202,8 @@ export function updateBoss(boss, player, dt, scrollX, width, height, bossX) {
       if (boss.enraged) {
         for (let i = 0; i < 3; i++) {
           bullets.push(createBossBullet(
-            boss.x + Math.random() * boss.width, height - 55,
-            (Math.random() - 0.5) * 80, -30, 6, '#ff4d4d',
+            boss.x + _rn(rng) * boss.width, height - 55,
+            (_rn(rng) - 0.5) * 80, -30, 6, '#ff4d4d',
           ));
         }
       }

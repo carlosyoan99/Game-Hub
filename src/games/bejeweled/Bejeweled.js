@@ -79,7 +79,7 @@ export class Bejeweled extends GameBase {
 
     this.particles = [];
 
-    generateBoard(this.grid);
+    generateBoard(this.grid, this.rng);
 
     const totalW = GRID_COLS * (GEM_SIZE + GEM_GAP) - GEM_GAP;
     this.boardX = (this.width - totalW) / 2;

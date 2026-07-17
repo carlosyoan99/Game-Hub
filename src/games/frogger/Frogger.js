@@ -105,7 +105,7 @@ export class Frogger extends GameBase {
     // Coches
     for (const lane of ROAD_LANES) {
       for (let i = 0; i < 3; i++) {
-        const cx = Math.random() * this.width;
+        const cx = this.rng.next() * this.width;
         this.cars.push({
           x: cx, y: lane.y,
           width: lane.type === 'truck' ? 60 : 36,
@@ -113,7 +113,7 @@ export class Frogger extends GameBase {
           vx: lane.dir * lane.speed * levelMult,
           laneY: lane.y,
           type: lane.type,
-          color: COLORS.car[Math.floor(Math.random() * COLORS.car.length)],
+          color: COLORS.car[this.rng.nextInt(0, COLORS.car.length - 1)],
         });
       }
     }
@@ -122,7 +122,7 @@ export class Frogger extends GameBase {
     for (const lane of RIVER_LANES) {
       // Troncos grandes
       for (let i = 0; i < 2; i++) {
-        const lx = Math.random() * this.width;
+        const lx = this.rng.next() * this.width;
         this.logs.push({
           x: lx, y: lane.y,
           width: 80, height: 22,
@@ -133,7 +133,7 @@ export class Frogger extends GameBase {
       }
       // Tortugas
       for (let i = 0; i < 1; i++) {
-        const tx = Math.random() * this.width;
+        const tx = this.rng.next() * this.width;
         this.logs.push({
           x: tx, y: lane.y,
           width: 50, height: 20,
@@ -141,7 +141,7 @@ export class Frogger extends GameBase {
           laneY: lane.y,
           type: 'turtle',
           submerged: false,
-          submergeTimer: Math.random() * 5,
+          submergeTimer: this.rng.next() * 5,
         });
       }
     }

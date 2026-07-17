@@ -73,6 +73,7 @@ const TRANSLATIONS = {
   'game.wind':               { es: 'VIENTO',                          en: 'WIND' },
   'game.lives':              { es: 'Vidas: {n}',                       en: 'Lives: {n}' },
   'game.paused':             { es: 'PAUSA',                            en: 'PAUSED' },
+  'game.selectDifficulty':   { es: 'SELECCIONAR DIFICULTAD',            en: 'SELECT DIFFICULTY' },
 
   // ── Gamepad ───────────────────────────────────────────────────────────
 

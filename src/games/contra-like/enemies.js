@@ -7,20 +7,22 @@
 import { TILE, GRAVITY, MAX_FALL, BOSS_SCROLL_X } from './levels.js';
 import { spawnParticles } from '../../engine/ParticleSystem.js';
 
+const _rn = (rng) => rng ? rng.next() : Math.random();
+
 /**
  * Crea un enemigo según su tipo
  */
-export function createEnemy(type, atX, wy) {
+export function createEnemy(type, atX, wy, rng) {
   switch (type) {
     case 'soldier':
       return {
         x: atX, y: wy,
         width: 22, height: 26,
-        vx: -60 - Math.random() * 30,
+        vx: -60 - _rn(rng) * 30,
         vy: 0,
         hp: 2, maxHp: 2,
         alive: true, type: 'soldier',
-        fireTimer: 1 + Math.random(),
+        fireTimer: 1 + _rn(rng),
         onGround: false,
         color: '#6b8e3a',
       };
@@ -28,7 +30,7 @@ export function createEnemy(type, atX, wy) {
       return {
         x: atX, y: wy,
         width: 20, height: 24,
-        vx: -120 - Math.random() * 40,
+        vx: -120 - _rn(rng) * 40,
         vy: 0,
         hp: 1, maxHp: 1,
         alive: true, type: 'runner',
@@ -56,7 +58,7 @@ export function createEnemy(type, atX, wy) {
  * Actualiza un enemigo: gravedad, movimiento, disparo
  * Devuelve un array de nuevas balas enemigas
  */
-export function updateEnemy(enemy, dt, player, tilemap, scrollX, width) {
+export function updateEnemy(enemy, dt, player, tilemap, scrollX, width, rng) {
   if (!enemy.alive) return [];
 
   // Gravity
@@ -79,7 +81,7 @@ export function updateEnemy(enemy, dt, player, tilemap, scrollX, width) {
   if (enemy.type === 'turret' || enemy.type === 'soldier') {
     enemy.fireTimer -= dt;
     if (enemy.fireTimer <= 0) {
-      enemy.fireTimer = enemy.type === 'turret' ? 1.5 : 1 + Math.random() * 1.5;
+      enemy.fireTimer = enemy.type === 'turret' ? 1.5 : 1 + _rn(rng) * 1.5;
       newBullets.push({
         x: enemy.x + enemy.width / 2,
         y: enemy.y + enemy.height / 2,
@@ -197,13 +199,13 @@ export function updateBossBullets(bossBullets, dt, tilemap, scrollX, width) {
 /**
  * Crea un power-up de arma
  */
-export function createPowerup(x, y) {
+export function createPowerup(x, y, rng) {
   const weapons = ['SPREAD', 'MACHINE', 'LASER', 'FIRE'];
   return {
     x, y,
     width: 16, height: 16,
     vy: -100,
-    weapon: weapons[Math.floor(Math.random() * weapons.length)],
+    weapon: weapons[Math.floor(_rn(rng) * weapons.length)],
     active: true,
     color: '#ffd700',
   };

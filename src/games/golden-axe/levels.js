@@ -7,6 +7,8 @@
 import { STAGE_LENGTHS, SCROLL_SPEEDS, BOSS_SCROLL_X,
          BOSS_PATTERNS, BOSS_COLORS, BOSS_NAMES, BOSS_HEIGHTS, BOSS_WIDTHS, MAX_STAGES, ENEMY_TYPES } from './constants.js';
 
+const _rn = (rng) => rng ? rng.next() : Math.random();
+
 /**
  * Inicializa la configuración de una etapa
  */
@@ -23,7 +25,7 @@ export function initStageConfig(stage) {
 /**
  * Genera la cola de enemigos para una etapa
  */
-export function generateEnemyWave(stage) {
+export function generateEnemyWave(stage, rng) {
   const wave = [];
   const counts = {
     skeleton: 6 + stage * 2,
@@ -49,7 +51,7 @@ export function generateEnemyWave(stage) {
   }
   // Shuffle
   for (let i = wave.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(_rn(rng) * (i + 1));
     [wave[i], wave[j]] = [wave[j], wave[i]];
   }
   return wave;

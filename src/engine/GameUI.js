@@ -400,3 +400,299 @@ export function createToastManager() {
 
   return { toasts, addToast, updateToasts, renderToasts };
 }
+
+// ═════════════════════════════════════════════════════════════════════════
+//  Difficulty Selector
+// ═════════════════════════════════════════════════════════════════════════
+
+/**
+ * Renderiza un selector de dificultad con tarjetas clickeables.
+ * Cada dificultad se muestra como una tarjeta con label y descripción.
+ * Devuelve un array de rectángulos { x, y, width, height } para hit testing.
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {object} opts
+ * @param {number}  opts.width          - Ancho del canvas
+ * @param {number}  opts.height         - Alto del canvas
+ * @param {Array<{id:string,label:string,description:string}>} opts.difficulties - Opciones de dificultad
+ * @param {number} [opts.selectedIndex] - Índice seleccionado (para highlight)
+ * @param {string} [opts.title]         - Título del selector (por defecto t('game.selectDifficulty'))
+ * @param {string} [opts.subtitle]      - Subtítulo opcional
+ * @param {object} [opts.colors]        - { bg?, cardBg?, cardBorder?, cardSelected?, text?, desc? }
+ * @returns {Array<{x:number,y:number,width:number,height:number}>}
+ */
+export function renderDifficultySelector(ctx, opts) {
+  const {
+    width, height,
+    difficulties,
+    selectedIndex = -1,
+    title = t('game.selectDifficulty'),
+    subtitle = '',
+    colors = {},
+  } = opts;
+
+  const bg = colors.bg || '#0b0f14';
+  const cardBg = colors.cardBg || '#11161d';
+  const cardBorder = colors.cardBorder || '#1e2731';
+  const cardSelected = colors.cardSelected || '#2a3a4a';
+  const text = colors.text || '#e7edf3';
+  const desc = colors.desc || '#7c8894';
+
+  const count = difficulties.length;
+  const cardW = 170;
+  const cardH = 70;
+  const gap = 16;
+  const totalW = count * cardW + (count - 1) * gap;
+  const startX = Math.max(10, (width - totalW) / 2);
+  const cardY = height / 2 + 5;
+
+  // Fondo
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, width, height);
+
+  // Título
+  ctx.fillStyle = text;
+  ctx.font = 'bold 28px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(title, width / 2, height / 2 - 90);
+
+  // Subtítulo
+  if (subtitle) {
+    ctx.font = '14px monospace';
+    ctx.fillStyle = desc;
+    ctx.fillText(subtitle, width / 2, height / 2 - 50);
+  }
+
+  // Tarjetas
+  const buttons = [];
+  for (let i = 0; i < count; i++) {
+    const x = startX + i * (cardW + gap);
+    const y = cardY;
+    buttons.push({ x, y, width: cardW, height: cardH });
+
+    // Fondo de tarjeta
+    const isSelected = i === selectedIndex;
+    ctx.fillStyle = isSelected ? cardSelected : cardBg;
+    ctx.fillRect(x, y, cardW, cardH);
+
+    // Borde
+    ctx.strokeStyle = isSelected ? '#4a9eff' : cardBorder;
+    ctx.lineWidth = isSelected ? 2 : 1;
+    ctx.strokeRect(x, y, cardW, cardH);
+
+    // Label
+    ctx.fillStyle = text;
+    ctx.font = '16px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(difficulties[i].label, x + cardW / 2, y + 24);
+
+    // Descripción
+    ctx.font = '11px monospace';
+    ctx.fillStyle = desc;
+    ctx.fillText(difficulties[i].description, x + cardW / 2, y + 48);
+  }
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+
+  return buttons;
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+//  Boss Health Bar
+// ═════════════════════════════════════════════════════════════════════════
+
+/**
+ * Renderiza una barra de vida de jefe consistente.
+ * Cambia de color según el porcentaje: verde > 50%, amarillo > 25%, rojo.
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {object} opts
+ * @param {number} opts.x       - Posición X de la barra
+ * @param {number} opts.y       - Posición Y de la barra
+ * @param {number} opts.width   - Ancho de la barra
+ * @param {number} [opts.height=12] - Alto de la barra
+ * @param {number} opts.hp      - HP actual
+ * @param {number} opts.maxHp   - HP máximo
+ * @param {string} [opts.label] - Etiqueta opcional (ej. "BOSS")
+ * @param {object} [opts.colors] - { bg?, fill?, border?, low?, mid? }
+ *   - bg: fondo de la barra (default 'rgba(0,0,0,0.5)')
+ *   - fill: color de relleno (default automático según %)
+ *   - border: color del borde (default 'rgba(255,255,255,0.2)')
+ *   - low: color cuando hp < 25% (default '#e74c3c')
+ *   - mid: color cuando hp < 50% (default '#ffb454')
+ *   - high: color cuando hp >= 50% (default '#3a9a5a')
+ */
+export function renderBossHealthBar(ctx, opts) {
+  const {
+    x, y,
+    width,
+    height = 12,
+    hp, maxHp,
+    label = '',
+    colors = {},
+  } = opts;
+
+  if (maxHp <= 0) return;
+
+  const hpPct = Math.max(0, Math.min(1, hp / maxHp));
+  const bgColor = colors.bg || 'rgba(0, 0, 0, 0.5)';
+  const borderColor = colors.border || 'rgba(255, 255, 255, 0.2)';
+  const lowColor = colors.low || '#e74c3c';
+  const midColor = colors.mid || '#ffb454';
+  const highColor = colors.high || '#3a9a5a';
+
+  // Color de relleno según HP
+  let fillColor = colors.fill;
+  if (!fillColor) {
+    if (hpPct < 0.25) fillColor = lowColor;
+    else if (hpPct < 0.50) fillColor = midColor;
+    else fillColor = highColor;
+  }
+
+  // Etiqueta (si hay)
+  if (label) {
+    ctx.fillStyle = '#7c8894';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(label, x, y - 2);
+  }
+
+  // Fondo
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(x, y, width, height);
+
+  // Relleno
+  ctx.fillStyle = fillColor;
+  if (hpPct > 0) {
+    ctx.fillRect(x + 1, y + 1, Math.max(0, (width - 2) * hpPct), height - 2);
+  }
+
+  // Borde
+  ctx.strokeStyle = borderColor;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x, y, width, height);
+
+  // Indicador de enrage (pulso cuando HP < 30%)
+  if (hpPct < 0.3) {
+    const pulse = 0.3 + Math.sin(Date.now() * 0.008) * 0.2;
+    ctx.fillStyle = `rgba(255, 0, 0, ${pulse * 0.15})`;
+    ctx.fillRect(x + 1, y + 1, (width - 2) * hpPct, height - 2);
+  }
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+//  Achievement Popup
+// ═════════════════════════════════════════════════════════════════════════
+
+/**
+ * Renderiza un popup de logro desbloqueado con animación slide-in.
+ * Debe llamarse por cada frame durante el tiempo que dure el popup.
+ *
+ * Uso típico:
+ *   const popup = { title, description, timer: 3, alpha: 1, age: 0 };
+ *   // En update:
+ *   popup.timer -= dt; popup.age += dt;
+ *   if (popup.timer < 0.5) popup.alpha = Math.max(0, popup.timer + 0.5);
+ *   // En render:
+ *   renderAchievementPopup(ctx, { width, height, ...popup });
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {object} opts
+ * @param {number}  opts.width       - Ancho del canvas
+ * @param {number}  opts.height      - Alto del canvas
+ * @param {string}  opts.title       - Nombre del logro
+ * @param {string}  [opts.description] - Descripción del logro
+ * @param {number}  [opts.timer=3]    - Tiempo restante en segundos
+ * @param {number}  [opts.alpha=1]    - Opacidad actual
+ * @param {number}  [opts.age=0]      - Edad en segundos (para slide-in)
+ * @param {object}  [opts.colors]     - { bg?, text?, accent? }
+ */
+export function renderAchievementPopup(ctx, opts) {
+  const {
+    width, height,
+    title,
+    description = '',
+    timer = 3,
+    alpha = 1,
+    age = 0,
+    colors = {},
+  } = opts;
+
+  if (alpha <= 0) return;
+
+  const bg = colors.bg || 'rgba(30, 39, 49, 0.95)';
+  const text = colors.text || '#e7edf3';
+  const accent = colors.accent || '#ffd700';
+
+  // Dimensiones del popup
+  const popupW = Math.min(380, width - 40);
+  const popupH = 70;
+  const popupX = (width - popupW) / 2;
+
+  // Animación slide-in (0.4s)
+  const slideDuration = 0.4;
+  const slideDistance = 30;
+  const entryProgress = Math.min(1, age / slideDuration);
+  const eased = 1 - Math.pow(1 - entryProgress, 3); // easeOutCubic
+  const slideOffset = (1 - eased) * slideDistance;
+
+  // Fade-out en los últimos 0.5s
+  const displayAlpha = alpha;
+  const totalAlpha = eased * displayAlpha;
+
+  if (totalAlpha <= 0) return;
+
+  const popupY = 10 - slideOffset;
+
+  ctx.save();
+  ctx.globalAlpha = totalAlpha;
+
+  // Sombra
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+  ctx.beginPath();
+  ctx.roundRect(popupX + 2, popupY + 2, popupW, popupH, 8);
+  ctx.fill();
+
+  // Fondo
+  ctx.fillStyle = bg;
+  ctx.beginPath();
+  ctx.roundRect(popupX, popupY, popupW, popupH, 8);
+  ctx.fill();
+
+  // Borde con acento
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(popupX, popupY, popupW, popupH, 8);
+  ctx.stroke();
+
+  // Barra decorativa izquierda
+  ctx.fillStyle = accent;
+  ctx.fillRect(popupX + 2, popupY + 8, 4, popupH - 16);
+
+  // Icono de trofeo
+  icon(ctx, 'star', popupX + 32, popupY + popupH / 2, 22, accent);
+
+  // Título
+  ctx.fillStyle = accent;
+  ctx.font = 'bold 13px monospace';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(title, popupX + 52, popupY + 24);
+
+  // Descripción
+  if (description) {
+    ctx.fillStyle = text;
+    ctx.font = '11px monospace';
+    ctx.fillText(description, popupX + 52, popupY + 48);
+  }
+
+  ctx.restore();
+}

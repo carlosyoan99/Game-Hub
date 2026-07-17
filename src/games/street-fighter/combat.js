@@ -172,13 +172,14 @@ export function checkCollisions(game) {
  * Crea efecto de partículas de golpe
  */
 export function spawnHitEffect(game, x, y, blocked) {
+  const rng = game.rng;
   game.hitEffects = game.hitEffects || [];
   for (let i = 0; i < 6; i++) {
     game.hitEffects.push({
       x, y,
-      vx: (Math.random() - 0.5) * 200,
-      vy: -Math.random() * 200,
-      life: 0.3 + Math.random() * 0.3,
+      vx: (rng.next() - 0.5) * 200,
+      vy: -rng.next() * 200,
+      life: 0.3 + rng.next() * 0.3,
       color: blocked ? '#4a9eff' : '#ffd700',
     });
   }

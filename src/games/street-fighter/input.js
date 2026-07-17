@@ -70,6 +70,7 @@ export function updateInput(fighter, dt, game) {
  * Actualiza la IA de un luchador
  */
 export function updateAI(fighter, dt, game) {
+  const rng = game.rng;
   if (fighter.hitstunTimer > 0) { fighter.state = STATE.HIT; return; }
   if (fighter.blockstunTimer > 0) { fighter.state = STATE.BLOCK; fighter.vx = 0; return; }
   if (fighter.state === STATE.PUNCH || fighter.state === STATE.KICK ||
@@ -88,22 +89,22 @@ export function updateAI(fighter, dt, game) {
   fighter.aiTimer = fighter.aiTimer || 0;
   fighter.aiTimer -= dt;
   if (fighter.aiTimer > 0) return;
-  fighter.aiTimer = reaction + Math.random() * 0.2;
+  fighter.aiTimer = reaction + rng.next() * 0.2;
 
   // AI decision
-  if (dist < 60 && Math.random() < aggro * 0.4) {
-    doAttack(fighter, Math.random() < 0.5 ? 'punch' : 'kick', game);
-  } else if (dist < 100 && Math.random() < aggro * 0.15 && fighter.superMeter >= fighter.superMax) {
+  if (dist < 60 && rng.next() < aggro * 0.4) {
+    doAttack(fighter, rng.next() < 0.5 ? 'punch' : 'kick', game);
+  } else if (dist < 100 && rng.next() < aggro * 0.15 && fighter.superMeter >= fighter.superMax) {
     doAttack(fighter, 'super', game);
     fighter.superMeter = 0;
     game.superFlash = 0.3;
-  } else if (dist < 120 && Math.random() < aggro * 0.1) {
+  } else if (dist < 120 && rng.next() < aggro * 0.1) {
     doAttack(fighter, 'special', game);
-  } else if (dist > 100 && Math.random() < 0.5) {
+  } else if (dist > 100 && rng.next() < 0.5) {
     fighter.state = STATE.WALK_FWD;
     fighter.vx = fighter.def.speed * (dx > 0 ? 1 : -1);
     fighter.facing = dx > 0 ? 1 : -1;
-  } else if (dist > 40 && Math.random() < 0.3) {
+  } else if (dist > 40 && rng.next() < 0.3) {
     fighter.state = STATE.WALK_BACK;
     fighter.vx = -fighter.def.speed * (dx > 0 ? 1 : -1);
   } else {

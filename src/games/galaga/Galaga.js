@@ -119,7 +119,7 @@ export class Galaga extends GameBase {
           hp: type.hp,  // copia, no referencia
           alive: true,
           angle: 0,
-          wobble: Math.random() * Math.PI * 2,
+          wobble: this.rng.next() * Math.PI * 2,
           width: type.radius * 2,
           height: type.radius * 2,
         });
@@ -135,17 +135,17 @@ export class Galaga extends GameBase {
     const divers = liveEnemies.filter((e) => e.row <= 2);
     if (divers.length === 0) return;
 
-    const diver = divers[Math.floor(Math.random() * divers.length)];
-    this.attackTimer = 4 + Math.random() * 2;
+    const diver = divers[this.rng.nextInt(0, divers.length - 1)];
+    this.attackTimer = 4 + this.rng.next() * 2;
 
     // Trayectoria de picada: el enemigo se separa de la formacion
     diver.diving = true;
     diver.diveAngle = Math.PI / 2; // hacia abajo
-    diver.diveSpeed = 80 + this.wave * 5 + Math.random() * 30;
-    diver.diveShootTimer = 0.5 + Math.random() * 0.5;
+    diver.diveSpeed = 80 + this.wave * 5 + this.rng.next() * 30;
+    diver.diveShootTimer = 0.5 + this.rng.next() * 0.5;
 
     // Ocasionalmente: tractor beam (si el jugador está vivo y no tiene dual)
-    if (Math.random() < 0.3 && this.player.alive && !this.player.dual && !this.tractorBeamActive) {
+    if (this.rng.next() < 0.3 && this.player.alive && !this.player.dual && !this.tractorBeamActive) {
       diver.hasTractor = true;
       this.tractorBeamActive = true;
       this.tractorTarget = diver;
@@ -306,7 +306,7 @@ export class Galaga extends GameBase {
       // Disparar durante la picada
       enemy.diveShootTimer -= dt;
       if (enemy.diveShootTimer <= 0) {
-        enemy.diveShootTimer = 1.0 + Math.random() * 1.5;
+        enemy.diveShootTimer = 1.0 + this.rng.next() * 1.5;
         this.enemyBullets.push({
           x: enemy.x,
           y: enemy.y + enemy.type.radius,
@@ -371,7 +371,7 @@ export class Galaga extends GameBase {
     for (let i = 0; i < liveEnemies.length; i++) {
       const e = liveEnemies[i];
       e.bonusPhase = i / liveEnemies.length;
-      e.bonusSpeed = 100 + Math.random() * 50;
+      e.bonusSpeed = 100 + this.rng.next() * 50;
       e.bonusAngle = (i / liveEnemies.length) * Math.PI * 2;
     }
   }

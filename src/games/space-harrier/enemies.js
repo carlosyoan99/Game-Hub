@@ -7,15 +7,18 @@ import { spawnParticles } from '../../engine/ParticleSystem.js';
 import { ENEMY_TYPES, PLAYER_MARGIN, Z_FAR, Z_NEAR, BULLET_SPEED, STAGES_COUNT } from './constants.js';
 import { projectZ } from './render.js';
 
+const _rn = rng => rng ? rng.next() : Math.random();
+
 /**
  * Crea un enemigo en una posición Z dada
  */
 export function spawnEnemy(state, z) {
+  const rng = state.rng;
   const types = Object.keys(ENEMY_TYPES);
-  const typeKey = types[Math.floor(Math.random() * types.length)];
+  const typeKey = types[Math.floor(_rn(rng) * types.length)];
   const type = ENEMY_TYPES[typeKey];
-  const x = PLAYER_MARGIN + Math.random() * (state.width - PLAYER_MARGIN * 2);
-  const xMove = (Math.random() - 0.5) * 60;
+  const x = PLAYER_MARGIN + _rn(rng) * (state.width - PLAYER_MARGIN * 2);
+  const xMove = (_rn(rng) - 0.5) * 60;
 
   return {
     x, z,
@@ -29,7 +32,7 @@ export function spawnEnemy(state, z) {
     color: type.color,
     type: typeKey,
     alive: true,
-    fireTimer: typeKey === 'turret' ? 2 + Math.random() : 0,
+    fireTimer: typeKey === 'turret' ? 2 + _rn(rng) : 0,
     scale: 1,
   };
 }
@@ -56,7 +59,7 @@ export function updateEnemies(enemies, dt, enemyBullets) {
     if (e.type === 'turret' && e.z < Z_FAR * 0.5) {
       e.fireTimer -= dt;
       if (e.fireTimer <= 0) {
-        e.fireTimer = 1.5 + Math.random();
+        e.fireTimer = 1.5 + _rn();
         enemyBullets.push({
           x: e.worldX, z: e.z,
           vx: 0, vz: -200,
@@ -232,7 +235,7 @@ export function checkCollisions(state) {
           state.score += e.score;
           state.stageScore += e.score;
           spawnParticles(particles, sx + sw / 2, sy + sh / 2, '#ff6b4a', 8);
-          if (Math.random() < 0.15) {
+          if (_rn(state.rng) < 0.15) {
             powerups.push({
               x: e.worldX, z: e.z,
               vz: -50,

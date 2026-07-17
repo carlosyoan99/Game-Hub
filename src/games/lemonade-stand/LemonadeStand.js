@@ -90,7 +90,7 @@ export class LemonadeStand extends GameBase {
     // Weighted random: sunnier weather more likely
     const weights = [1, 2, 3, 2]; // rainy, cloudy, sunny, hot
     const total = weights.reduce((a, b) => a + b, 0);
-    let r = Math.random() * total;
+    let r = this.rng.next() * total;
     for (let i = 0; i < weights.length; i++) {
       r -= weights[i];
       if (r <= 0) {
@@ -120,7 +120,7 @@ export class LemonadeStand extends GameBase {
     if (maxCups <= 0) return { sold: 0, revenue: 0, customers: 0 };
 
     // Base demand
-    const baseCustomers = 20 + Math.floor(Math.random() * 15);
+    const baseCustomers = 20 + this.rng.nextInt(0, 14);
 
     // Weather modifier
     const weatherMult = this.weather.mult;

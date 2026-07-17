@@ -12,6 +12,8 @@ import { spawnParticles } from '../../engine/ParticleSystem.js';
 import { COMBO_WINDOW, MAX_COMBO, HITSTUN_DURATION } from './constants.js';
 import { createPowerup, createComboParticle } from './entities.js';
 
+const _rn = (rng) => rng ? rng.next() : Math.random();
+
 /**
  * Ejecuta el ataque mágico de área alrededor del jugador
  * Modifica player, enemies, boss, particles in-place.
@@ -72,7 +74,7 @@ function spawnParticlesAt(entity, particles, color, count) {
  * Modifica el estado de player, enemies, boss, arrows, bossBullets, powerups, particles, comboParticles
  * Devuelve { scoreAdd, bossDefeated }
  */
-export function checkCollisions(player, enemies, boss, arrows, bossBullets, powerups, particles, comboParticles, projectiles) {
+export function checkCollisions(player, enemies, boss, arrows, bossBullets, powerups, particles, comboParticles, projectiles, rng) {
   if (player.dead || player.invincible > 0) {
     return { scoreAdd: 0, bossDefeated: false };
   }
@@ -114,8 +116,8 @@ export function checkCollisions(player, enemies, boss, arrows, bossBullets, powe
           scoreAdd += e.score;
           spawnParticles(particles, e.x + e.width / 2, e.y + e.height / 2, '#ff6b4a', 12, { speed: 250 });
           // Drop chance
-          if (Math.random() < 0.15) {
-            const type = Math.random() < 0.6 ? 'potion' : 'hp';
+          if (_rn(rng) < 0.15) {
+            const type = _rn(rng) < 0.6 ? 'potion' : 'hp';
             powerups.push(createPowerup(e.x, e.y, type));
           }
         }

@@ -228,7 +228,7 @@ export class DonkeyKong extends GameBase {
       this.barrels.push({
         x: this.dk.x - 10,
         y: this.dk.y + 20,
-        vx: Math.random() < 0.5 ? -BARREL_SPEED : BARREL_SPEED,
+        vx: this.rng.next() < 0.5 ? -BARREL_SPEED : BARREL_SPEED,
         vy: 0,
         w: 18,
         h: 18,

@@ -96,7 +96,7 @@ export class GoldenAxe extends GameBase {
     this.scrollSpeed = cfg.scrollSpeed;
     this.stageLength = cfg.stageLength;
     this.bossX = cfg.bossX;
-    this.enemyQueue = generateEnemyWave(this.currentStage);
+    this.enemyQueue = generateEnemyWave(this.currentStage, this.rng);
     this.enemyTimer = 0;
     this.spawnedCount = 0;
     this.maxEnemies = cfg.maxEnemies;
@@ -258,7 +258,7 @@ export class GoldenAxe extends GameBase {
       const entry = this.enemyQueue.shift();
       this.enemies.push(createEnemy(entry, ENEMY_TYPES[entry.type], this.scrollX, this.width, this.height));
       this.spawnedCount++;
-      this.enemyTimer = Math.max(0.4, 1.0 - this.currentStage * 0.1 + Math.random() * 0.5);
+      this.enemyTimer = Math.max(0.4, 1.0 - this.currentStage * 0.1 + this.rng.next() * 0.5);
     }
   }
 
@@ -266,8 +266,8 @@ export class GoldenAxe extends GameBase {
     for (const e of this.enemies) {
       if (!e.alive) continue;
       if (e.x < this.scrollX - 100 || e.x > this.scrollX + this.width + 100) { e.alive = false; continue; }
-      updateEnemyAI(e, this.player, dt, this.height);
-      updateArcherBehavior(e, this.player, dt, this.arrows);
+      updateEnemyAI(e, this.player, dt, this.height, this.rng);
+      updateArcherBehavior(e, this.player, dt, this.arrows, this.rng);
     }
     this.enemies = this.enemies.filter(e => e.alive);
     this.arrows = updateArrows(this.arrows, dt);
@@ -275,7 +275,7 @@ export class GoldenAxe extends GameBase {
 
   _updateBossLogic(dt) {
     if (!this.boss || !this.boss.alive) return;
-    const result = updateBoss(this.boss, this.player, dt, this.scrollX, this.width, this.height, this.bossX);
+    const result = updateBoss(this.boss, this.player, dt, this.scrollX, this.width, this.height, this.bossX, this.rng);
     if (result.minions.length > 0) this.enemies.push(...result.minions);
     this.bossBullets.push(...result.bossBullets);
     this.bossBullets = updateBossBullets(this.bossBullets, this.player, dt, this.scrollX, this.width, this.height);
@@ -291,8 +291,8 @@ export class GoldenAxe extends GameBase {
         onEnemyKilled: (e) => {
             this.score += e.score;
             this._emitParticles(e.x + e.width / 2, e.y + e.height / 2, '#ff6b4a', 12);
-            if (Math.random() < 0.15) {
-              const type = Math.random() < 0.6 ? 'potion' : 'hp';
+          if (this.rng.next() < 0.15) {
+            const type = this.rng.next() < 0.6 ? 'potion' : 'hp';
               this.powerups.push(createPowerup(e.x, e.y, type));
             }
           },
@@ -324,7 +324,7 @@ export class GoldenAxe extends GameBase {
     const result = checkCollisions(
       this.player, this.enemies, this.boss,
       this.arrows, this.bossBullets, this.powerups, this.particles, this.comboParticles,
-      this.projectiles,
+      this.projectiles, this.rng,
     );
     if (result.scoreAdd) this.score += result.scoreAdd;
     if (result.bossDefeated) this._onBossDefeated();
@@ -422,9 +422,9 @@ export class GoldenAxe extends GameBase {
     for (let i = 0; i < count; i++) {
       this.particles.push({
         x, y,
-        vx: (Math.random() - 0.5) * 250,
-        vy: -Math.random() * 200 - 50,
-        life: 0.3 + Math.random() * 0.4,
+        vx: (this.rng.next() - 0.5) * 250,
+        vy: -this.rng.next() * 200 - 50,
+        life: 0.3 + this.rng.next() * 0.4,
         color,
       });
     }

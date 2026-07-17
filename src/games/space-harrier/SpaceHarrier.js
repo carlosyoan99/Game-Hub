@@ -148,10 +148,10 @@ export class SpaceHarrier extends GameBase {
 
     this.enemyTimer -= dt;
     if (this.enemyTimer <= 0 && !this.boss && this.stageProgress < 0.85) {
-      const z = Z_FAR - 50 - Math.random() * 100;
+      const z = Z_FAR - 50 - this.rng.next() * 100;
       const enemy = spawnEnemy(this, z);
       if (enemy) this.enemies.push(enemy);
-      this.enemyTimer = this.stageConfig.enemyInterval * (0.5 + Math.random());
+      this.enemyTimer = this.stageConfig.enemyInterval * (0.5 + this.rng.next());
     }
 
     if (this.stageProgress >= 0.85 && !this.boss && !this.bossDefeatedThisStage) {
