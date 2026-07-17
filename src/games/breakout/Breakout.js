@@ -4,7 +4,7 @@ import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { ScreenShake } from '../../engine/ScreenShake.js';
 import { t } from '../../engine/i18n.js';
-import { renderOverlay, setupHUDContext } from '../../engine/GameUI.js';
+import { renderOverlay, setupHUDContext, renderDifficultySelector, renderBossHealthBar, renderAchievementPopup } from '../../engine/GameUI.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
 import { icon } from '../../engine/IconRenderer.js';
 import { ProgressionManager } from '../../engine/ProgressionManager.js';
@@ -58,6 +58,7 @@ export class Breakout extends GameBase {
     this.boss = null;
     this.bossBullets = [];
     this.bossFireTimer = 0;
+    this.achievementPopup = null;
   }
 
   _getDifficulty() {
@@ -192,7 +193,7 @@ export class Breakout extends GameBase {
         this.score += 200;
         AudioManager.sfx({ type: 'powerup', volume: 0.6 });
         HapticManager.vibrate('powerup');
-        ProgressionManager.checkAchievement('breakout', 'brick-breaker');
+        this._checkAchievement('breakout', 'brick-breaker');
         const duration = (Date.now() - this.startTime) / 1000;
         ProgressionManager.recordGamePlay('breakout', this.score, true, duration);
         ProgressionManager.addXp(75, 'boss-defeated');
@@ -223,15 +224,16 @@ export class Breakout extends GameBase {
     ctx.fillRect(this.boss.x + 23, this.boss.y + 7, 5, 6);
     ctx.fillRect(this.boss.x + this.boss.width - 27, this.boss.y + 7, 5, 6);
 
-    // Barra de HP debajo del jefe
-    const barWidth = this.boss.width;
-    const barHeight = 5;
-    const barX = this.boss.x;
-    const barY = this.boss.y + this.boss.height + 4;
-    ctx.fillStyle = 'rgba(255, 0, 0, 0.4)';
-    ctx.fillRect(barX, barY, barWidth, barHeight);
-    ctx.fillStyle = `hsl(${hue}, 80%, 55%)`;
-    ctx.fillRect(barX, barY, barWidth * hpRatio, barHeight);
+    // Barra de HP del jefe (usando función centralizada)
+    renderBossHealthBar(ctx, {
+      x: this.boss.x,
+      y: this.boss.y + this.boss.height + 4,
+      width: this.boss.width,
+      height: 6,
+      hp: this.boss.hp,
+      maxHp: this.boss.maxHp,
+      label: t('breakout.boss'),
+    });
 
     // Balas del jefe
     ctx.fillStyle = '#ff6b4a';
@@ -247,10 +249,9 @@ export class Breakout extends GameBase {
 
   update(dt) {
     if (this.phase === 'select-difficulty') {
-      if (this.input.mouse.clickedThisFrame) {
-        const buttons = this._getDifficultyButtons();
-        for (let i = 0; i < buttons.length; i++) {
-          if (pointInRect(this.input.mouse.x, this.input.mouse.y, buttons[i])) {
+      if (this.input.mouse.clickedThisFrame && this._diffButtons) {
+        for (let i = 0; i < this._diffButtons.length; i++) {
+          if (pointInRect(this.input.mouse.x, this.input.mouse.y, this._diffButtons[i])) {
             AudioManager.sfx({ type: 'select', volume: 0.25 });
             this._startGame(i);
             break;
@@ -261,6 +262,7 @@ export class Breakout extends GameBase {
     }
 
     if (this.phase === 'boss-fight') {
+      this._updateAchievementPopup(dt);
       this._updateBoss(dt);
       if (this.phase !== 'boss-fight') return; // si murió el jefe
 
@@ -315,6 +317,7 @@ export class Breakout extends GameBase {
     }
 
     if (this.phase === 'level-complete') {
+      this._updateAchievementPopup(dt);
       if (this.input.wasActionPressed('action') || this.input.mouse.clickedThisFrame) {
         this._nextLevel();
       }
@@ -323,8 +326,11 @@ export class Breakout extends GameBase {
 
     if (this.phase === 'won' || this.phase === 'lost') {
       if (this.handleRestartInput()) return;
+      this._updateAchievementPopup(dt);
       return;
     }
+
+    this._updateAchievementPopup(dt);
 
     // Paleta
     if (this.input.isActionDown('moveLeft')) {
@@ -421,9 +427,9 @@ export class Breakout extends GameBase {
       HapticManager.vibrate('powerup');
 
       // ── Logros ──
-      if (this.currentLevel === 1) ProgressionManager.checkAchievement('breakout', 'first-step');
-      if (this.currentLevel === MAX_LEVEL) ProgressionManager.checkAchievement('breakout', 'impossible');
-      if (this._livesLostThisLevel === 0) ProgressionManager.checkAchievement('breakout', 'flawless');
+      if (this.currentLevel === 1) this._checkAchievement('breakout', 'first-step');
+      if (this.currentLevel === MAX_LEVEL) this._checkAchievement('breakout', 'impossible');
+      if (this._livesLostThisLevel === 0) this._checkAchievement('breakout', 'flawless');
       this._livesLostThisLevel = 0;
 
       if (this.currentLevel >= MAX_LEVEL) {
@@ -754,65 +760,54 @@ export class Breakout extends GameBase {
       const subtitle = this.phase === 'won' ? t('breakout.finalScore', { n: this.score }) : undefined;
       renderOverlay(ctx, { width: this.width, height: this.height, title, subtitle, actionText: t('game.restart') });
     }
+
+    // Achievement popup
+    if (this.achievementPopup) {
+      renderAchievementPopup(ctx, {
+        width: this.width,
+        height: this.height,
+        ...this.achievementPopup,
+      });
+    }
+  }
+
+  _updateAchievementPopup(dt) {
+    if (this.achievementPopup) {
+      this.achievementPopup.age += dt;
+      if (this.achievementPopup.age > 4) {
+        this.achievementPopup = null;
+      }
+    }
+  }
+
+  _checkAchievement(gameId, achievementId) {
+    const wasUnlocked = ProgressionManager.checkAchievement(gameId, achievementId);
+    if (wasUnlocked) {
+      const defKey = `prog.${gameId}.${achievementId}`;
+      this.achievementPopup = {
+        title: t(`${defKey}`),
+        description: t(`${defKey}.desc`),
+        timer: 4,
+        age: 0,
+        alpha: 1,
+      };
+      AudioManager.sfx({ type: 'powerup', volume: 0.5 });
+    }
   }
 
   _renderDifficultySelect(ctx) {
-    const diffLabels = [t('level.easy'), t('level.medium'), t('level.hard')];
-    const diffDescs = [
-      t('breakout.diffEasyDesc'),
-      t('breakout.diffNormalDesc'),
-      t('breakout.diffHardDesc'),
-    ];
-
-    ctx.fillStyle = '#0b0f14';
-    ctx.fillRect(0, 0, this.width, this.height);
-
-    ctx.fillStyle = '#e7edf3';
-    ctx.font = 'bold 28px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(t('breakout.selectDifficulty'), this.width / 2, this.height / 2 - 80);
-
-    ctx.font = '14px monospace';
-    ctx.fillStyle = '#7c8894';
-    ctx.fillText(t('breakout.levelsToBeat', { n: MAX_LEVEL }), this.width / 2, this.height / 2 - 45);
-
-    const buttons = this._getDifficultyButtons();
-    for (let i = 0; i < buttons.length; i++) {
-      const btn = buttons[i];
-      ctx.fillStyle = '#11161d';
-      ctx.strokeStyle = '#1e2731';
-      ctx.fillRect(btn.x, btn.y, btn.width, btn.height);
-      ctx.strokeRect(btn.x, btn.y, btn.width, btn.height);
-
-      ctx.fillStyle = '#e7edf3';
-      ctx.font = '16px monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(diffLabels[i], btn.x + btn.width / 2, btn.y + 22);
-
-      ctx.font = '11px monospace';
-      ctx.fillStyle = '#7c8894';
-      ctx.fillText(diffDescs[i], btn.x + btn.width / 2, btn.y + 44);
-    }
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'alphabetic';
-  }
-
-  _getDifficultyButtons() {
-    const count = DIFFICULTIES.length;
-    const btnW = 170;
-    const btnH = 60;
-    const gap = 16;
-    const totalW = count * btnW + (count - 1) * gap;
-    const startX = (this.width - totalW) / 2;
-    const y = this.height / 2 + 5;
-    return DIFFICULTIES.map((_, i) => ({
-      x: startX + i * (btnW + gap),
-      y,
-      width: btnW,
-      height: btnH,
-    }));
+    this._diffButtons = renderDifficultySelector(ctx, {
+      width: this.width,
+      height: this.height,
+      difficulties: [
+        { id: 'easy',   label: t('level.easy'),   description: t('breakout.diffEasyDesc') },
+        { id: 'normal', label: t('level.medium'), description: t('breakout.diffNormalDesc') },
+        { id: 'hard',   label: t('level.hard'),   description: t('breakout.diffHardDesc') },
+      ],
+      selectedIndex: this.selectedDifficulty,
+      title: t('breakout.selectDifficulty'),
+      subtitle: t('breakout.levelsToBeat', { n: MAX_LEVEL }),
+    });
   }
 
 }

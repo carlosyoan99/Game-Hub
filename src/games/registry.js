@@ -17,8 +17,13 @@ export const GAME_REGISTRY = [
     level: 1,
     load: () => import('./breakout/index.js').then((m) => m.Breakout),
     test: {
+      frames: 300,
       keys: [{ code: 'ArrowRight', atFrame: 10 }, { code: 'ArrowLeft', atFrame: 50 }],
-      assert: (g) => { if (g.score === undefined) throw new Error('Missing score'); },
+      expectPhase: ['select-difficulty', 'playing', 'won', 'lost'],
+      assert: (g) => {
+        if (g.score === undefined) throw new Error('Missing score');
+        if (g.phase === undefined) throw new Error('Missing phase');
+      },
     },
   },
   {
@@ -27,11 +32,20 @@ export const GAME_REGISTRY = [
     tagline_i18n: 'registry.snake.tagline',
     level: 1,
     load: () => import('./snake/index.js').then((m) => m.Snake),
-    test: { keys: [
-      { code: 'ArrowDown', atFrame: 10 }, { code: 'ArrowLeft', atFrame: 40 },
-      { code: 'ArrowDown', atFrame: 120 }, { code: 'ArrowRight', atFrame: 180 },
-      { code: 'ArrowUp', atFrame: 220 },
-    ] },
+    test: {
+      frames: 300,
+      keys: [
+        { code: 'ArrowDown', atFrame: 10 }, { code: 'ArrowLeft', atFrame: 40 },
+        { code: 'ArrowDown', atFrame: 120 }, { code: 'ArrowRight', atFrame: 180 },
+        { code: 'ArrowUp', atFrame: 220 },
+      ],
+      expectPhase: ['playing', 'lost'],
+      assert: (g) => {
+        if (g.snake === undefined) throw new Error('Missing snake');
+        if (g.score === undefined) throw new Error('Missing score');
+        if (g.direction === undefined) throw new Error('Missing direction');
+      },
+    },
   },
   {
     id: 'pong',
@@ -39,10 +53,17 @@ export const GAME_REGISTRY = [
     tagline_i18n: 'registry.pong.tagline',
     level: 1,
     load: () => import('./pong/index.js').then((m) => m.Pong),
-    test: { keys: [
-      { code: 'ArrowUp', atFrame: 5 }, { code: 'ArrowDown', atFrame: 100 },
-      { code: 'ArrowUp', atFrame: 150 }, { code: 'ArrowDown', atFrame: 200 },
-    ] },
+    test: {
+      frames: 300,
+      keys: [
+        { code: 'ArrowUp', atFrame: 5 }, { code: 'ArrowDown', atFrame: 100 },
+        { code: 'ArrowUp', atFrame: 150 }, { code: 'ArrowDown', atFrame: 200 },
+      ],
+      expectPhase: ['select-difficulty', 'playing', 'won', 'lost'],
+      assert: (g) => {
+        if (g.phase === undefined) throw new Error('Missing phase');
+      },
+    },
   },
   {
     id: 'flappy-bird',
@@ -50,11 +71,19 @@ export const GAME_REGISTRY = [
     tagline_i18n: 'registry.flappy-bird.tagline',
     level: 1,
     load: () => import('./flappy-bird/index.js').then((m) => m.FlappyBird),
-    test: { keys: [
-      { code: 'Space', atFrame: 5 }, { code: 'Space', atFrame: 40 },
-      { code: 'Space', atFrame: 80 }, { code: 'Space', atFrame: 120 },
-      { code: 'Space', atFrame: 160 }, { code: 'Space', atFrame: 200 },
-    ] },
+    test: {
+      frames: 300,
+      keys: [
+        { code: 'Space', atFrame: 5 }, { code: 'Space', atFrame: 40 },
+        { code: 'Space', atFrame: 80 }, { code: 'Space', atFrame: 120 },
+        { code: 'Space', atFrame: 160 }, { code: 'Space', atFrame: 200 },
+      ],
+      expectPhase: ['playing', 'lost'],
+      assert: (g) => {
+        if (g.bird === undefined) throw new Error('Missing bird');
+        if (g.score === undefined) throw new Error('Missing score');
+      },
+    },
   },
   {
     id: 'asteroids',

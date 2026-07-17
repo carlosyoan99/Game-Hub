@@ -6,7 +6,7 @@
  */
 
 import { t } from '../../engine/i18n.js';
-import { renderOverlay, setupHUDContext } from '../../engine/GameUI.js';
+import { renderOverlay, setupHUDContext, renderBossHealthBar } from '../../engine/GameUI.js';
 import { TILE, T, COLS, ROWS, ROOM_W, ROOM_H, ABILITY } from './constants.js';
 import { ROOMS, getRoomBgColors, TILE_COLORS } from './tilemap-data.js';
 
@@ -403,7 +403,15 @@ export function renderBoss(ctx, boss) {
   ctx.beginPath();
   ctx.arc(boss.x + 60, boss.y + 8, 6, 0, Math.PI * 2);
   ctx.fill();
-  renderBossHP(ctx, boss);
+  renderBossHealthBar(ctx, {
+    x: boss.x,
+    y: boss.y - 10,
+    width: boss.width,
+    height: 5,
+    hp: boss.hp,
+    maxHp: boss.maxHp,
+    label: t('metroid.boss'),
+  });
 }
 
 /**
@@ -436,7 +444,15 @@ export function renderMiniBoss(ctx, miniBoss) {
   // Mouth
   ctx.fillStyle = '#3a1a1a';
   ctx.fillRect(miniBoss.x + 30, miniBoss.y + 50, 40, 10);
-  renderBossHP(ctx, miniBoss);
+  renderBossHealthBar(ctx, {
+    x: miniBoss.x,
+    y: miniBoss.y - 10,
+    width: miniBoss.width,
+    height: 5,
+    hp: miniBoss.hp,
+    maxHp: miniBoss.maxHp,
+    label: t('metroid.miniBoss'),
+  });
 }
 
 /**
@@ -477,14 +493,13 @@ export function renderBoss2(ctx, boss2) {
   for (let t = 0; t < 4; t++) {
     ctx.fillRect(boss2.x + 36 + t * 7, boss2.y + 30, 3, 4);
   }
-  renderBossHP(ctx, boss2);
-}
-
-function renderBossHP(ctx, boss) {
-  if (!boss) return;
-  const hpPct = boss.hp / boss.maxHp;
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-  ctx.fillRect(boss.x, boss.y - 10, boss.width, 5);
-  ctx.fillStyle = hpPct > 0.5 ? '#3a9a5a' : hpPct > 0.25 ? '#ffb454' : '#ff4d4d';
-  ctx.fillRect(boss.x + 1, boss.y - 9, (boss.width - 2) * hpPct, 3);
+  renderBossHealthBar(ctx, {
+    x: boss2.x,
+    y: boss2.y - 10,
+    width: boss2.width,
+    height: 5,
+    hp: boss2.hp,
+    maxHp: boss2.maxHp,
+    label: t('metroid.finalBoss'),
+  });
 }

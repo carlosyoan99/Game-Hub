@@ -3,7 +3,7 @@
  */
 import { clamp } from '../../engine/CollisionUtils.js';
 import { t } from '../../engine/i18n.js';
-import { renderOverlay, setupHUDContext } from '../../engine/GameUI.js';
+import { renderOverlay, setupHUDContext, renderBossHealthBar } from '../../engine/GameUI.js';
 import { GROUND_OFFSET, HORIZON_Y, Z_NEAR, Z_FAR } from './constants.js';
 
 /**
@@ -180,14 +180,15 @@ function renderBoss(ctx, boss, bossBullets, bossZBob, _width) {
   ctx.fillRect(sx - sw * 0.3, screenY - sh * 0.6, sw * 0.3, sh * 0.3);
   ctx.fillRect(sx + sw, screenY - sh * 0.6, sw * 0.3, sh * 0.3);
 
-  const barW = 60;
-  const barH = 4;
-  const barX = boss.worldX - barW / 2;
-  const barY = screenY - sh - 8;
-  ctx.fillStyle = 'rgba(0,0,0,0.6)';
-  ctx.fillRect(barX, barY, barW, barH);
-  ctx.fillStyle = hpPct > 0.5 ? '#3a9a5a' : '#ff6b4a';
-  ctx.fillRect(barX + 1, barY + 1, (barW - 2) * hpPct, barH - 2);
+  renderBossHealthBar(ctx, {
+    x: boss.worldX - 30,
+    y: screenY - sh - 8,
+    width: 60,
+    height: 4,
+    hp: boss.hp,
+    maxHp: boss.maxHp,
+    label: t('harrier.boss'),
+  });
 
   for (const b of bossBullets) {
     if (!b.alive) continue;

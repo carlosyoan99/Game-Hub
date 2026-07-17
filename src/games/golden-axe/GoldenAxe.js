@@ -22,6 +22,7 @@ import {
 import { createPlayer, createEnemy, createPowerup } from './entities.js';
 import { initStageConfig, generateEnemyWave, createBossMinions } from './levels.js';
 import { doMagic, checkCollisions, handlePlayerDeath } from './combat.js';
+import { spawnParticles, updateParticles } from '../../engine/ParticleSystem.js';
 import {
   updateBoss, updateBossBullets, updateEnemyAI, updateArcherBehavior,
   updateArrows, updateProjectiles,
@@ -313,11 +314,7 @@ export class GoldenAxe extends GameBase {
   }
 
   _updateParticles(dt) {
-    for (const p of this.particles) {
-      p.x += p.vx * dt; p.y += p.vy * dt;
-      p.vy += 500 * dt; p.life -= dt;
-    }
-    this.particles = this.particles.filter(p => p.life > 0);
+    this.particles = updateParticles(this.particles, dt, 500);
   }
 
   _resolveCombat() {
@@ -419,15 +416,13 @@ export class GoldenAxe extends GameBase {
   }
 
   _emitParticles(x, y, color, count) {
-    for (let i = 0; i < count; i++) {
-      this.particles.push({
-        x, y,
-        vx: (this.rng.next() - 0.5) * 250,
-        vy: -this.rng.next() * 200 - 50,
-        life: 0.3 + this.rng.next() * 0.4,
-        color,
-      });
-    }
+    spawnParticles(this.particles, x, y, color, count, {
+      speed: 250,
+      vyOffset: -50,
+      lifeMin: 0.3,
+      lifeMax: 0.7,
+      rng: this.rng,
+    });
   }
 
   // ── Render ────────────────────────────────────────────────────────

@@ -26,10 +26,11 @@ import {
   MAX_MISS_DISTANCE, HP_DECAY_RATE, HP_HIT_GAIN, HP_PERFECT_GAIN, HP_MISS_LOSS, MAX_HP,
   findBestNote, judgeHit, getComboMultiplier, getScoreForHit, getJudgmentDisplay,
 } from './judge.js';
+import { updateParticles } from '../../engine/ParticleSystem.js';
 import {
   renderGame, renderSelect,
   spawnHitExplosion, spawnNoteStreak,
-  updateParticles, updateStars, updateStreaks,
+  updateStars, updateStreaks,
 } from './render.js';
 
 export class GuitarHero extends GameBase {
@@ -307,15 +308,15 @@ export class GuitarHero extends GameBase {
       this.combo++;
       this.hp = Math.min(MAX_HP, this.hp + HP_PERFECT_GAIN);
       this.perfectCount++;
-      spawnHitExplosion(this.particles, this.stars, hx, hy, LANE_COLORS[lane], 'perfect');
-      spawnNoteStreak(this.streakParticles, lane, best.y, this.width);
+      spawnHitExplosion(this.particles, this.stars, hx, hy, LANE_COLORS[lane], 'perfect', this.rng);
+      spawnNoteStreak(this.streakParticles, lane, best.y, this.width, this.rng);
       HapticManager.vibrate('powerup');
     } else if (type === 'good') {
       this.combo++;
       this.hp = Math.min(MAX_HP, this.hp + HP_HIT_GAIN);
       this.goodCount++;
-      spawnHitExplosion(this.particles, this.stars, hx, hy, LANE_COLORS[lane], 'good');
-      spawnNoteStreak(this.streakParticles, lane, best.y, this.width);
+      spawnHitExplosion(this.particles, this.stars, hx, hy, LANE_COLORS[lane], 'good', this.rng);
+      spawnNoteStreak(this.streakParticles, lane, best.y, this.width, this.rng);
       HapticManager.vibrate('hit');
     }
 
@@ -342,7 +343,7 @@ export class GuitarHero extends GameBase {
     for (const n of this.activeNotes) {
       if (n.missed && !n.missEffectSpawned) {
         n.missEffectSpawned = true;
-        spawnHitExplosion(this.particles, this.stars, getLaneX(n.lane, this.width), this.height * HIT_ZONE_Y_RATIO, '#ff4d4d', 'miss');
+        spawnHitExplosion(this.particles, this.stars, getLaneX(n.lane, this.width), this.height * HIT_ZONE_Y_RATIO, '#ff4d4d', 'miss', this.rng);
         break;
       }
     }

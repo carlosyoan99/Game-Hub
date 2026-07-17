@@ -10,70 +10,72 @@ import { renderOverlay, setupHUDContext } from '../../engine/GameUI.js';
 import { LANE_COUNT, LANE_NAMES, LANE_COLORS, NOTE_HEIGHT, HIT_ZONE_Y_RATIO, SONG_DEFS, getLaneX } from './notes.js';
 import { MAX_HP, getComboMultiplier } from './judge.js';
 
+const _rn = rng => rng ? rng.next() : Math.random();
+
 // ─── Efectos de partículas ─────────────────────────────────────────
 
 
-export function spawnHitExplosion(particles, stars, x, y, color, type) {
+export function spawnHitExplosion(particles, stars, x, y, color, type, rng) {
   if (type === 'perfect') {
     for (let i = 0; i < 20; i++) {
       const angle = (i / 20) * Math.PI * 2;
-      const speed = 80 + Math.random() * 120;
+      const speed = 80 + _rn(rng) * 120;
       particles.push({
-        x, y, radius: 2 + Math.random() * 3,
+        x, y, radius: 2 + _rn(rng) * 3,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
-        life: 0.4 + Math.random() * 0.4,
+        life: 0.4 + _rn(rng) * 0.4,
         color: i % 3 === 0 ? '#ffd700' : color,
       });
     }
     for (let i = 0; i < 6; i++) {
       stars.push({
         x, y,
-        vx: (Math.random() - 0.5) * 60,
-        vy: -Math.random() * 100 - 40,
-        life: 0.6 + Math.random() * 0.3,
-        size: 4 + Math.random() * 4,
-        rotation: Math.random() * Math.PI * 2,
-        rotSpeed: (Math.random() - 0.5) * 8,
+        vx: (_rn(rng) - 0.5) * 60,
+        vy: -_rn(rng) * 100 - 40,
+        life: 0.6 + _rn(rng) * 0.3,
+        size: 4 + _rn(rng) * 4,
+        rotation: _rn(rng) * Math.PI * 2,
+        rotSpeed: (_rn(rng) - 0.5) * 8,
       });
     }
   } else if (type === 'good') {
     for (let i = 0; i < 10; i++) {
       const angle = (i / 10) * Math.PI * 2;
-      const speed = 50 + Math.random() * 80;
+      const speed = 50 + _rn(rng) * 80;
       particles.push({
-        x, y, radius: 2 + Math.random() * 2,
+        x, y, radius: 2 + _rn(rng) * 2,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
-        life: 0.3 + Math.random() * 0.3,
+        life: 0.3 + _rn(rng) * 0.3,
         color,
       });
     }
   } else if (type === 'miss') {
     for (let i = 0; i < 15; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = 60 + Math.random() * 140;
+      const angle = _rn(rng) * Math.PI * 2;
+      const speed = 60 + _rn(rng) * 140;
       particles.push({
-        x, y, radius: 2 + Math.random() * 2,
+        x, y, radius: 2 + _rn(rng) * 2,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed - 30,
-        life: 0.2 + Math.random() * 0.3,
-        color: Math.random() > 0.5 ? '#ff4d4d' : '#ff6b4a',
+        life: 0.2 + _rn(rng) * 0.3,
+        color: _rn(rng) > 0.5 ? '#ff4d4d' : '#ff6b4a',
       });
     }
   }
 }
 
-export function spawnNoteStreak(streakParticles, lane, y, width) {
+export function spawnNoteStreak(streakParticles, lane, y, width, rng) {
   const lx = getLaneX(lane, width);
   const color = LANE_COLORS[lane];
   for (let i = 0; i < 3; i++) {
     streakParticles.push({
-      x: lx + (Math.random() - 0.5) * 20,
+      x: lx + (_rn(rng) - 0.5) * 20,
       y: y + NOTE_HEIGHT,
-      vx: (Math.random() - 0.5) * 20,
-      vy: 80 + Math.random() * 60,
-      life: 0.2 + Math.random() * 0.2,
+      vx: (_rn(rng) - 0.5) * 20,
+      vy: 80 + _rn(rng) * 60,
+      life: 0.2 + _rn(rng) * 0.2,
       color,
       alpha: 0.2,
     });
@@ -81,16 +83,6 @@ export function spawnNoteStreak(streakParticles, lane, y, width) {
 }
 
 // ─── Actualización de partículas ───────────────────────────────────
-
-export function updateParticles(particles, dt) {
-  for (const p of particles) {
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-    p.vy += 500 * dt;
-    p.life -= dt;
-  }
-  return particles.filter(p => p.life > 0);
-}
 
 export function updateStars(stars, dt) {
   for (const s of stars) {

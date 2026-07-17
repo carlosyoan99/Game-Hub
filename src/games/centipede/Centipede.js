@@ -4,7 +4,7 @@ import { ParticleSystem } from '../../engine/ParticleSystem.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
-import { renderOverlay } from '../../engine/GameUI.js';
+import { renderOverlay, renderBossHealthBar } from '../../engine/GameUI.js';
 import { ProgressionManager } from '../../engine/ProgressionManager.js';
 
 // ── Constantes ──────────────────────────────────────────────────────────
@@ -658,17 +658,15 @@ export class Centipede extends GameBase {
       ctx.textBaseline = 'middle';
       ctx.fillText(t('centipede.bossWave'), this.width / 2, this.height / 2 - 30);
       if (this.boss) {
-        // Barra de vida del jefe
-        const barW = 200;
-        const barH = 12;
-        const barX = this.width / 2 - barW / 2;
-        ctx.fillStyle = 'rgba(255, 0, 0, 0.4)';
-        ctx.fillRect(barX, this.height / 2 + 5, barW, barH);
-        ctx.fillStyle = '#ff6b4a';
-        ctx.fillRect(barX, this.height / 2 + 5, barW * (this.boss.hp / this.boss.maxHp), barH);
-        ctx.strokeStyle = '#ffb454';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(barX, this.height / 2 + 5, barW, barH);
+        renderBossHealthBar(ctx, {
+          x: this.width / 2 - 100,
+          y: this.height / 2 + 5,
+          width: 200,
+          height: 12,
+          hp: this.boss.hp,
+          maxHp: this.boss.maxHp,
+          label: t('centipede.boss'),
+        });
       }
       ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';
