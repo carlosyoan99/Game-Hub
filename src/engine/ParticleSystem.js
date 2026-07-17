@@ -172,3 +172,80 @@ export class ParticleSystem {
     return this._activeCount === 0;
   }
 }
+
+// ═════════════════════════════════════════════════════════════════════════
+// Funciones helper para juegos que usan arrays planos de partículas
+// (compatibilidad con el patrón legacy de partículas inline).
+// Todos los juegos deben importar estas funciones del engine en vez
+// de duplicarlas en sus propios archivos.
+// ═════════════════════════════════════════════════════════════════════════
+
+/**
+ * Generador interno compartido para partículas (determinista por sesión).
+ * Se crea sin semilla explícita para que el constructor use Date.now().
+ */
+let _particleRng = null;
+function getParticleRng() {
+  if (!_particleRng) _particleRng = new SeededRandom();
+  return _particleRng;
+}
+
+/**
+ * Crea una explosión de partículas en (x, y) usando un array plano.
+ * Compatible con el patrón legacy `this.particles = []` que muchos
+ * juegos usan. Las partículas se renderizan iterando el array.
+ *
+ * @param {Array} particles  Array de partículas al que añadir
+ * @param {number} x         Centro X
+ * @param {number} y         Centro Y
+ * @param {string} color     Color CSS
+ * @param {number} count     Cantidad de partículas
+ * @param {object} [opts]    Opciones override
+ * @param {number} [opts.speed=200]      Velocidad base px/s
+ * @param {number} [opts.vyOffset=-50]   Empuje vertical inicial
+ * @param {number} [opts.lifeMin=0.3]    Vida mínima
+ * @param {number} [opts.lifeMax=0.7]    Vida máxima
+ * @param {number} [opts.size]           Tamaño opcional (si no se usa radius)
+ * @param {Function} [opts.rng]          Función random [0,1) opcional (default SeededRandom interno)
+ */
+export function spawnParticles(particles, x, y, color, count, opts = {}) {
+  const {
+    speed = 200,
+    vyOffset = -50,
+    lifeMin = 0.3,
+    lifeMax = 0.7,
+    size,
+    rng,
+  } = opts;
+  const rand = rng || getParticleRng().next.bind(getParticleRng());
+  for (let i = 0; i < count; i++) {
+    const p = {
+      x, y,
+      vx: (rand() - 0.5) * speed,
+      vy: -rand() * (speed * 0.5) + vyOffset,
+      life: lifeMin + rand() * (lifeMax - lifeMin),
+      color,
+    };
+    if (size) p.size = size + rand() * 4;
+    particles.push(p);
+  }
+}
+
+/**
+ * Actualiza un array plano de partículas (gravedad, vida).
+ * Devuelve el array filtrado (partículas vivas).
+ *
+ * @param {Array} particles  Array de partículas
+ * @param {number} dt        Delta time
+ * @param {number} [gravity=500]  Gravedad px/s²
+ * @returns {Array}  Partículas vivas
+ */
+export function updateParticles(particles, dt, gravity = 500) {
+  for (const p of particles) {
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vy += gravity * dt;
+    p.life -= dt;
+  }
+  return particles.filter(p => p.life > 0);
+}

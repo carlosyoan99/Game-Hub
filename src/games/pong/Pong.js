@@ -1,6 +1,5 @@
 import { GameBase } from '../../engine/GameBase.js';
 import { renderOverlay } from '../../engine/GameUI.js';
-import { StorageManager } from '../../engine/StorageManager.js';
 import { circleIntersectsAABB, clamp, pointInRect } from '../../engine/CollisionUtils.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
@@ -162,15 +161,15 @@ export class Pong extends GameBase {
 
   _spawnHitParticles(x, y) {
     for (let i = 0; i < 6; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = 30 + Math.random() * 60;
+      const angle = this.rng.next() * Math.PI * 2;
+      const speed = 30 + this.rng.next() * 60;
       this.hitParticles.push({
         x, y,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
-        life: 0.4 + Math.random() * 0.3,
+        life: 0.4 + this.rng.next() * 0.3,
         maxLife: 0.7,
-        color: Math.random() > 0.5 ? '#e7edf3' : '#5dade2',
+        color: this.rng.next() > 0.5 ? '#e7edf3' : '#5dade2',
       });
     }
   }

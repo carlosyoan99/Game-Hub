@@ -1,7 +1,6 @@
 import { GameBase } from '../../engine/GameBase.js';
 import { renderOverlay } from '../../engine/GameUI.js';
 import { ProgressionManager } from '../../engine/ProgressionManager.js';
-import { StorageManager } from '../../engine/StorageManager.js';
 import { icon } from '../../engine/IconRenderer.js';
 import { pointInRect } from '../../engine/CollisionUtils.js';
 import { wrapText } from '../../engine/wrapText.js';

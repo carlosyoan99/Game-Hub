@@ -19,6 +19,7 @@
  */
 import { StorageManager } from './StorageManager.js';
 import { SettingsManager } from './SettingsManager.js';
+import { SeededRandom } from './SeededRandom.js';
 import { renderDefaultHUD, renderPauseOverlay } from './GameUI.js';
 
 export class GameBase {
@@ -34,6 +35,10 @@ export class GameBase {
     this.input = engine.input;
     this.width = this.canvas.width;
     this.height = this.canvas.height;
+
+    // Generador determinista de números aleatorios para contenido procedimental.
+    // Misma semilla = misma secuencia = niveles compartibles.
+    this.rng = new SeededRandom();
 
     if (storageKey) {
       this.storage = new StorageManager(storageKey);

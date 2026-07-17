@@ -9,7 +9,6 @@
  */
 import { GameBase } from '../../engine/GameBase.js';
 import { renderOverlay, setupHUDContext } from '../../engine/GameUI.js';
-import { StorageManager } from '../../engine/StorageManager.js';
 import { clamp } from '../../engine/CollisionUtils.js';
 import { ParticleSystem } from '../../engine/ParticleSystem.js';
 import { AudioManager } from '../../engine/AudioManager.js';

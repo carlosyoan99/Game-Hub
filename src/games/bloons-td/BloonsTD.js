@@ -9,7 +9,6 @@
  */
 import { GameBase } from '../../engine/GameBase.js';
 import { renderOverlay } from '../../engine/GameUI.js';
-import { StorageManager } from '../../engine/StorageManager.js';
 import { ParticleSystem } from '../../engine/ParticleSystem.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
@@ -17,9 +16,21 @@ import { t } from '../../engine/i18n.js';
 import { ProgressionManager } from '../../engine/ProgressionManager.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
 import { icon } from '../../engine/IconRenderer.js';
-import { COLORS, RELATIVE_WAYPOINTS, MAX_WAVE, TOWER_TYPES, TOWER_KEYS, BLOON_TYPES, BLOON_ORDER } from './constants.js';
+import { COLORS, RELATIVE_WAYPOINTS, MAX_WAVE, TOWER_TYPES, TOWER_KEYS, BLOON_TYPES, BLOON_ORDER } from './constants.js';export class BloonsTD extends GameBase {
 
-export class BloonsTD extends GameBase {
+  _defaultBindings() {
+    return {
+      tower1:     ['Digit1', 'GamepadLeft'],
+      tower2:     ['Digit2', 'GamepadUp'],
+      tower3:     ['Digit3', 'GamepadRight'],
+      speed1:     ['Digit4', 'GamepadA'],
+      speed2:     ['Digit5', 'GamepadB'],
+      speed3:     ['Digit6', 'GamepadY'],
+      placeMode:  ['KeyT', 'GamepadX'],
+      action:     ['Space', 'Enter', 'GamepadA'],
+    };
+  }
+
   init(engine) {
     super.init(engine, 'bloons-td');
     this.highscore = this.storage.get('highscore', 0);

@@ -246,7 +246,19 @@ const TRANSLATIONS = {
   // ── Lemonade Stand achievements ───────────────────────────────────────
 
 
-  // ── Desbloqueables ─────────────────────────────────────────────────────
+
+  // ── Desbloqueables (cosméticos) ────────────────────────────────────────
+
+  'prog.unlock.skinAsteroidsGold':  { es: 'Nave Asteroide Dorada',          en: 'Golden Asteroid Ship' },
+  'prog.unlock.skinPacmanBlue':    { es: 'Pac-Man Azul',                    en: 'Blue Pac-Man' },
+  'prog.unlock.skinShipNeon':      { es: 'Nave Neón',                       en: 'Neon Ship' },
+  'prog.unlock.widePaddle':        { es: 'Paleta Ancha',                    en: 'Wide Paddle' },
+  'prog.unlock.extraLife':         { es: 'Vida Extra',                      en: 'Extra Life' },
+  'prog.unlock.modeSpeedrun':      { es: 'Modo Speedrun',                   en: 'Speedrun Mode' },
+  'prog.unlock.modeEndless':       { es: 'Modo Infinito',                   en: 'Endless Mode' },
+  'prog.unlock.modeHardcore':      { es: 'Modo Hardcore',                   en: 'Hardcore Mode' },
+  'prog.unlock.scanlines':         { es: 'Líneas de Scan (CRT)',            en: 'Scanlines (CRT)' },
+  'prog.unlock.retroBorder':       { es: 'Marco Retro',                     en: 'Retro Border' },
 };
 
 // ══════════════════════════════════════════════════════════════════════════

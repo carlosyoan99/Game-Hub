@@ -1,6 +1,5 @@
 import { renderOverlay, setupHUDContext } from '../../engine/GameUI.js';
 import { GameBase } from '../../engine/GameBase.js';
-import { StorageManager } from '../../engine/StorageManager.js';
 import { Vector2 } from '../../engine/Vector2.js';
 import { circleIntersects } from '../../engine/CollisionUtils.js';
 import { ParticleSystem } from '../../engine/ParticleSystem.js';

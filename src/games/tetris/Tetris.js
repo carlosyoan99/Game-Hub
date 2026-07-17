@@ -1,9 +1,7 @@
 import { GameBase } from '../../engine/GameBase.js';
-import { StorageManager } from '../../engine/StorageManager.js';
 import { ParticleSystem } from '../../engine/ParticleSystem.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
-import { t } from '../../engine/i18n.js';
 import { renderOverlay } from '../../engine/GameUI.js';
 import { ProgressionManager } from '../../engine/ProgressionManager.js';
 
@@ -127,7 +125,7 @@ export class Tetris extends GameBase {
     // 7-bag randomizer
     const pieces = [...PIECE_NAMES];
     for (let i = pieces.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = this.rng.nextInt(0, i);
       [pieces[i], pieces[j]] = [pieces[j], pieces[i]];
     }
     this.bag = pieces;

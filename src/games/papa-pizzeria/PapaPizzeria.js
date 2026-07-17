@@ -1,6 +1,5 @@
 import { GameBase } from '../../engine/GameBase.js';
 import { renderOverlay } from '../../engine/GameUI.js';
-import { StorageManager } from '../../engine/StorageManager.js';
 import { pointInRect } from '../../engine/CollisionUtils.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';

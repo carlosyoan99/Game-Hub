@@ -1,6 +1,5 @@
 import { GameBase } from '../../engine/GameBase.js';
 import { renderOverlay } from '../../engine/GameUI.js';
-import { StorageManager } from '../../engine/StorageManager.js';
 import { pointInRect } from '../../engine/CollisionUtils.js';
 import { wrapText } from '../../engine/wrapText.js';
 import { AudioManager } from '../../engine/AudioManager.js';
@@ -71,8 +70,6 @@ const SCENES = {
     { id: 'market_job', labelKey: 'stick.action.marketJob', energyCost: 30 },
   ], npcDialogueKey: 'stick.npc.market' },
 };
-
-const SCENE_KEYS = Object.keys(SCENES);
 
 const SCENE_CONNECTIONS = {
   home: ['streets'],

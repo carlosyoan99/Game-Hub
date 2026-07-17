@@ -1,6 +1,5 @@
 import { renderOverlay, setupHUDContext } from '../../engine/GameUI.js';
 import { GameBase } from '../../engine/GameBase.js';
-import { StorageManager } from '../../engine/StorageManager.js';
 import { Tilemap } from '../../engine/Tilemap.js';
 import { Camera } from '../../engine/Camera.js';
 import { aabbIntersects, clamp } from '../../engine/CollisionUtils.js';
@@ -150,9 +149,17 @@ const LEVEL_ROWS = [
 ];
 
 const MAX_LEVEL = LEVEL_ROWS.length;
-const LEGEND = { '#': 1 };
+const LEGEND = { '#': 1 };export class FancyPants extends GameBase {
 
-export class FancyPants extends GameBase {
+  _defaultBindings() {
+    return {
+      moveLeft:  ['ArrowLeft', 'KeyA', 'GamepadLStickLeft', 'GamepadLeft'],
+      moveRight: ['ArrowRight', 'KeyD', 'GamepadLStickRight', 'GamepadRight'],
+      jump:      ['Space', 'ArrowUp', 'KeyW', 'GamepadA'],
+      action:    ['Space', 'KeyJ', 'GamepadA'],
+    };
+  }
+
   init(engine) {
     super.init(engine, 'fancy-pants');
     this.bestTime = this.storage.get('bestTime', null);

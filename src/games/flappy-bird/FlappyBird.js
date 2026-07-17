@@ -1,5 +1,4 @@
 import { GameBase } from '../../engine/GameBase.js';
-import { StorageManager } from '../../engine/StorageManager.js';
 import { circleIntersectsAABB } from '../../engine/CollisionUtils.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';

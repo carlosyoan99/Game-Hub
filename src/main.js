@@ -580,7 +580,7 @@ function _buildAchievementCards(gameId) {
     return false;
   }
 
-  for (const ach of achievements) {
+  for (const _ach of achievements) {
     const card = document.createElement('div');
     card.className = 'prog-ach-card';
     card.append(

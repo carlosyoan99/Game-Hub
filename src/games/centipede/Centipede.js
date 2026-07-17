@@ -1,5 +1,4 @@
 import { GameBase } from '../../engine/GameBase.js';
-import { StorageManager } from '../../engine/StorageManager.js';
 import { aabbIntersects } from '../../engine/CollisionUtils.js';
 import { ParticleSystem } from '../../engine/ParticleSystem.js';
 import { AudioManager } from '../../engine/AudioManager.js';
@@ -94,8 +93,8 @@ export class Centipede extends GameBase {
   }
 
   _placeMushroom() {
-    const mx = Math.floor(Math.random() * (this.width - 40)) + 20;
-    const my = Math.floor(Math.random() * (this.height * 0.6)) + 40;
+    const mx = this.rng.nextInt(20, this.width - 20);
+    const my = this.rng.nextInt(40, Math.floor(this.height * 0.6) + 40);
     // No colocar encima de otro hongo
     for (const m of this.mushrooms) {
       if (Math.abs(m.x - mx) < MUSHROOM_SIZE && Math.abs(m.y - my) < MUSHROOM_SIZE) return;
@@ -106,7 +105,7 @@ export class Centipede extends GameBase {
   _spawnCentipede() {
     this.centipede = [];
     const segments = INITIAL_SEGMENTS + (this.wave - 1) * 3;
-    const startX = Math.random() * (this.width - 80) + 40;
+    const startX = this.rng.next() * (this.width - 80) + 40;
     const startY = 20;
 
     for (let i = 0; i < segments; i++) {
@@ -198,7 +197,7 @@ export class Centipede extends GameBase {
         bullet.alive = false;
         this.boss.hp--;
         this.score += 20;
-        this.particles.burst(this.boss.x + (Math.random() - 0.5) * 30, this.boss.y + (Math.random() - 0.5) * 30, '#ff6b4a', 5, 60);
+        this.particles.burst(this.boss.x + (this.rng.next() - 0.5) * 30, this.boss.y + (this.rng.next() - 0.5) * 30, '#ff6b4a', 5, 60);
         AudioManager.sfx({ type: 'centipede_hit', volume: 0.25 });
         HapticManager.vibrate('hit');
 
@@ -227,13 +226,13 @@ export class Centipede extends GameBase {
 
   _spawnSpider() {
     if (this.status === 'boss-fight') return;
-    const side = Math.floor(Math.random() * 4);
+    const side = this.rng.nextInt(0, 3);
     let x, y, vx, vy;
     const speed = 60 + this.wave * 8;
-    if (side === 0) { x = 0; y = Math.random() * this.height * 0.6; vx = speed; vy = (Math.random() - 0.5) * speed; }
-    else if (side === 1) { x = this.width; y = Math.random() * this.height * 0.6; vx = -speed; vy = (Math.random() - 0.5) * speed; }
-    else if (side === 2) { x = Math.random() * this.width; y = 0; vx = (Math.random() - 0.5) * speed; vy = speed; }
-    else { x = Math.random() * this.width; y = this.height * 0.6; vx = (Math.random() - 0.5) * speed; vy = -speed; }
+    if (side === 0) { x = 0; y = this.rng.next() * this.height * 0.6; vx = speed; vy = (this.rng.next() - 0.5) * speed; }
+    else if (side === 1) { x = this.width; y = this.rng.next() * this.height * 0.6; vx = -speed; vy = (this.rng.next() - 0.5) * speed; }
+    else if (side === 2) { x = this.rng.next() * this.width; y = 0; vx = (this.rng.next() - 0.5) * speed; vy = speed; }
+    else { x = this.rng.next() * this.width; y = this.height * 0.6; vx = (this.rng.next() - 0.5) * speed; vy = -speed; }
 
     this.spiders.push({ x, y, vx, vy, radius: SPIDER_SIZE, alive: true, hp: 2 + Math.floor(this.wave / 3) });
   }

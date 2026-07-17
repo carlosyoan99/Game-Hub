@@ -150,7 +150,7 @@ export class Breakout extends GameBase {
     // Disparar cada cierto tiempo
     this.bossFireTimer -= dt;
     if (this.bossFireTimer <= 0) {
-      this.bossFireTimer = 1.0 + Math.random() * 0.8;
+      this.bossFireTimer = 1.0 + this.rng.next() * 0.8;
       this.bossBullets.push({
         x: this.boss.x + this.boss.width / 2,
         y: this.boss.y + this.boss.height,

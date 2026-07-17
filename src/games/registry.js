@@ -12,9 +12,7 @@
 export const GAME_REGISTRY = [
   {
     id: 'breakout',
-    title: 'Breakout',
     title_i18n: 'registry.breakout.title',
-    tagline: 'Rebotes y destrucción de ladrillos',
     tagline_i18n: 'registry.breakout.tagline',
     level: 1,
     load: () => import('./breakout/index.js').then((m) => m.Breakout),
@@ -25,9 +23,7 @@ export const GAME_REGISTRY = [
   },
   {
     id: 'snake',
-    title: 'Snake',
     title_i18n: 'registry.snake.title',
-    tagline: 'Movimiento en cuadrícula y colisión propia',
     tagline_i18n: 'registry.snake.tagline',
     level: 1,
     load: () => import('./snake/index.js').then((m) => m.Snake),
@@ -39,9 +35,7 @@ export const GAME_REGISTRY = [
   },
   {
     id: 'pong',
-    title: 'Pong',
     title_i18n: 'registry.pong.title',
-    tagline: 'Rebote con ángulo variable vs. IA',
     tagline_i18n: 'registry.pong.tagline',
     level: 1,
     load: () => import('./pong/index.js').then((m) => m.Pong),
@@ -52,9 +46,7 @@ export const GAME_REGISTRY = [
   },
   {
     id: 'flappy-bird',
-    title: 'Flappy Bird',
     title_i18n: 'registry.flappy-bird.title',
-    tagline: 'Gravedad constante y scroll infinito',
     tagline_i18n: 'registry.flappy-bird.tagline',
     level: 1,
     load: () => import('./flappy-bird/index.js').then((m) => m.FlappyBird),
@@ -66,9 +58,7 @@ export const GAME_REGISTRY = [
   },
   {
     id: 'asteroids',
-    title: 'Asteroids',
     title_i18n: 'registry.asteroids.title',
-    tagline: 'Física de nave: empuje, fricción y wraparound',
     tagline_i18n: 'registry.asteroids.tagline',
     level: 2,
     load: () => import('./asteroids/index.js').then((m) => m.Asteroids),
@@ -87,9 +77,7 @@ export const GAME_REGISTRY = [
   },
   {
     id: 'platformer',
-    title: 'Platformer',
     title_i18n: 'registry.platformer.title',
-    tagline: 'Tilemap, colisión pixel-perfect y cámara con seguimiento',
     tagline_i18n: 'registry.platformer.tagline',
     level: 2,
     load: () => import('./platformer/index.js').then((m) => m.Platformer),
@@ -100,9 +88,7 @@ export const GAME_REGISTRY = [
   },
   {
     id: 'fancy-pants',
-    title: 'Fancy Pants',
     title_i18n: 'registry.fancy-pants.title',
-    tagline: 'Movimiento fluido, hang time y salto en pared',
     tagline_i18n: 'registry.fancy-pants.tagline',
     level: 2,
     load: () => import('./fancy-pants/index.js').then((m) => m.FancyPants),
@@ -113,9 +99,7 @@ export const GAME_REGISTRY = [
   },
   {
     id: 'coop-platformer',
-    title: 'Fuego y Agua',
     title_i18n: 'registry.coop-platformer.title',
-    tagline: 'Cooperativo local: plataforma móvil y palanca',
     tagline_i18n: 'registry.coop-platformer.tagline',
     level: 2,
     load: () => import('./coop-platformer/index.js').then((m) => m.CoopPlatformer),
@@ -126,9 +110,7 @@ export const GAME_REGISTRY = [
   },
   {
     id: 'trick-quiz',
-    title: 'Trivia Trampa',
     title_i18n: 'registry.trick-quiz.title',
-    tagline: 'Máquina de estados: preguntas trampa y zonas ocultas',
     tagline_i18n: 'registry.trick-quiz.tagline',
     level: 3,
     load: () => import('./trick-quiz/index.js').then((m) => m.TrickQuiz),
@@ -138,9 +120,7 @@ export const GAME_REGISTRY = [
   },
   {
     id: 'papa-pizzeria',
-    title: "Papa's Pizzeria",
     title_i18n: 'registry.papa-pizzeria.title',
-    tagline: 'Colas, temporizadores y multitarea culinaria',
     tagline_i18n: 'registry.papa-pizzeria.tagline',
     level: 3,
     load: () => import('./papa-pizzeria/index.js').then((m) => m.PapaPizzeria),
@@ -151,9 +131,7 @@ export const GAME_REGISTRY = [
   },
   {
     id: 'stick-rpg',
-    title: 'Stick RPG',
     title_i18n: 'registry.stick-rpg.title',
-    tagline: 'Días, energía, diálogos y cambio de escenas',
     tagline_i18n: 'registry.stick-rpg.tagline',
     level: 3,
     load: () => import('./stick-rpg/index.js').then((m) => m.StickRPG),
@@ -164,9 +142,7 @@ export const GAME_REGISTRY = [
   },
   {
     id: 'crush-the-castle',
-    title: 'Crush the Castle',
     title_i18n: 'registry.crush-the-castle.title',
-    tagline: 'Proyectiles con física en estructuras',
     tagline_i18n: 'registry.crush-the-castle.tagline',
     level: 4,
     load: () => import('./crush-the-castle/index.js').then((m) => m.CrushTheCastle),
@@ -178,9 +154,7 @@ export const GAME_REGISTRY = [
   },
   {
     id: 'bowman',
-    title: 'Bowman',
     title_i18n: 'registry.bowman.title',
-    tagline: 'Tiro parabólico con viento',
     tagline_i18n: 'registry.bowman.tagline',
     level: 4,
     load: () => import('./bowman/index.js').then((m) => m.Bowman),
@@ -194,9 +168,7 @@ export const GAME_REGISTRY = [
   },
   {
     id: 'bloons-td',
-    title: 'Bloons TD',
     title_i18n: 'registry.bloons-td.title',
-    tagline: 'Waypoints + torres defensivas',
     tagline_i18n: 'registry.bloons-td.tagline',
     level: 4,
     load: () => import('./bloons-td/index.js').then((m) => m.BloonsTD),
@@ -215,9 +187,7 @@ export const GAME_REGISTRY = [
   },
   {
     id: 'territory-war',
-    title: 'Territory War',
     title_i18n: 'registry.territory-war.title',
-    tagline: 'IA de bots, turnos y captura de territorio',
     tagline_i18n: 'registry.territory-war.tagline',
     level: 4,
     load: () => import('./territory-war/index.js').then((m) => m.TerritoryWar),
@@ -235,9 +205,7 @@ export const GAME_REGISTRY = [
   },
   {
     id: 'swords-and-souls',
-    title: 'Swords and Souls',
     title_i18n: 'registry.swords-and-souls.title',
-    tagline: 'Entrenamiento, combate por turnos y subida de nivel',
     tagline_i18n: 'registry.swords-and-souls.tagline',
     level: 5,
     load: () => import('./swords-and-souls/index.js').then((m) => m.SwordsAndSouls),
@@ -255,9 +223,7 @@ export const GAME_REGISTRY = [
   },
   {
     id: 'henry-stickmin',
-    title: 'Henry Stickmin',
     title_i18n: 'registry.henry-stickmin.title',
-    tagline: 'Árbol de decisiones, finales múltiples y humor',
     tagline_i18n: 'registry.henry-stickmin.tagline',
     level: 5,
     load: () => import('./henry-stickmin/index.js').then((m) => m.HenryStickmin),
@@ -277,9 +243,7 @@ export const GAME_REGISTRY = [
 
   {
     id: 'mario-like',
-    title: 'Super Mario Bros',
     title_i18n: 'registry.mario-like.title',
-    tagline: 'Scroll lateral, power-ups y enemigos clásicos',
     tagline_i18n: 'registry.mario-like.tagline',
     level: 1,
     load: () => import('./mario-like/index.js').then((m) => m.MarioLike),
@@ -299,9 +263,7 @@ export const GAME_REGISTRY = [
 
   {
     id: 'contra-like',
-    title: 'Contra',
     title_i18n: 'registry.contra-like.title',
-    tagline: 'Run & gun con scroll lateral, power-ups y jefes',
     tagline_i18n: 'registry.contra-like.tagline',
     level: 3,
     load: () => import('./contra-like/index.js').then((m) => m.ContraLike),
@@ -322,9 +284,7 @@ export const GAME_REGISTRY = [
 
   {
     id: 'space-harrier',
-    title: 'Space Harrier',
     title_i18n: 'registry.space-harrier.title',
-    tagline: 'Pseudo-3D shooter sobre raíles con enemigos y jefes',
     tagline_i18n: 'registry.space-harrier.tagline',
     level: 4,
     load: () => import('./space-harrier/index.js').then((m) => m.SpaceHarrier),
@@ -346,9 +306,7 @@ export const GAME_REGISTRY = [
 
   {
     id: 'metroid-like',
-    title: 'Metroid',
     title_i18n: 'registry.metroid-like.title',
-    tagline: 'Exploración no lineal con power-ups, mapa interconectado y jefe final',
     tagline_i18n: 'registry.metroid-like.tagline',
     level: 5,
     load: () => import('./metroid-like/index.js').then((m) => m.MetroidLike),
@@ -369,9 +327,7 @@ export const GAME_REGISTRY = [
 
   {
     id: 'outrun-like',
-    title: 'OutRun',
     title_i18n: 'registry.outrun-like.title',
-    tagline: 'Carreras top-down con tráfico, derrapes y checkpoints',
     tagline_i18n: 'registry.outrun-like.tagline',
     level: 4,
     load: () => import('./outrun-like/index.js').then((m) => m.OutRunLike),
@@ -392,9 +348,7 @@ export const GAME_REGISTRY = [
 
   {
     id: 'street-fighter',
-    title: 'Street Fighter',
     title_i18n: 'registry.street-fighter.title',
-    tagline: 'Pelea 1v1 local y vs IA con 4 personajes, supers y rounds',
     tagline_i18n: 'registry.street-fighter.tagline',
     level: 5,
     load: () => import('./street-fighter/index.js').then((m) => m.StreetFighter),
@@ -414,9 +368,7 @@ export const GAME_REGISTRY = [
 
   {
     id: 'golden-axe',
-    title: 'Golden Axe',
     title_i18n: 'registry.golden-axe.title',
-    tagline: 'Beat\'em up con 3 personajes, magia, combos y jefes',
     tagline_i18n: 'registry.golden-axe.tagline',
     level: 4,
     load: () => import('./golden-axe/index.js').then((m) => m.GoldenAxe),
@@ -437,9 +389,7 @@ export const GAME_REGISTRY = [
 
   {
     id: 'guitar-hero',
-    title: 'Guitar Hero',
     title_i18n: 'registry.guitar-hero.title',
-    tagline: 'Juego de ritmo con 5 cuerdas, combo y canciones procedurales',
     tagline_i18n: 'registry.guitar-hero.tagline',
     level: 4,
     load: () => import('./guitar-hero/index.js').then((m) => m.GuitarHero),
@@ -463,9 +413,7 @@ export const GAME_REGISTRY = [
 
   {
     id: 'bejeweled',
-    title: 'Bejeweled',
     title_i18n: 'registry.bejeweled.title',
-    tagline: 'Match-3 con gemas, cascadas y modos de juego',
     tagline_i18n: 'registry.bejeweled.tagline',
     level: 3,
     load: () => import('./bejeweled/index.js').then((m) => m.Bejeweled),
@@ -484,9 +432,7 @@ export const GAME_REGISTRY = [
 
   {
     id: 'lemonade-stand',
-    title: 'Lemonade Stand',
     title_i18n: 'registry.lemonade-stand.title',
-    tagline: 'Tycoon de limonada con economía, clima y receta',
     tagline_i18n: 'registry.lemonade-stand.tagline',
     level: 3,
     load: () => import('./lemonade-stand/index.js').then((m) => m.LemonadeStand),
@@ -507,9 +453,7 @@ export const GAME_REGISTRY = [
 
   {
     id: 'space-invaders',
-    title: 'Space Invaders',
     title_i18n: 'registry.space-invaders.title',
-    tagline: 'Disparos verticales con oleadas de aliens',
     tagline_i18n: 'registry.space-invaders.tagline',
     level: 1,
     load: () => import('./space-invaders/index.js').then((m) => m.SpaceInvaders),
@@ -527,9 +471,7 @@ export const GAME_REGISTRY = [
   },
   {
     id: 'centipede',
-    title: 'Centipede',
     title_i18n: 'registry.centipede.title',
-    tagline: 'Cienpiés serpenteante y hongos',
     tagline_i18n: 'registry.centipede.tagline',
     level: 1,
     load: () => import('./centipede/index.js').then((m) => m.Centipede),
@@ -546,9 +488,7 @@ export const GAME_REGISTRY = [
   },
   {
     id: 'missile-command',
-    title: 'Missile Command',
     title_i18n: 'registry.missile-command.title',
-    tagline: 'Defensa antimisiles con el ratón',
     tagline_i18n: 'registry.missile-command.tagline',
     level: 1,
     load: () => import('./missile-command/index.js').then((m) => m.MissileCommand),
@@ -565,9 +505,7 @@ export const GAME_REGISTRY = [
   },
   {
     id: 'galaga',
-    title: 'Galaga',
     title_i18n: 'registry.galaga.title',
-    tagline: 'Formaciones y bombardeo en picada',
     tagline_i18n: 'registry.galaga.tagline',
     level: 1,
     load: () => import('./galaga/index.js').then((m) => m.Galaga),
@@ -584,9 +522,7 @@ export const GAME_REGISTRY = [
   },
   {
     id: 'frogger',
-    title: 'Frogger',
     title_i18n: 'registry.frogger.title',
-    tagline: 'Cruza la carretera y el río',
     tagline_i18n: 'registry.frogger.tagline',
     level: 1,
     load: () => import('./frogger/index.js').then((m) => m.Frogger),
@@ -603,9 +539,7 @@ export const GAME_REGISTRY = [
   },
   {
     id: 'tetris',
-    title: 'Tetris',
     title_i18n: 'registry.tetris.title',
-    tagline: 'Piezas que caen, rotación y líneas',
     tagline_i18n: 'registry.tetris.tagline',
     level: 3,
     load: () => import('./tetris/index.js').then((m) => m.Tetris),
@@ -624,9 +558,7 @@ export const GAME_REGISTRY = [
   },
   {
     id: 'pac-man',
-    title: 'Pac-Man',
     title_i18n: 'registry.pac-man.title',
-    tagline: 'Laberinto, puntos y fantasmas con IA',
     tagline_i18n: 'registry.pac-man.tagline',
     level: 3,
     load: () => import('./pac-man/index.js').then((m) => m.PacMan),
@@ -643,9 +575,7 @@ export const GAME_REGISTRY = [
   },
   {
     id: 'donkey-kong',
-    title: 'Donkey Kong',
     title_i18n: 'registry.donkey-kong.title',
-    tagline: 'Barriles, escaleras y rescate',
     tagline_i18n: 'registry.donkey-kong.tagline',
     level: 3,
     load: () => import('./donkey-kong/index.js').then((m) => m.DonkeyKong),

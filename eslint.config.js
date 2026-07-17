@@ -35,11 +35,12 @@ export default [
         confirm: 'readonly',
         setInterval: 'readonly',
         clearInterval: 'readonly',
+        OffscreenCanvas: 'readonly',
       },
     },
     rules: {
       'no-undef': 'error',
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       'no-constant-condition': 'warn',
       'no-duplicate-imports': 'error',
       'no-extra-semi': 'warn',
@@ -92,6 +93,7 @@ export default [
         process: 'readonly',
         setInterval: 'readonly',
         clearInterval: 'readonly',
+        OffscreenCanvas: 'readonly'
       },
     },
     rules: {

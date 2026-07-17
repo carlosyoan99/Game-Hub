@@ -1,5 +1,4 @@
 import { GameBase } from '../../engine/GameBase.js';
-import { StorageManager } from '../../engine/StorageManager.js';
 import { ParticleSystem } from '../../engine/ParticleSystem.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
@@ -303,7 +302,7 @@ export class PacMan extends GameBase {
 
     if (g.frightened) {
       // Huir aleatoriamente
-      return Math.floor(Math.random() * 4);
+      return this.rng.nextInt(0, 3);
     }
 
     if (g.eaten) {

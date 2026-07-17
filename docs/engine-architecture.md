@@ -1,6 +1,6 @@
 # GameHub Engine — Arquitectura Técnica
 
-> Documentación completa del motor de juego común para los 34+ juegos del GameHub Engine.
+> Documentación completa del motor de juego común para los 35 juegos del GameHub Engine.
 > Julio 2026.
 
 ---
@@ -580,7 +580,7 @@ Volúmenes guardados en localStorage bajo `gamehub:audio:volumes`.
 
 ### Beneficios del diseño procedimental
 
-- **Zero assets de audio**: los 34+ juegos funcionan sin archivos de sonido.
+- **Zero assets de audio**: los 35 juegos funcionan sin archivos de sonido.
 - **Latencia cero**: los sonidos se generan al instante, sin esperar descargas.
 - **Personalizable**: cada juego tiene efectos únicos (galaga_shoot ≠ asteroids_shoot).
 - **Determinista**: mismo tipo + volumen produce el mismo sonido.

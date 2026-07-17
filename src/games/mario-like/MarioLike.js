@@ -4,6 +4,7 @@ import { Camera } from '../../engine/Camera.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { aabbIntersects, clamp } from '../../engine/CollisionUtils.js';
+import { spawnParticles, updateParticles as updateParticlesGlobal } from '../../engine/ParticleSystem.js';
 import { t } from '../../engine/i18n.js';
 import { renderOverlay, setupHUDContext } from '../../engine/GameUI.js';
 import { ProgressionManager } from '../../engine/ProgressionManager.js';
@@ -394,13 +395,7 @@ export class MarioLike extends GameBase {
   }
 
   _updateParticles(dt) {
-    for (const p of this.particles) {
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.vy += 600 * dt;
-      p.life -= dt;
-    }
-    this.particles = this.particles.filter(p => p.life > 0);
+    this.particles = updateParticlesGlobal(this.particles, dt, 600);
   }
 
   _updateCamera() {
@@ -501,15 +496,7 @@ export class MarioLike extends GameBase {
   }
 
   _spawnParticles(x, y, color, count) {
-    for (let i = 0; i < count; i++) {
-      this.particles.push({
-        x, y,
-        vx: (Math.random() - 0.5) * 150,
-        vy: -Math.random() * 200 - 50,
-        life: 0.4 + Math.random() * 0.3,
-        color,
-      });
-    }
+    spawnParticles(this.particles, x, y, color, count, { speed: 150, vyOffset: -50, lifeMin: 0.4, lifeMax: 0.7 });
   }
 
   _playerHit() {

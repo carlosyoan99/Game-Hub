@@ -1,5 +1,4 @@
 import { GameBase } from '../../engine/GameBase.js';
-import { StorageManager } from '../../engine/StorageManager.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
@@ -251,7 +250,7 @@ export class Snake extends GameBase {
         // Atraer comida hacia la cabeza
         const dx = Math.sign(this.food.x - newHead.x);
         const dy = Math.sign(this.food.y - newHead.y);
-        if (Math.random() < 0.3) {
+        if (this.rng.next() < 0.3) {
           const newFx = this.food.x - dx;
           const newFy = this.food.y - dy;
           if (newFx >= 0 && newFx < this.cols && newFy >= 0 && newFy < this.rows &&
@@ -329,7 +328,7 @@ export class Snake extends GameBase {
     let bestDir = null;
     let bestDist = -1;
     for (let i = dirs.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = this.rng.nextInt(0, i);
       [dirs[i], dirs[j]] = [dirs[j], dirs[i]];
     }
     for (const d of dirs) {

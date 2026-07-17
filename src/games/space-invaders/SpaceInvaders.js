@@ -1,10 +1,8 @@
 import { GameBase } from '../../engine/GameBase.js';
-import { StorageManager } from '../../engine/StorageManager.js';
 import { aabbIntersects } from '../../engine/CollisionUtils.js';
 import { ParticleSystem } from '../../engine/ParticleSystem.js';
 import { AudioManager } from '../../engine/AudioManager.js';
 import { HapticManager } from '../../engine/HapticManager.js';
-import { t } from '../../engine/i18n.js';
 import { renderOverlay } from '../../engine/GameUI.js';
 import { ProgressionManager } from '../../engine/ProgressionManager.js';
 
@@ -56,7 +54,6 @@ const SHIELD_DAMAGED = '#2d4f7a';
 const MYSTERY_COLOR = '#ff6b9d';
 const BULLET_COLOR = '#f0e6b3';
 const ALIEN_BULLET_COLOR = '#ff4d4d';
-const HUD_COLOR = '#9aa7b2';
 
 // ── Clase principal ──────────────────────────────────────────────────────
 

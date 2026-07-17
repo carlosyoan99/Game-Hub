@@ -9,7 +9,6 @@
  */
 import { GameBase } from '../../engine/GameBase.js';
 import { renderOverlay } from '../../engine/GameUI.js';
-import { StorageManager } from '../../engine/StorageManager.js';
 import { clamp } from '../../engine/CollisionUtils.js';
 import { ParticleSystem } from '../../engine/ParticleSystem.js';
 import { AudioManager } from '../../engine/AudioManager.js';
@@ -17,9 +16,18 @@ import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
 import { ProgressionManager } from '../../engine/ProgressionManager.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
-import { GRAVITY, BLOCK_SIZE, BLOCK_GAP, PROJECTILE_RADIUS, DEBRIS_OPTS, COLORS, BLOCK_TYPES } from './constants.js';
+import { GRAVITY, BLOCK_SIZE, BLOCK_GAP, PROJECTILE_RADIUS, DEBRIS_OPTS, COLORS, BLOCK_TYPES } from './constants.js';export class CrushTheCastle extends GameBase {
 
-export class CrushTheCastle extends GameBase {
+  _defaultBindings() {
+    return {
+      aimUp:        ['ArrowUp', 'KeyW', 'GamepadLStickUp', 'GamepadUp'],
+      aimDown:      ['ArrowDown', 'KeyS', 'GamepadLStickDown', 'GamepadDown'],
+      aimPowerUp:   ['KeyE', 'GamepadR1'],
+      aimPowerDown: ['KeyQ', 'GamepadL1'],
+      action:       ['Space', 'GamepadA'],
+    };
+  }
+
   init(engine) {
     super.init(engine, 'crush-the-castle');
     this.highscore = this.storage.get('highscore', 0);

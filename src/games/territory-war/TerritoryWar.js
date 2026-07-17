@@ -9,16 +9,15 @@
  */
 import { GameBase } from '../../engine/GameBase.js';
 import { renderOverlay } from '../../engine/GameUI.js';
-import { StorageManager } from '../../engine/StorageManager.js';
-import { pointInRect, clamp } from '../../engine/CollisionUtils.js';
+import { pointInRect } from '../../engine/CollisionUtils.js';
 import { ParticleSystem } from '../../engine/ParticleSystem.js';
 import { AudioManager } from '../../engine/AudioManager.js';
-import { HapticManager } from '../../engine/HapticManager.js';
 import { t } from '../../engine/i18n.js';
 import { ProgressionManager } from '../../engine/ProgressionManager.js';
 import { SeededRandom } from '../../engine/SeededRandom.js';
 import { icon } from '../../engine/IconRenderer.js';
 import { COLORS, TERRAIN_COLS, TERRAIN_ROWS, UNIT_TYPES } from './constants.js';
+import { aiBuyUnits, aiDoAction, getSpawnPoints, getValidMoves, getValidAttacks, captureTerritory, checkAllActionsDone } from './ai.js';
 
 export class TerritoryWar extends GameBase {
   init(engine) {
@@ -159,100 +158,15 @@ export class TerritoryWar extends GameBase {
   }
 
   _aiBuyUnits() {
-    const spawnPoints = this._getSpawnPoints(2);
-    if (spawnPoints.length === 0) return;
-
-    const affordableUnits = ['infantry', 'archer', 'cavalry'].filter(
-      (t) => UNIT_TYPES[t].cost <= this.enemyResources
-    );
-
-    if (affordableUnits.length === 0) return;
-
-    const buyCount = Math.min(1 + this.rng.nextInt(0, 1), affordableUnits.length, spawnPoints.length);
-    for (let i = 0; i < buyCount; i++) {
-      const type = affordableUnits[this.rng.nextInt(0, affordableUnits.length - 1)];
-      const cost = UNIT_TYPES[type].cost;
-      if (this.enemyResources >= cost && spawnPoints.length > 0) {
-        const sp = spawnPoints.shift();
-        if (sp) {
-          this._addUnit(type, 2, sp.col, sp.row);
-          this.enemyResources -= cost;
-        }
-      }
-    }
+    aiBuyUnits(this);
   }
 
   _aiDoAction() {
-    const units = this._getActionableUnits(2);
-    if (units.length === 0) {
-      this._endTurn();
-      return;
-    }
-
-    const unit = units[0];
-
-    const attacks = this._getValidAttacks(unit);
-    if (attacks.length > 0) {
-      const target = attacks.reduce((nearest, t) => {
-        const d1 = Math.abs(t.col - unit.col) + Math.abs(t.row - unit.row);
-        const d2 = Math.abs(nearest.col - unit.col) + Math.abs(nearest.row - unit.row);
-        return d1 < d2 ? t : nearest;
-      });
-
-      if (target) {
-        this.animating = true;
-        this.animationProgress = 0;
-        this.animUnit = unit;
-        this.animTarget = target;
-        this.phase = 'attacking';
-        AudioManager.sfx({ type: 'territory_attack', volume: 0.2 });
-        return;
-      }
-    }
-
-    if (unit.type === 'healer') {
-      const ally = this.units.find(u => u.owner === 2 && u.hp > 0 && u.hp < u.maxHp &&
-        Math.abs(u.col - unit.col) + Math.abs(u.row - unit.row) <= 2);
-      if (ally) {
-        ally.hp = Math.min(ally.maxHp, ally.hp + 10);
-        unit.hasAttacked = true;
-        this.particles.burst(this._tileToPixel(ally.col, ally.row).x, this._tileToPixel(ally.col, ally.row).y, '#3a9a5a', 6, 60);
-        if (this._checkAllActionsDone()) { this._endTurn(); }
-        else { this.aiTimer = 0.3 + this.rng.next() * 0.3; }
-        return;
-      }
-    }
-
-    if (!unit.hasMoved) {
-      const moves = this._getValidMoves(unit);
-      if (moves.length > 0) {
-        const sorted = moves.sort((a, b) => a.col - b.col);
-        const bestMove = sorted[0];
-        if (bestMove) {
-          unit.col = bestMove.col;
-          unit.row = bestMove.row;
-          unit.hasMoved = true;
-          this._captureTerritory(bestMove.col, bestMove.row, 2);
-        }
-      }
-    }
-
-    unit.hasAttacked = true;
-    if (this._checkAllActionsDone()) { this._endTurn(); }
-    else { this.aiTimer = 0.3 + this.rng.next() * 0.3; }
+    aiDoAction(this);
   }
 
   _getSpawnPoints(owner) {
-    const points = [];
-    for (let row = 0; row < TERRAIN_ROWS; row++) {
-      for (let col = 0; col < TERRAIN_COLS; col++) {
-        if (this.territory[row][col].isSpawn && this.territory[row][col].owner === owner) {
-          const occupied = this.units.some((u) => u.col === col && u.row === row && u.hp > 0);
-          if (!occupied) points.push({ col, row });
-        }
-      }
-    }
-    return points;
+    return getSpawnPoints(this, owner);
   }
 
   _endTurn() {
@@ -297,36 +211,11 @@ export class TerritoryWar extends GameBase {
   }
 
   _getValidMoves(unit) {
-    if (unit.hasMoved) return [];
-    const moves = [];
-    for (let dr = -unit.moveRange; dr <= unit.moveRange; dr++) {
-      for (let dc = -unit.moveRange; dc <= unit.moveRange; dc++) {
-        if (dr === 0 && dc === 0) continue;
-        const dist = Math.abs(dr) + Math.abs(dc);
-        if (dist > unit.moveRange) continue;
-
-        const nr = unit.row + dr;
-        const nc = unit.col + dc;
-        if (nr < 0 || nr >= TERRAIN_ROWS || nc < 0 || nc >= TERRAIN_COLS) continue;
-
-        const occupied = this.units.some((u) => u.col === nc && u.row === nr && u.hp > 0);
-        if (occupied) continue;
-
-        moves.push({ col: nc, row: nr });
-      }
-    }
-    return moves;
+    return getValidMoves(this, unit);
   }
 
   _getValidAttacks(unit) {
-    if (unit.hasAttacked) return [];
-    const targets = [];
-    for (const other of this.units) {
-      if (other.owner === unit.owner || other.hp <= 0) continue;
-      const dist = Math.abs(other.col - unit.col) + Math.abs(other.row - unit.row);
-      if (dist <= unit.range) targets.push(other);
-    }
-    return targets;
+    return getValidAttacks(this, unit);
   }
 
   update(dt) {
@@ -572,26 +461,11 @@ export class TerritoryWar extends GameBase {
   }
 
   _captureTerritory(col, row, owner) {
-    const directions = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]];
-    for (const [dc, dr] of directions) {
-      const nc = col + dc;
-      const nr = row + dr;
-      if (nc >= 0 && nc < TERRAIN_COLS && nr >= 0 && nr < TERRAIN_ROWS) {
-        if (this.territory[nr][nc].owner !== owner) {
-          this.territory[nr][nc].owner = owner;
-          this.particles.burst(
-            this._tileToPixel(nc, nr).x,
-            this._tileToPixel(nc, nr).y,
-            owner === 1 ? '#4a9eff' : '#e74c3c', 5, 60
-          );
-        }
-      }
-    }
+    captureTerritory(this, col, row, owner);
   }
 
   _checkAllActionsDone() {
-    const actionable = this._getActionableUnits(this.turn);
-    return actionable.length === 0;
+    return checkAllActionsDone(this);
   }
 
   _pixelToTile(px, py) {
@@ -747,7 +621,6 @@ export class TerritoryWar extends GameBase {
         ctx.fillStyle = 'rgba(231, 76, 60, 0.15)';
         ctx.fill();
       } else {
-        const pos = this._tileToPixel(target.col, target.row);
         ctx.fillStyle = 'rgba(74, 158, 255, 0.15)';
         ctx.fillRect(
           this.GRID_OFFSET_X + target.col * this.TILE_SIZE + 2,

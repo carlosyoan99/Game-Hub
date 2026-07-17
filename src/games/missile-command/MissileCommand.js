@@ -1,5 +1,4 @@
 import { GameBase } from '../../engine/GameBase.js';
-import { StorageManager } from '../../engine/StorageManager.js';
 import { clamp } from '../../engine/CollisionUtils.js';
 import { ParticleSystem } from '../../engine/ParticleSystem.js';
 import { AudioManager } from '../../engine/AudioManager.js';
@@ -106,15 +105,15 @@ export class MissileCommand extends GameBase {
   }
 
   _launchIncomingMissile() {
-    const startX = Math.random() * (this.width - 60) + 30;
+    const startX = this.rng.next() * (this.width - 60) + 30;
     const startY = 10;
 
     // Elegir ciudad objetivo viva
     const liveCities = this.cities.filter((c) => c.alive);
     if (liveCities.length === 0) return;
 
-    const target = liveCities[Math.floor(Math.random() * liveCities.length)];
-    const speed = MISSILE_SPEED_BASE + Math.random() * MISSILE_SPEED_VAR + this.wave * 5;
+    const target = liveCities[this.rng.nextInt(0, liveCities.length - 1)];
+    const speed = MISSILE_SPEED_BASE + this.rng.next() * MISSILE_SPEED_VAR + this.wave * 5;
 
     const dx = target.x - startX;
     const dy = target.y - startY;
@@ -216,7 +215,7 @@ export class MissileCommand extends GameBase {
     const dx = this.mousePos.x - bestBase.x;
     const dy = this.mousePos.y - bestBase.y;
     const dist = Math.hypot(dx, dy);
-    const speed = INTERCEPTOR_SPEED + Math.random() * 40;
+    const speed = INTERCEPTOR_SPEED + this.rng.next() * 40;
 
     this.interceptors.push({
       x: bestBase.x,

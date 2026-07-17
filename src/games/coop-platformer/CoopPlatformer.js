@@ -1,6 +1,5 @@
 import { renderOverlay, setupHUDContext } from '../../engine/GameUI.js';
 import { GameBase } from '../../engine/GameBase.js';
-import { StorageManager } from '../../engine/StorageManager.js';
 import { Tilemap } from '../../engine/Tilemap.js';
 import { Camera } from '../../engine/Camera.js';
 import { aabbIntersects, clamp } from '../../engine/CollisionUtils.js';
